@@ -8,7 +8,7 @@ using System.Threading;
 using System.Collections;
 using log4net;
 
-namespace MissionPlanner
+namespace MissionPlanner.Utilities
 {
     public class srtm : IDisposable
     {
@@ -32,7 +32,17 @@ namespace MissionPlanner
             public string altsource = "";
         }
 
-        public static string datadirectory = "./srtm/";
+        private static string _datadirectory = "./srtm/";
+
+        public static string datadirectory
+        {
+            get { return _datadirectory; }
+            set
+            {
+                log.Info(value);
+                _datadirectory = value;
+            }
+        }
 
         static object objlock = new object();
 
@@ -52,6 +62,8 @@ namespace MissionPlanner
 
         static srtm()
         {
+            log.Info(".cctor");
+
             // running tostring at a high rate was costing cpu
             for (int y = -90; y <= 90; y++)
             {
@@ -189,7 +201,7 @@ namespace MissionPlanner
                     int y_int = (int) yf;
                     double y_frac = yf - y_int;
 
-                    y_int = (size - 2) - y_int;
+                    y_int = (size-2) - y_int;
 
                     double alt00 = GetAlt(filename, x_int, y_int);
                     double alt10 = GetAlt(filename, x_int + 1, y_int);
@@ -198,7 +210,7 @@ namespace MissionPlanner
 
                     double v1 = avg(alt00, alt10, x_frac);
                     double v2 = avg(alt01, alt11, x_frac);
-                    double v = avg(v1, v2, -y_frac);
+                    double v = avg(v1, v2, 1-y_frac);
 
                     if (v < -1000)
                         return altresponce.Invalid;
@@ -348,8 +360,9 @@ namespace MissionPlanner
                     }
                 }
             }
-            catch
+            catch (Exception ex)
             {
+                log.Error(ex);
                 return altresponce.Invalid;
             }
 
@@ -368,6 +381,8 @@ namespace MissionPlanner
 
         static MemoryStream readFile(string filename)
         {
+            log.Info(filename);
+
             if (filecache.ContainsKey(filename))
             {
                 return (MemoryStream) filecache[filename];
@@ -389,6 +404,8 @@ namespace MissionPlanner
 
         static void requestRunner()
         {
+            log.Info("requestRunner start");
+
             requestThreadrun = true;
 
             while (requestThreadrun)
@@ -406,6 +423,7 @@ namespace MissionPlanner
 
                     if (item != "")
                     {
+                        log.Info(item);
                         get3secfile(item);
                         lock (objlock)
                         {

@@ -15,14 +15,18 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
 using System.Windows.Forms;
+using MissionPlanner.Maps;
 using MissionPlanner.Utilities;
+using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace MissionPlanner.Controls
 {
     public partial class SITL : MyUserControl, IActivate
     {
         //https://regex101.com/r/cH3kV3/2
-        Regex default_params_regex = new Regex(@"""([^""]+)""\s*:\s*\{\s*[^\}]+""default_params_filename""\s*:\s*""([^""]+)""\s*[^\}]*\}");
+        //https://regex101.com/r/cH3kV3/3
+        Regex default_params_regex = new Regex(@"""([^""]+)""\s*:\s*\{\s*[^\{}]+""default_params_filename""\s*:\s*\[*""([^""]+)""\s*[^\}]*\}");
 
         Uri sitlurl = new Uri("http://firmware.ardupilot.org/Tools/MissionPlanner/sitl/");
 
@@ -191,22 +195,22 @@ namespace MissionPlanner.Controls
 
             var load = Common.LoadingBox("Downloading", "Downloading sitl software");
 
-            Common.getFilefromNet(fullurl.ToString(),
+            Download.getFilefromNet(fullurl.ToString(),
                 sitldirectory + Path.GetFileNameWithoutExtension(filename) + ".exe");
 
             load.Refresh();
 
             // dependancys
             var depurl = new Uri(sitlurl, "cyggcc_s-1.dll");
-            Common.getFilefromNet(depurl.ToString(), sitldirectory + depurl.Segments[depurl.Segments.Length - 1]);
+            Download.getFilefromNet(depurl.ToString(), sitldirectory + depurl.Segments[depurl.Segments.Length - 1]);
 
             load.Refresh();
             depurl = new Uri(sitlurl, "cygstdc++-6.dll");
-            Common.getFilefromNet(depurl.ToString(), sitldirectory + depurl.Segments[depurl.Segments.Length - 1]);
+            Download.getFilefromNet(depurl.ToString(), sitldirectory + depurl.Segments[depurl.Segments.Length - 1]);
 
             load.Refresh();
             depurl = new Uri(sitlurl, "cygwin1.dll");
-            Common.getFilefromNet(depurl.ToString(), sitldirectory + depurl.Segments[depurl.Segments.Length - 1]);
+            Download.getFilefromNet(depurl.ToString(), sitldirectory + depurl.Segments[depurl.Segments.Length - 1]);
 
             load.Close();
 
@@ -215,9 +219,9 @@ namespace MissionPlanner.Controls
 
         private string GetDefaultConfig(string model)
         {
-            if (Common.getFilefromNet(
+            if (Download.getFilefromNet(
                 "https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/autotest/sim_vehicle.py",
-                sitldirectory + "sim_vehicle.py"))
+                sitldirectory + "sim_vehicle.py") || File.Exists(sitldirectory + "sim_vehicle.py"))
             {
                 var matches = default_params_regex.Matches(File.ReadAllText(sitldirectory + "sim_vehicle.py"));
 
@@ -225,14 +229,114 @@ namespace MissionPlanner.Controls
                 {
                     if (match.Groups[1].Value.ToLower().Equals(model))
                     {
-                        if (Common.getFilefromNet(
+                        if (Download.getFilefromNet(
                             "https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/autotest/" +
                             match.Groups[2].Value.ToString(),
-                            sitldirectory + match.Groups[2].Value.ToString()))
+                            sitldirectory + match.Groups[2].Value.ToString()) || File.Exists(sitldirectory + match.Groups[2].Value.ToString()))
                             return sitldirectory + match.Groups[2].Value.ToString();
                     }
                 }
             }
+
+            if (Download.getFilefromNet(
+                "https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/autotest/pysim/vehicleinfo.py",
+                sitldirectory + "vehicleinfo.py") || File.Exists(sitldirectory + "vehicleinfo.py"))
+            {
+                cleanupJson(sitldirectory + "vehicleinfo.py");
+
+                using (Newtonsoft.Json.JsonTextReader reader =
+                    new JsonTextReader(File.OpenText(sitldirectory + "vehicleinfo.py")))
+                {
+                    JsonSerializer serializer = new JsonSerializer();
+                    var obj = (JObject) serializer.Deserialize(reader);
+
+                    foreach (var fwtype in obj)
+                    {
+                        var frames = fwtype.Value["frames"];
+
+                        if (frames == null)
+                            continue;
+
+                        var config = frames[model];
+
+                        if (config == null)
+                            continue;
+
+                        var configs = config["default_params_filename"];
+
+                        if (configs is JValue)
+                        {
+                            if (Download.getFilefromNet(
+                                "https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/autotest/" +
+                                configs.ToString(),
+                                sitldirectory + configs.ToString()) || File.Exists(sitldirectory + configs.ToString()))
+                            {
+                                return sitldirectory + configs.ToString();
+                            }
+                        }
+
+                        string data = "";
+
+                        foreach (var config1 in configs)
+                        {
+                            if (Download.getFilefromNet(
+                                "https://raw.githubusercontent.com/ArduPilot/ardupilot/master/Tools/autotest/" +
+                                config1.ToString(),
+                                sitldirectory + config1.ToString()) || File.Exists(sitldirectory + config1.ToString()))
+                            {
+                                data += "\r\n" + File.ReadAllText(sitldirectory + config1.ToString());
+                            }
+                        }
+
+                        var temp = Path.GetTempFileName();
+                        File.WriteAllText(temp, data);
+                        return temp;
+                    }
+                }
+            }
+            return "";
+        }
+
+        void cleanupJson(string filename)
+        {
+            var content = File.ReadAllText(filename);
+
+            var match = BraceMatch(content, '{', '}');
+
+            match = Regex.Replace(match, @"#.*", "");
+
+            File.WriteAllText(filename, match);
+        }
+
+        static string BraceMatch(string text, char braces, char bracee)
+        {
+            int level = 0;
+            int start = 0;
+            int end = 0;
+
+            int index = -1;
+
+            foreach (char c in text)
+            {
+                index++;
+                if (c == braces)
+                {
+                    if (level == 0)
+                        start = index;
+                    // opening brace detected
+                    level++;
+                }
+
+                if (c == bracee)
+                {
+                    level--;
+                    end = index;
+
+                    if (level == 0)
+                        return text.Substring(start, end - start + 1);
+                }
+            }
+
             return "";
         }
 
@@ -268,6 +372,11 @@ namespace MissionPlanner.Controls
 
             if (!string.IsNullOrEmpty(config))
                 extraargs += @" --defaults """ + config+@"""";
+
+            extraargs += " " + txt_cmdline.Text + " ";
+
+            if (chk_wipe.Checked)
+                extraargs += " --wipe ";
 
             string simdir = sitldirectory + model + Path.DirectorySeparatorChar;
 

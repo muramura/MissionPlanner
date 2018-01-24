@@ -22,6 +22,8 @@ namespace MissionPlanner.Utilities
 
         Form temp = new Form();
 
+        public bool DataAvailable { get; set; } = false;
+
         public Proximity(MAVState mavInt)
         {
             _parent = mavInt;
@@ -109,47 +111,47 @@ namespace MissionPlanner.Utilities
 
                 Pen redpen = new Pen(Color.Red, 3);
                 float move = 5;
-                var font = new Font(Control.DefaultFont.FontFamily, Control.DefaultFont.Size, FontStyle.Bold);
+                var font = new Font(Control.DefaultFont.FontFamily, Control.DefaultFont.Size+2, FontStyle.Bold);
 
                 switch (temp.Orientation)
                 {
                     case MAV_SENSOR_ORIENTATION.MAV_SENSOR_ROTATION_NONE:
-                        location.rotate(Common.Rotation.ROTATION_NONE);
+                        location.rotate(Rotation.ROTATION_NONE);
                         e.Graphics.DrawString((temp.Distance/100).ToString("0.0m"), font, System.Drawing.Brushes.Green, midx - (float)location.x-move*2, midy - (float)location.y + move);
                         e.Graphics.DrawArc(redpen, (float)(midx - length), (float)(midy - length), (float)doublelength, (float)doublelength, -22.5f - 90f, 45f);
                         break;
                     case MAV_SENSOR_ORIENTATION.MAV_SENSOR_ROTATION_YAW_45:
-                        location.rotate(Common.Rotation.ROTATION_YAW_45);
+                        location.rotate(Rotation.ROTATION_YAW_45);
                         e.Graphics.DrawString((temp.Distance/100).ToString("0.0m"), font, System.Drawing.Brushes.Green, midx - (float)location.x- move*8, midy - (float)location.y+ move);
                         e.Graphics.DrawArc(redpen, (float)(midx - length), (float)(midy - length), (float)doublelength, (float)doublelength, 22.5f - 90f, 45f);
                         break;
                     case MAV_SENSOR_ORIENTATION.MAV_SENSOR_ROTATION_YAW_90:
-                        location.rotate(Common.Rotation.ROTATION_YAW_90);
+                        location.rotate(Rotation.ROTATION_YAW_90);
                         e.Graphics.DrawString((temp.Distance/100).ToString("0.0m"), font, System.Drawing.Brushes.Green, midx - (float)location.x- move*8, midy - (float)location.y);
                         e.Graphics.DrawArc(redpen, (float)(midx - length), (float)(midy - length), (float)doublelength, (float)doublelength, 67.5f - 90f, 45f);
                         break;
                     case MAV_SENSOR_ORIENTATION.MAV_SENSOR_ROTATION_YAW_135:
-                        location.rotate(Common.Rotation.ROTATION_YAW_135);
+                        location.rotate(Rotation.ROTATION_YAW_135);
                         e.Graphics.DrawString((temp.Distance/100).ToString("0.0m"), font, System.Drawing.Brushes.Green, midx - (float)location.x- move*8, midy - (float)location.y- move);
                         e.Graphics.DrawArc(redpen, (float)(midx - length), (float)(midy - length), (float)doublelength, (float)doublelength, 112.5f - 90f, 45f);
                         break;
                     case MAV_SENSOR_ORIENTATION.MAV_SENSOR_ROTATION_YAW_180:
-                        location.rotate(Common.Rotation.ROTATION_YAW_180);
+                        location.rotate(Rotation.ROTATION_YAW_180);
                         e.Graphics.DrawString((temp.Distance/100).ToString("0.0m"), font, System.Drawing.Brushes.Green, midx - (float)location.x-move*2, midy - (float)location.y-move*3);
                         e.Graphics.DrawArc(redpen, (float)(midx - length), (float)(midy - length), (float)doublelength, (float)doublelength, 157.5f - 90f, 45f);
                         break;
                     case MAV_SENSOR_ORIENTATION.MAV_SENSOR_ROTATION_YAW_225:
-                        location.rotate(Common.Rotation.ROTATION_YAW_225);
+                        location.rotate(Rotation.ROTATION_YAW_225);
                         e.Graphics.DrawString((temp.Distance/100).ToString("0.0m"), font, System.Drawing.Brushes.Green, midx - (float)location.x+ move, midy - (float)location.y- move);
                         e.Graphics.DrawArc(redpen, (float)(midx - length), (float)(midy - length), (float)doublelength, (float)doublelength, 202.5f - 90f, 45f);
                         break;
                     case MAV_SENSOR_ORIENTATION.MAV_SENSOR_ROTATION_YAW_270:
-                        location.rotate(Common.Rotation.ROTATION_YAW_270);
+                        location.rotate(Rotation.ROTATION_YAW_270);
                         e.Graphics.DrawString((temp.Distance/100).ToString("0.0m"), font, System.Drawing.Brushes.Green, midx - (float)location.x+move, midy - (float)location.y);
                         e.Graphics.DrawArc(redpen, (float)(midx - length), (float)(midy - length), (float)doublelength, (float)doublelength, 247.5f - 90f, 45f);
                         break;
                     case MAV_SENSOR_ORIENTATION.MAV_SENSOR_ROTATION_YAW_315:
-                        location.rotate(Common.Rotation.ROTATION_YAW_315);
+                        location.rotate(Rotation.ROTATION_YAW_315);
                         e.Graphics.DrawString((temp.Distance/100).ToString("0.0m"), font, System.Drawing.Brushes.Green, midx - (float)location.x+move, midy - (float)location.y);
                         e.Graphics.DrawArc(redpen, (float)(midx - length), (float)(midy - length), (float)doublelength, (float)doublelength, 292.5f - 90f, 45f);
                         break;
@@ -159,7 +161,7 @@ namespace MissionPlanner.Utilities
 
         ~Proximity()
         {
-            _parent.parent.UnSubscribeToPacketType(sub);
+            _parent?.parent?.UnSubscribeToPacketType(sub);
         }
 
         private bool messageReceived(MAVLinkMessage arg)
@@ -170,6 +172,8 @@ namespace MissionPlanner.Utilities
 
             if (arg.msgid == (uint)MAVLINK_MSG_ID.DISTANCE_SENSOR)
             {
+                DataAvailable = true;
+
                 var dist = arg.ToStructure<mavlink_distance_sensor_t>();
 
                 if (dist.current_distance >= dist.max_distance)
@@ -184,16 +188,26 @@ namespace MissionPlanner.Utilities
                 {
                     temp.Invalidate();
                 }
-                else
-                {
-                    if (!temp.IsDisposed)
-                    {
-                        MainV2.instance.Invoke((MethodInvoker)delegate { temp.Show(); });
-                    }
-                }
             }
 
             return true;
+        }
+
+        public void Show()
+        {
+            if (!temp.IsDisposed)
+            {
+                if (temp.Visible)
+                    return;
+
+                temp.Show();
+            }
+            else
+            {
+                Dispose();
+                _parent.Proximity = new Proximity(_parent);
+                _parent.Proximity.Show();
+            }
         }
 
         public void Dispose()

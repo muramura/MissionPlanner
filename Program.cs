@@ -14,6 +14,8 @@ using MissionPlanner;
 using System.Drawing;
 using System.Runtime.CompilerServices;
 using System.Text.RegularExpressions;
+using MissionPlanner.Comms;
+using MissionPlanner.Controls;
 
 namespace MissionPlanner
 {
@@ -24,6 +26,8 @@ namespace MissionPlanner
         public static DateTime starttime = DateTime.Now;
 
         public static string name { get; internal set; }
+
+        public static bool WindowsStoreApp { get { return Application.ExecutablePath.Contains("WindowsApps"); } }
 
         public static Image Logo = null;
         public static Image IconFile = null;
@@ -36,6 +40,7 @@ namespace MissionPlanner
         public static Bitmap SplashBG = null;
 
         public static string[] names = new string[] { "VVVVZ" };
+        public static bool MONO = false;
 
         /// <summary>
         /// The main entry point for the application.
@@ -47,6 +52,9 @@ namespace MissionPlanner
             Console.WriteLine(
                 "If your error is about Microsoft.DirectX.DirectInput, please install the latest directx redist from here http://www.microsoft.com/en-us/download/details.aspx?id=35 \n\n");
             Console.WriteLine("Debug under mono    MONO_LOG_LEVEL=debug mono MissionPlanner.exe");
+
+            var t = Type.GetType("Mono.Runtime");
+            MONO = (t != null);
 
             Thread = Thread.CurrentThread;
 
@@ -125,8 +133,12 @@ namespace MissionPlanner
             MissionPlanner.Controls.InputBox.ApplyTheme += MissionPlanner.Utilities.ThemeManager.ApplyThemeTo;
             Controls.BackstageView.BackstageViewPage.ApplyTheme += MissionPlanner.Utilities.ThemeManager.ApplyThemeTo;
 
+            Controls.MainSwitcher.Tracking += MissionPlanner.Utilities.Tracking.AddPage;
+            Controls.BackstageView.BackstageView.Tracking += MissionPlanner.Utilities.Tracking.AddPage;
+
             // setup settings provider
             MissionPlanner.Comms.CommsBase.Settings += CommsBase_Settings;
+            MissionPlanner.Comms.CommsBase.InputBoxShow += CommsBaseOnInputBoxShow;
             MissionPlanner.Comms.CommsBase.ApplyTheme += MissionPlanner.Utilities.ThemeManager.ApplyThemeTo;
 
             // set the cache provider to my custom version
@@ -136,9 +148,12 @@ namespace MissionPlanner
             GMap.NET.MapProviders.GMapProviders.List.Add(Maps.Custom.Instance);
             GMap.NET.MapProviders.GMapProviders.List.Add(Maps.Earthbuilder.Instance);
             GMap.NET.MapProviders.GMapProviders.List.Add(Maps.Statkart_Topo2.Instance);
+            GMap.NET.MapProviders.GMapProviders.List.Add(Maps.Eniro_Topo.Instance);
             GMap.NET.MapProviders.GMapProviders.List.Add(Maps.MapBox.Instance);
             GMap.NET.MapProviders.GMapProviders.List.Add(Maps.MapboxNoFly.Instance);
-            GMap.NET.MapProviders.GMapProviders.List.Add(GDAL.GDALProvider.Instance);
+            // optionally add gdal support
+            if (Directory.Exists(Application.StartupPath + Path.DirectorySeparatorChar + "gdal"))
+                GMap.NET.MapProviders.GMapProviders.List.Add(GDAL.GDALProvider.Instance);
 
             // add proxy settings
             GMap.NET.MapProviders.GMapProvider.WebProxy = WebRequest.GetSystemWebProxy();
@@ -168,6 +183,19 @@ namespace MissionPlanner
             Device.DeviceStructure test2 = new Device.DeviceStructure(262434);
             Device.DeviceStructure test3 = new Device.DeviceStructure(131874);
 
+            //ph2 - cube with here
+            Device.DeviceStructure test5 = new Device.DeviceStructure(466441);
+            Device.DeviceStructure test6 = new Device.DeviceStructure(131874);
+            Device.DeviceStructure test7 = new Device.DeviceStructure(263178);
+            // 
+            Device.DeviceStructure test8 = new Device.DeviceStructure(1442082);
+            Device.DeviceStructure test9 = new Device.DeviceStructure(1114914);
+            Device.DeviceStructure test10 = new Device.DeviceStructure(1442826);
+            //
+            Device.DeviceStructure test11 = new Device.DeviceStructure(2359586);
+            Device.DeviceStructure test12 = new Device.DeviceStructure(2229282);
+            Device.DeviceStructure test13 = new Device.DeviceStructure(2360330);
+
             MAVLink.MavlinkParse tmp = new MAVLink.MavlinkParse();
             MAVLink.mavlink_heartbeat_t hb = new MAVLink.mavlink_heartbeat_t()
             {
@@ -185,6 +213,8 @@ namespace MissionPlanner
 
             tmp.GenerateMAVLinkPacket20(MAVLink.MAVLINK_MSG_ID.HEARTBEAT, hb, true);
             tmp.GenerateMAVLinkPacket20(MAVLink.MAVLINK_MSG_ID.HEARTBEAT, hb, true);
+
+            var msg = new MAVLink.MAVLinkMessage(t2);
 
 
             try
@@ -211,6 +241,18 @@ namespace MissionPlanner
             catch
             {
             }
+        }
+
+        private static inputboxreturn CommsBaseOnInputBoxShow(string title, string prompttext, ref string text)
+        {
+            var ans = InputBox.Show(title, prompttext, ref text);
+
+            if (ans == DialogResult.Cancel || ans == DialogResult.Abort)
+                return inputboxreturn.Cancel;
+            if (ans == DialogResult.OK)
+                return inputboxreturn.OK;
+
+            return inputboxreturn.NotSet;
         }
 
         static void CleanupFiles()
@@ -285,6 +327,10 @@ namespace MissionPlanner
 
         static void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)
         {
+            var list = AppDomain.CurrentDomain.ReflectionOnlyGetAssemblies();
+
+            log.Error(list);
+
             handleException((Exception) e.ExceptionObject);
         }
 
@@ -317,6 +363,9 @@ namespace MissionPlanner
                 return;
             }
 
+            if (MainV2.instance != null && MainV2.instance.IsDisposed)
+                return;
+
             MissionPlanner.Utilities.Tracking.AddException(ex);
 
             log.Debug(ex.ToString());
@@ -332,6 +381,12 @@ namespace MissionPlanner
             if (ex.Message == "The port is closed.")
             {
                 CustomMessageBox.Show("Serial connection has been lost");
+                return;
+            }
+            if (ex.Message.Contains("Array.Empty"))
+            {
+                CustomMessageBox.Show("Please install Microsoft Dot Net 4.6.2");
+                Application.Exit();
                 return;
             }
             if (ex.Message == "A device attached to the system is not functioning.")

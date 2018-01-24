@@ -25,6 +25,12 @@ namespace MissionPlanner.GCSViews
             catch
             {
             }
+
+            if (Program.WindowsStoreApp)
+            {
+                BUT_betaupdate.Visible = false;
+                BUT_updatecheck.Visible = false;
+            }
         }
 
         public void BUT_updatecheck_Click(object sender, EventArgs e)
@@ -67,6 +73,12 @@ namespace MissionPlanner.GCSViews
             try
             {
                 Utilities.Update.dobeta = true;
+                if (Control.ModifierKeys == Keys.Control)
+                {
+                    Utilities.Update.domaster = true;
+                    CustomMessageBox.Show("This will update to MASTER release");
+                }
+
                 Utilities.Update.DoUpdate();
             }
             catch (Exception ex)

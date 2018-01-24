@@ -18,6 +18,7 @@ namespace MissionPlanner.GCSViews.ConfigurationView
     {
         private List<CultureInfo> _languages;
         private bool startup;
+        static temp temp;
 
         public ConfigPlanner()
         {
@@ -62,7 +63,7 @@ namespace MissionPlanner.GCSViews.ConfigurationView
             var cultureCodes = new[]
             {
                 "en-US", "zh-Hans", "zh-TW", "ru-RU", "Fr", "Pl", "it-IT", "es-ES", "de-DE", "ja-JP", "id-ID", "ko-KR",
-                "ar"
+                "ar", "pt"
             };
 
             _languages = cultureCodes
@@ -114,6 +115,8 @@ namespace MissionPlanner.GCSViews.ConfigurationView
             SetCheckboxFromConfig("showairports", CHK_showairports);
             SetCheckboxFromConfig("enableadsb", chk_ADSB);
             SetCheckboxFromConfig("norcreceiver", chk_norcreceiver);
+            SetCheckboxFromConfig("showtfr", chk_tfr);
+            SetCheckboxFromConfig("autoParamCommit", CHK_AutoParamCommit);
 
             // this can't fail because it set at startup
             NUM_tracklength.Value = Settings.Instance.GetInt32("NUM_tracklength");
@@ -136,6 +139,8 @@ namespace MissionPlanner.GCSViews.ConfigurationView
             SetCheckboxFromConfig("CHK_maprotation", CHK_maprotation);
 
             SetCheckboxFromConfig("CHK_disttohomeflightdata", CHK_disttohomeflightdata);
+
+            CHK_AutoParamCommit.Visible = MainV2.DisplayConfiguration.displayParamCommitButton;
 
             //set hud color state
             var hudcolor = Settings.Instance["hudcolor"];
@@ -752,6 +757,8 @@ namespace MissionPlanner.GCSViews.ConfigurationView
         private void CHK_beta_CheckedChanged(object sender, EventArgs e)
         {
             Settings.Instance["beta_updates"] = CHK_beta.Checked.ToString();
+
+            MissionPlanner.Utilities.Update.dobeta = CHK_beta.Checked;
         }
 
         private void CHK_Password_CheckedChanged(object sender, EventArgs e)
@@ -836,7 +843,7 @@ namespace MissionPlanner.GCSViews.ConfigurationView
             }
 
             Settings.Instance["enableadsb"] = chk_ADSB.Checked.ToString();
-            MainV2.instance.EnableADSB = CHK_showairports.Checked;
+            MainV2.instance.EnableADSB = chk_ADSB.Checked;
         }
 
         private void chk_tfr_CheckedChanged(object sender, EventArgs e)
@@ -870,8 +877,24 @@ namespace MissionPlanner.GCSViews.ConfigurationView
 
         private void chk_temp_CheckedChanged(object sender, EventArgs e)
         {
-            var temp = new temp();
-            temp.Show();
+            if (chk_temp.Checked)
+            {
+                temp = new temp();
+                temp.FormClosing += chk_temp_FormClosing;
+                temp.Show();
+            }
+            else
+            {
+                if (temp != null)
+                { 
+                    temp.Close();
+                }
+            }
+        }
+
+        private void chk_temp_FormClosing(object sender, EventArgs e)
+        {
+            chk_temp.Checked = false;
         }
 
         private void chk_norcreceiver_CheckedChanged(object sender, EventArgs e)
@@ -895,6 +918,11 @@ namespace MissionPlanner.GCSViews.ConfigurationView
                 MainV2.DisplayConfiguration = MainV2.DisplayConfiguration.Basic();
             }
             Settings.Instance["displayview"] = MainV2.DisplayConfiguration.ConvertToString();
+        }
+
+        private void CHK_AutoParamCommit_CheckedChanged(object sender, EventArgs e)
+        {
+            Settings.Instance["autoParamCommit"] = CHK_AutoParamCommit.Checked.ToString();
         }
     }
 }

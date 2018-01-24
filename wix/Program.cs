@@ -116,7 +116,7 @@ namespace wix
 
             System.Diagnostics.FileVersionInfo fvi = FileVersionInfo.GetVersionInfo(exepath);
 
-            string fn = outputfilename + "-" + fvi.FileVersion;
+            string fn = outputfilename + "-" + fvi.ProductVersion;
 
             StreamWriter st = new StreamWriter("create.bat", false);
 
@@ -124,7 +124,7 @@ namespace wix
 
             st.WriteLine(@"""%wix%\bin\candle"" installer.wxs -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension -ext WixIisExtension");
 
-            st.WriteLine(@"""%wix%\bin\light"" installer.wixobj ""%wix%\bin\difxapp_x86.wixlib"" -o " + fn + ".msi -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension -ext WixIisExtension");
+            st.WriteLine(@"""%wix%\bin\light"" installer.wixobj ""%wix%\bin\difxapp_x86.wixlib"" -sval -o " + fn + ".msi -ext WiXNetFxExtension -ext WixDifxAppExtension -ext WixUIExtension.dll -ext WixUtilExtension -ext WixIisExtension");
 
             st.WriteLine("pause");
 
@@ -132,6 +132,9 @@ namespace wix
 
             st.WriteLine("About to upload!!!!!!!!!");
             st.WriteLine("pause");
+
+            st.WriteLine(@"c:\cygwin\bin\chmod.exe 777 " + fn + ".zip");
+            st.WriteLine(@"c:\cygwin\bin\chmod.exe 777 " + fn + ".msi");
 
             st.WriteLine(@"c:\cygwin\bin\ln.exe -f -s " + fn + ".zip " + outputfilename + "-latest.zip");
             st.WriteLine(@"c:\cygwin\bin\ln.exe -f -s " + fn + ".msi " + outputfilename + "-latest.msi");
@@ -165,16 +168,16 @@ namespace wix
 
             newid = "*";
 
-            StreamReader sr = new StreamReader(File.OpenRead("../Properties/AssemblyInfo.cs"));
+            StreamReader sr = new StreamReader(File.OpenRead("../MissionPlanner.csproj"));
 
             string version = "0";
 
             while (!sr.EndOfStream)
             {
                 string line = sr.ReadLine();
-                if (line.Contains("AssemblyFileVersion"))
+                if (line.Contains("<Version>"))
                 {
-                    string[] items = line.Split(new char[] { '"' }, StringSplitOptions.RemoveEmptyEntries);
+                    string[] items = line.Split(new char[] {' ','"', '<', '>'}, StringSplitOptions.RemoveEmptyEntries);
                     version = items[1];
                     break;
                 }
@@ -200,9 +203,9 @@ namespace wix
 
     <SetProperty Action='SetTARGETDIR' Before='LaunchConditions' Id='TARGETDIR' Value=""[ProgramFilesFolder]"" />
 
-    <PropertyRef Id=""NETFRAMEWORK40FULL"" />
+    <PropertyRef Id=""WIX_IS_NETFRAMEWORK_46_OR_LATER_INSTALLED"" />
 
-    <Condition Message=""This application requires .NET Framework 4.0. Please install the .NET Framework then run this installer again.""><![CDATA[Installed OR NETFRAMEWORK40FULL]]></Condition>
+    <Condition Message=""This application requires .NET Framework 4.6.1. Please install the .NET Framework then run this installer again.""><![CDATA[Installed OR WIX_IS_NETFRAMEWORK_46_OR_LATER_INSTALLED]]></Condition>
 
     <Media Id=""1"" Cabinet=""product.cab"" EmbedCab=""yes"" />
 
@@ -375,7 +378,24 @@ namespace wix
      <Verb Id='open' Command='Open' TargetFile='" + mainexeid + @"' Argument='""%1""' />
   </Extension>
 </ProgId>
+<ProgId Id='MissionPlanner.bin' Description='Binary Log'>
+  <Extension Id='bin' ContentType='application/dflog'>
+     <Verb Id='open' Command='Open' TargetFile='" + mainexeid + @"' Argument='""%1""' />
+  </Extension>
+</ProgId>
+<ProgId Id='MissionPlanner.log' Description='DF Log'>
+  <Extension Id='log' ContentType='application/dflog'>
+     <Verb Id='open' Command='Open' TargetFile='" + mainexeid + @"' Argument='""%1""' />
+  </Extension>
+</ProgId>
  <RegistryValue Root=""HKCR"" Key=""MissionPlanner.tlog\shellex\{BB2E617C-0920-11D1-9A0B-00C04FC2D6C1}"" Value=""{f3b857f1-0b79-4e77-9d0b-8b8b7e874f56}"" Type=""string"" Action=""write"" />
+ <RegistryValue Root=""HKCR"" Key=""MissionPlanner.tlog\shellex\{e357fccd-a995-4576-b01f-234630154e96}"" Value=""{f3b857f1-0b79-4e77-9d0b-8b8b7e874f56}"" Type=""string"" Action=""write"" />
+
+ <RegistryValue Root=""HKCR"" Key=""MissionPlanner.bin\shellex\{BB2E617C-0920-11D1-9A0B-00C04FC2D6C1}"" Value=""{f3b857f1-0b79-4e77-9d0b-8b8b7e874f56}"" Type=""string"" Action=""write"" />
+ <RegistryValue Root=""HKCR"" Key=""MissionPlanner.bin\shellex\{e357fccd-a995-4576-b01f-234630154e96}"" Value=""{f3b857f1-0b79-4e77-9d0b-8b8b7e874f56}"" Type=""string"" Action=""write"" />
+
+ <RegistryValue Root=""HKCR"" Key=""MissionPlanner.log\shellex\{BB2E617C-0920-11D1-9A0B-00C04FC2D6C1}"" Value=""{f3b857f1-0b79-4e77-9d0b-8b8b7e874f56}"" Type=""string"" Action=""write"" />
+ <RegistryValue Root=""HKCR"" Key=""MissionPlanner.log\shellex\{e357fccd-a995-4576-b01f-234630154e96}"" Value=""{f3b857f1-0b79-4e77-9d0b-8b8b7e874f56}"" Type=""string"" Action=""write"" />
 ");
 
                 }
@@ -383,14 +403,6 @@ namespace wix
                 {
                     sw.WriteLine(tabs3 + "<File Id=\"" + fixname(Path.GetFileName(filepath)) + "\" Source=\"" + filepath + "\" />");
                 }
-            }
-
-            // put placeholder into dir
-            if (files.Length == 0)
-            {
-                File.WriteAllText(basedir + Path.DirectorySeparatorChar + "aircraft/placeholder.txt", "");
-                sw.WriteLine(tabs2 + "<File Id=\"_placeholder_" + no + "\" Source=\"" + basedir + Path.DirectorySeparatorChar + "aircraft/placeholder.txt" + "\" />");
-                no++;
             }
 
             sw.WriteLine(tabs2 + "</Component>");

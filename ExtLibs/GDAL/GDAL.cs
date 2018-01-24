@@ -11,8 +11,6 @@ using log4net.Config;
 using System.IO;
 using System.Collections.Generic;
 using GMap.NET;
-using System.Windows.Forms;
-using GMap.NET.WindowsForms;
 using GMap.NET.MapProviders;
 using System.Drawing.Drawing2D;
 using OSGeo.OGR;
@@ -45,8 +43,8 @@ namespace GDAL
                 i++;
                 try
                 {
-                    // 5kb file check
-                    if (new FileInfo(file).Length < 1024 * 5)
+                    // 1kb file check
+                    if (new FileInfo(file).Length < 1024 * 1)
                         continue;
 
                     if (OnProgress != null)
@@ -233,6 +231,9 @@ namespace GDAL
                         {
                             lock (locker)
                             {
+                                if (image.Bitmap == null)
+                                    continue;
+
                                 // this is wrong
                                 g.DrawImage(image.Bitmap, new RectangleF(0, 0, width, height), rect, GraphicsUnit.Pixel);
 
@@ -266,39 +267,47 @@ namespace GDAL
 
         public static Bitmap LoadImage(string file)
         {
-            using (var ds = OSGeo.GDAL.Gdal.Open(file, OSGeo.GDAL.Access.GA_ReadOnly))
+            lock (locker)
             {
-                // Get the GDAL Band objects from the Dataset
-                Band band = ds.GetRasterBand(1);
-                if (band == null)
-                    return null;
-                ColorTable ct = band.GetRasterColorTable();
-                // Create a Bitmap to store the GDAL image in
-                Bitmap bitmap = new Bitmap(ds.RasterXSize, ds.RasterYSize, PixelFormat.Format8bppIndexed);
-                // Obtaining the bitmap buffer
-                BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, ds.RasterXSize, ds.RasterYSize), ImageLockMode.ReadWrite, PixelFormat.Format8bppIndexed);
-                try
+                using (var ds = OSGeo.GDAL.Gdal.Open(file, OSGeo.GDAL.Access.GA_ReadOnly))
                 {
-                    int iCol = ct.GetCount();
-                    ColorPalette pal = bitmap.Palette;
-                    for (int i = 0; i < iCol; i++)
+                    // Get the GDAL Band objects from the Dataset
+                    Band band = ds.GetRasterBand(1);
+                    if (band == null)
+                        return null;
+                    ColorTable ct = band.GetRasterColorTable();
+                    // Create a Bitmap to store the GDAL image in
+                    Bitmap bitmap = new Bitmap(ds.RasterXSize, ds.RasterYSize, PixelFormat.Format8bppIndexed);
+                    // Obtaining the bitmap buffer
+                    BitmapData bitmapData = bitmap.LockBits(new Rectangle(0, 0, ds.RasterXSize, ds.RasterYSize),
+                        ImageLockMode.ReadWrite, PixelFormat.Format8bppIndexed);
+                    try
                     {
-                        ColorEntry ce = ct.GetColorEntry(i);
-                        pal.Entries[i] = Color.FromArgb(ce.c4, ce.c1, ce.c2, ce.c3);
+                        if (ct != null)
+                        {
+                            int iCol = ct.GetCount();
+                            ColorPalette pal = bitmap.Palette;
+                            for (int i = 0; i < iCol; i++)
+                            {
+                                ColorEntry ce = ct.GetColorEntry(i);
+                                pal.Entries[i] = Color.FromArgb(ce.c4, ce.c1, ce.c2, ce.c3);
+                            }
+                            bitmap.Palette = pal;
+                        }
+
+                        int stride = bitmapData.Stride;
+                        IntPtr buf = bitmapData.Scan0;
+
+                        band.ReadRaster(0, 0, ds.RasterXSize, ds.RasterYSize, buf, ds.RasterXSize, ds.RasterYSize,
+                            DataType.GDT_Byte, 1, stride);
                     }
-                    bitmap.Palette = pal;
+                    finally
+                    {
+                        bitmap.UnlockBits(bitmapData);
+                    }
 
-                    int stride = bitmapData.Stride;
-                    IntPtr buf = bitmapData.Scan0;
-
-                    band.ReadRaster(0, 0, ds.RasterXSize, ds.RasterYSize, buf, ds.RasterXSize, ds.RasterYSize, DataType.GDT_Byte, 1, stride);
+                    return bitmap;
                 }
-                finally
-                {
-                    bitmap.UnlockBits(bitmapData);
-                }
-
-                return bitmap;
             }
         }
 
@@ -330,7 +339,18 @@ namespace GDAL
         {
             Bitmap _bitmap = null;
             // load on demand
-            public Bitmap Bitmap { get { if (_bitmap == null) _bitmap = LoadImage(File); return _bitmap; } }
+            public Bitmap Bitmap
+            {
+                get
+                {
+                    lock (this)
+                    {
+                        if (_bitmap == null) _bitmap = LoadImage(File);
+                        return _bitmap;
+                    }
+                }
+            }
+
             public GMap.NET.RectLatLng Rect;
             public string File;
             public int RasterXSize;
@@ -423,41 +443,6 @@ namespace GDAL
             }
             Console.WriteLine("");
             return 1;
-        }
-    }
-
-    public static class Program
-    {
-        /// <summary>
-        /// The main entry point for the application.
-        /// </summary>
-        [STAThread]
-        public static void Main(string[] args)
-        {
-            var layout = new PatternLayout("%-4timestamp [%thread] %-5level %logger %ndc - %message%newline");
-            var appender = new ConsoleAppender
-            {
-                Layout = layout
-            };
-            layout.ActivateOptions();
-            appender.ActivateOptions();
-            BasicConfigurator.Configure(appender);
-
-            GDAL.ScanDirectory(Application.StartupPath);
-
-            Form frm = new Form();
-            GMap.NET.WindowsForms.GMapControl map = new GMap.NET.WindowsForms.GMapControl();
-            map.Dock = DockStyle.Fill;
-            frm.Controls.Add(map);
-            map.MapProvider = GDALProvider.Instance;
-
-            map.MaxZoom = 22;
-
-            //map.Manager.Mode = AccessMode.ServerOnly;
-
-            map.Invalidate();
-
-            frm.ShowDialog();
         }
     }
 }

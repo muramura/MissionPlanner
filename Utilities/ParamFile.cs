@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
@@ -14,9 +15,11 @@ namespace MissionPlanner.Utilities
         private static readonly ILog log =
             LogManager.GetLogger(System.Reflection.MethodBase.GetCurrentMethod().DeclaringType);
 
-        public static Hashtable loadParamFile(string Filename)
+        public static string FileMask = "Parameter File|*.param;*.parm|All Files|*.*";
+
+        public static Dictionary<string, double> loadParamFile(string Filename)
         {
-            Hashtable param = new Hashtable();
+            Dictionary<string, double> param = new Dictionary<string, double>();
 
             using (StreamReader sr = new StreamReader(Filename))
             {
@@ -42,8 +45,7 @@ namespace MissionPlanner.Utilities
                     double value = 0;
                     try
                     {
-                        value = double.Parse(items[1], System.Globalization.CultureInfo.InvariantCulture);
-                            // new System.Globalization.CultureInfo("en-US"));
+                        value = double.Parse(items[1], CultureInfo.InvariantCulture);
                     }
                     catch (Exception ex)
                     {
@@ -100,12 +102,12 @@ namespace MissionPlanner.Utilities
                 {
                     double value = double.Parse(paramlist[item].ToString());
 
-                    string valueasstring = value.ToString(new System.Globalization.CultureInfo("en-US"));
+                    string valueasstring = value.ToString(CultureInfo.InvariantCulture);
 
                     if (valueasstring.Contains("."))
                     {
                         sw.WriteLine(item + "," +
-                                     ((float) value).ToString(new System.Globalization.CultureInfo("en-US")));
+                                     (value).ToString(CultureInfo.InvariantCulture));
                     }
                     else
                     {

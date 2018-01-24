@@ -17,7 +17,7 @@ namespace MissionPlanner.Wizard
     public partial class _3ConnectAP : MyUserControl, IWizard, IActivate
     {
         List<KeyValuePair<string, string>> fwmap = new List<KeyValuePair<string, string>>();
-        ProgressReporterDialogue pdr;
+        IProgressReporterDialogue pdr;
         string comport = "";
         bool fwdone = false;
         private bool usebeta;
@@ -95,6 +95,10 @@ namespace MissionPlanner.Wizard
                 return 0;
             }
 
+            // ensure we are using a comport
+            if (!(MainV2.comPort.BaseStream is SerialPort))
+                MainV2.comPort.BaseStream = new SerialPort();
+
             if (!fwdone)
             {
                 pdr = new ProgressReporterDialogue();
@@ -112,7 +116,9 @@ namespace MissionPlanner.Wizard
             }
 
             if (MainV2.comPort.BaseStream.IsOpen)
+            {
                 MainV2.comPort.BaseStream.Close();
+            }
 
             // setup for over usb
             MainV2.comPort.BaseStream.BaudRate = 115200;
@@ -159,7 +165,7 @@ namespace MissionPlanner.Wizard
             return false;
         }
 
-        void pdr_DoWork(object sender, Controls.ProgressWorkerEventArgs e, object passdata = null)
+        void pdr_DoWork(IProgressReporterDialogue sender)
         {
             // upload fw
 
@@ -167,13 +173,13 @@ namespace MissionPlanner.Wizard
             fw.Progress += fw_Progress;
             string firmwareurl = "";
             if (usebeta)
-                firmwareurl = "https://raw.github.com/diydrones/binary/master/dev/firmware2.xml";
+                firmwareurl = "https://raw.github.com/ardupilot/binary/master/dev/firmware2.xml";
 
             List<Utilities.Firmware.software> swlist = fw.getFWList(firmwareurl);
 
             if (swlist.Count == 0)
             {
-                e.ErrorMessage = "Error getting Firmware list";
+                sender.doWorkArgs.ErrorMessage = "Error getting Firmware list";
                 return;
             }
 
@@ -191,9 +197,9 @@ namespace MissionPlanner.Wizard
             string target = Wizard.config["fwframe"].ToString();
 
 
-            if (e.CancelRequested)
+            if (sender.doWorkArgs.CancelRequested)
             {
-                e.CancelAcknowledged = true;
+                sender.doWorkArgs.CancelAcknowledged = true;
                 return;
             }
 
@@ -214,7 +220,7 @@ namespace MissionPlanner.Wizard
                         }
                         if (fwdone == false)
                         {
-                            e.ErrorMessage = "Error uploading Firmware";
+                            sender.doWorkArgs.ErrorMessage = "Error uploading Firmware";
                             return;
                         }
                         break;
@@ -224,15 +230,15 @@ namespace MissionPlanner.Wizard
                     break;
             }
 
-            if (e.CancelRequested)
+            if (sender.doWorkArgs.CancelRequested)
             {
-                e.CancelAcknowledged = true;
+                sender.doWorkArgs.CancelAcknowledged = true;
                 return;
             }
 
             if (!fwdone)
             {
-                e.ErrorMessage = "Error with Firmware";
+                sender.doWorkArgs.ErrorMessage = "Error with Firmware";
                 return;
             }
 

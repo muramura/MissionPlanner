@@ -1,29 +1,27 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
-using System.Reactive.Subjects;
-using System.Text;
-using System.Runtime.InteropServices;
-using System.Collections; // hashs
-using System.Diagnostics; // stopwatch
-using System.Reflection;
-using System.Reflection.Emit;
-using System.IO;
-using System.Drawing;
-using System.Threading;
-using MissionPlanner.Controls;
 using System.ComponentModel;
+using System.IO;
 using System.Linq;
+using System.Reactive.Subjects;
+using System.Reflection;
+using System.Runtime.InteropServices;
 using System.Security.Cryptography;
+using System.Text;
+using System.Threading;
+using System.Windows.Forms;
 using log4net;
 using MissionPlanner.Comms;
-using MissionPlanner.Utilities;
-using System.Windows.Forms;
+using MissionPlanner.Controls;
 using MissionPlanner.HIL;
 using MissionPlanner.Mavlink;
+using MissionPlanner.Utilities;
+using Timer = System.Timers.Timer;
 
 namespace MissionPlanner
 {
-    public class MAVLinkInterface : MAVLink, IDisposable
+    public class MAVLinkInterface : MAVLink, IDisposable, IMAVLinkInterface
     {
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private ICommsSerial _baseStream;
@@ -59,6 +57,7 @@ namespace MissionPlanner
             }
         }
 
+        public event EventHandler<MAVLinkMessage> OnPacketReceived;
 
         public ICommsSerial MirrorStream { get; set; }
         public bool MirrorStreamWrite { get; set; }
@@ -134,7 +133,7 @@ namespace MissionPlanner
         /// <summary>
         /// progress form to handle connect and param requests
         /// </summary>
-        ProgressReporterDialogue frmProgressReporter;
+        IProgressReporterDialogue frmProgressReporter;
 
         /// <summary>
         /// used for outbound packet sending
@@ -326,7 +325,7 @@ namespace MissionPlanner
 
             frmProgressReporter = new ProgressReporterDialogue
             {
-                StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen,
+                StartPosition = FormStartPosition.CenterScreen,
                 Text = Strings.ConnectingMavlink
             };
 
@@ -351,17 +350,17 @@ namespace MissionPlanner
             }
         }
 
-        void FrmProgressReporterDoWorkAndParams(object sender, ProgressWorkerEventArgs e, object passdata = null)
+        void FrmProgressReporterDoWorkAndParams(IProgressReporterDialogue sender)
         {
-            OpenBg(sender, true, e);
+            OpenBg(sender, true);
         }
 
-        void FrmProgressReporterDoWorkNOParams(object sender, ProgressWorkerEventArgs e, object passdata = null)
+        void FrmProgressReporterDoWorkNOParams(IProgressReporterDialogue sender)
         {
-            OpenBg(sender, false, e);
+            OpenBg(sender, false);
         }
 
-        private void OpenBg(object PRsender, bool getparams, ProgressWorkerEventArgs progressWorkerEventArgs)
+        private void OpenBg(IProgressReporterDialogue PRsender, bool getparams)
         {
             frmProgressReporter.UpdateProgressAndStatus(-1, Strings.MavlinkConnecting);
 
@@ -370,7 +369,7 @@ namespace MissionPlanner
             if (BaseStream is SerialPort)
             {
                 // allow settings to settle - previous dtr 
-                System.Threading.Thread.Sleep(1000);
+                Thread.Sleep(1000);
             }
 
             Terrain = new TerrainFollow(this);
@@ -385,21 +384,31 @@ namespace MissionPlanner
                 {
                     log.Info("Open port with " + BaseStream.PortName + " " + BaseStream.BaudRate);
 
+                    if (BaseStream is UdpSerial)
+                    {
+                        PRsender.doWorkArgs.CancelRequestChanged += (o,e) => { ((UdpSerial)BaseStream).CancelConnect = true;
+                                                                                     ((ProgressWorkerEventArgs) o)
+                                                                                         .CancelAcknowledged = true;
+                        };
+                    }
+
                     BaseStream.Open();
 
                     BaseStream.DiscardInBuffer();
 
                     // other boards seem to have issues if there is no delay? posible bootloader timeout issue
-                    Thread.Sleep(1000);
+                    if (BaseStream is SerialPort)
+                    {
+                        Thread.Sleep(1000);
+                    }
                 }
 
-                MAVLinkMessage buffer = MAVLinkMessage.Invalid;
-                MAVLinkMessage buffer1 = MAVLinkMessage.Invalid;
+                List<MAVLinkMessage> hbhistory = new List<MAVLinkMessage>();
 
                 DateTime start = DateTime.Now;
                 DateTime deadline = start.AddSeconds(CONNECT_TIMEOUT_SECONDS);
 
-                var countDown = new System.Timers.Timer {Interval = 1000, AutoReset = false};
+                var countDown = new Timer {Interval = 1000, AutoReset = false};
                 countDown.Elapsed += (sender, e) =>
                 {
                     int secondsRemaining = (deadline - e.SignalTime).Seconds;
@@ -415,9 +424,9 @@ namespace MissionPlanner
 
                 while (true)
                 {
-                    if (progressWorkerEventArgs.CancelRequested)
+                    if (PRsender.doWorkArgs.CancelRequested)
                     {
-                        progressWorkerEventArgs.CancelAcknowledged = true;
+                        PRsender.doWorkArgs.CancelAcknowledged = true;
                         countDown.Stop();
                         if (BaseStream.IsOpen)
                             BaseStream.Close();
@@ -436,12 +445,12 @@ namespace MissionPlanner
 
                         if (hbseen)
                         {
-                            progressWorkerEventArgs.ErrorMessage = Strings.Only1Hb;
+                            PRsender.doWorkArgs.ErrorMessage = Strings.Only1Hb;
                             throw new Exception(Strings.Only1HbD);
                         }
                         else
                         {
-                            progressWorkerEventArgs.ErrorMessage = "No Heartbeat Packets Received";
+                            PRsender.doWorkArgs.ErrorMessage = "No Heartbeat Packets Received";
                             throw new Exception(@"Can not establish a connection\n
 Please check the following
 1. You have firmware loaded
@@ -452,77 +461,83 @@ Please check the following
                         }
                     }
 
-                    System.Threading.Thread.Sleep(1);
+                    Thread.Sleep(1);
 
-                    // can see 2 heartbeat packets at any time, and will connect - was one after the other
+                    var buffer = getHeartBeat();
+                    if (buffer.Length > 0)
+                    {
+                        mavlink_heartbeat_t hb = buffer.ToStructure<mavlink_heartbeat_t>();
 
-                    if (buffer.Length == 0)
-                        buffer = getHeartBeat();
+                        if (hb.type != (byte) MAV_TYPE.GCS)
+                        {
+                            hbhistory.Add(buffer);
+                        }
+                    }
 
-                    System.Threading.Thread.Sleep(1);
-
-                    if (buffer1.Length == 0)
-                        buffer1 = getHeartBeat();
-
-
-                    if (buffer.Length > 0 || buffer1.Length > 0)
+                    if (hbhistory.Count > 0)
                         hbseen = true;
 
                     count++;
 
-                    // 2 hbs that match
-                    if (buffer.Length > 5 && buffer1.Length > 5 && buffer.sysid == buffer1.sysid && buffer.compid == buffer1.compid)
+                    // if we get no data, try enableing rts/cts
+                    if (buffer.Length == 0 && BaseStream is SerialPort)
                     {
-                        mavlink_heartbeat_t hb = buffer.ToStructure<mavlink_heartbeat_t>();
-
-                        if (hb.type != (byte) MAVLink.MAV_TYPE.GCS)
-                        {
-                            SetupMavConnect(buffer, hb);
-                            break;
-                        }
+                        BaseStream.RtsEnable = !BaseStream.RtsEnable;
                     }
 
-                    // 2 hb's that dont match. more than one sysid here
-                    if (buffer.Length > 5 && buffer1.Length > 5 && (buffer.sysid == buffer1.sysid || buffer.compid == buffer1.compid))
+                    // check we have hb's
+                    if (hbhistory.Count > 0)
                     {
-                        mavlink_heartbeat_t hb = buffer.ToStructure<mavlink_heartbeat_t>();
-
-                        if (hb.type != (byte) MAVLink.MAV_TYPE.ANTENNA_TRACKER && hb.type != (byte) MAVLink.MAV_TYPE.GCS)
+                        bool exit = false;
+                        // get most seen hbs
+                        var mostseenlist = hbhistory.GroupBy(s => MAVList.GetID(s.sysid, s.compid))
+                            .OrderByDescending(s => s.Count()).Where(s => s.Key >= 2);
+                        foreach (var mostseen in mostseenlist)
                         {
-                            SetupMavConnect(buffer, hb);
-                            break;
+                            // get count on most seen
+                            var seentimes = mostseen.Count();
+                            // get the most seen mavlinkmessage
+                            var msg = mostseen.First();
+
+                            // preference compid of 1, failover to anything that we have seen 4 times
+                            if (seentimes >= 2 && msg.compid == 1 || seentimes >= 4)
+                            {
+                                SetupMavConnect(msg, (mavlink_heartbeat_t) msg.data);
+                                sysidcurrent = msg.sysid;
+                                compidcurrent = msg.compid;
+                                exit = true;
+                                break;
+                            }
                         }
 
-                        hb = buffer1.ToStructure<mavlink_heartbeat_t>();
-
-                        if (hb.type != (byte) MAVLink.MAV_TYPE.ANTENNA_TRACKER && hb.type != (byte) MAVLink.MAV_TYPE.GCS)
-                        {
-                            SetupMavConnect(buffer1, hb);
+                        if (exit)
                             break;
-                        }
                     }
                 }
 
                 countDown.Stop();
 
-                getVersion();
-
-                frmProgressReporter.UpdateProgressAndStatus(0,
-                    "Getting Params.. (sysid " + MAV.sysid + " compid " + MAV.compid + ") ");
-
-                byte[] temp = ASCIIEncoding.ASCII.GetBytes("Mission Planner " + Application.ProductVersion + "\0");
+                byte[] temp = ASCIIEncoding.ASCII.GetBytes("Mission Planner " + getAppVersion() + "\0");
                 Array.Resize(ref temp, 50);
                 // 
                 generatePacket((byte)MAVLINK_MSG_ID.STATUSTEXT,
                     new mavlink_statustext_t() { severity = (byte)MAV_SEVERITY.INFO, text = temp });
                 // mavlink2
-                generatePacket((byte) MAVLINK_MSG_ID.STATUSTEXT,
-                    new mavlink_statustext_t() {severity = (byte) MAV_SEVERITY.INFO, text = temp}, sysidcurrent,
+                generatePacket((byte)MAVLINK_MSG_ID.STATUSTEXT,
+                    new mavlink_statustext_t() { severity = (byte)MAV_SEVERITY.INFO, text = temp }, sysidcurrent,
                     compidcurrent, true, true);
+
+                // this ensures a mavlink2 change has been noticed
+                getHeartBeat();
+
+                getVersion();
 
                 if (getparams)
                 {
-                    getParamListBG();
+                    frmProgressReporter.UpdateProgressAndStatus(0,
+                        "Getting Params.. (sysid " + MAV.sysid + " compid " + MAV.compid + ") ");
+
+                    getParamList(MAV.sysid,MAV.compid);
                 }
 
                 if (frmProgressReporter.doWorkArgs.CancelAcknowledged == true)
@@ -543,8 +558,8 @@ Please check the following
                 {
                 }
                 giveComport = false;
-                if (string.IsNullOrEmpty(progressWorkerEventArgs.ErrorMessage))
-                    progressWorkerEventArgs.ErrorMessage = Strings.ConnectFailed;
+                if (string.IsNullOrEmpty(PRsender.doWorkArgs.ErrorMessage))
+                    PRsender.doWorkArgs.ErrorMessage = Strings.ConnectFailed;
                 log.Error(e);
                 throw;
             }
@@ -556,21 +571,43 @@ Please check the following
             MAV.synclost = 0;
         }
 
+        private string getAppVersion()
+        {
+            try
+            {
+                Assembly entryAssembly = Assembly.GetEntryAssembly();
+                if (entryAssembly != null)
+                {
+                    object[] customAttributes =
+                        entryAssembly.GetCustomAttributes(typeof(AssemblyFileVersionAttribute), false);
+                    if (customAttributes != null && customAttributes.Length != 0)
+                    {
+                        return ((AssemblyFileVersionAttribute) customAttributes[0]).Version;
+                        ;
+                    }
+                }
+            } catch { }
+
+            return "0.0";
+        }
+
+        private void ProgressWorkerEventArgs_CancelRequestChanged(object sender, PropertyChangedEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
         void SetupMavConnect(MAVLinkMessage message, mavlink_heartbeat_t hb)
         {
-            sysidcurrent = message.sysid;
-            compidcurrent = message.compid;
-
             mavlinkversion = hb.mavlink_version;
-            MAV.aptype = (MAV_TYPE) hb.type;
-            MAV.apname = (MAV_AUTOPILOT) hb.autopilot;
+            MAVlist[message.sysid, message.compid].aptype = (MAV_TYPE) hb.type;
+            MAVlist[message.sysid, message.compid].apname = (MAV_AUTOPILOT) hb.autopilot;
 
             setAPType(message.sysid, message.compid);
 
-            MAV.sysid = message.sysid;
-            MAV.compid = message.compid;
-            MAV.recvpacketcount = message.seq;
-            log.InfoFormat("ID sys {0} comp {1} ver{2} type {3} name {4}", MAV.sysid, MAV.compid, mavlinkversion,
+            MAVlist[message.sysid, message.compid].sysid = message.sysid;
+            MAVlist[message.sysid, message.compid].compid = message.compid;
+            MAVlist[message.sysid, message.compid].recvpacketcount = message.seq;
+            log.InfoFormat("ID sys {0} comp {1} ver{2} type {3} name {4}", message.sysid, message.compid, mavlinkversion,
                 MAV.aptype.ToString(), MAV.apname.ToString());
         }
 
@@ -590,7 +627,7 @@ Please check the following
                     {
                         mavlink_heartbeat_t hb = buffer.ToStructure<mavlink_heartbeat_t>();
 
-                        if (hb.type != (byte) MAVLink.MAV_TYPE.GCS)
+                        if (hb.type != (byte) MAV_TYPE.GCS)
                         {
                             SetupMavConnect(buffer, hb);
 
@@ -651,13 +688,13 @@ Please check the following
             if (ReadOnly)
             {
                 // allow these messages
-                if (messageType == (byte) MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_LIST ||
-                    messageType == (byte) MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST_PARTIAL_LIST ||
-                    messageType == (byte) MAVLink.MAVLINK_MSG_ID.MISSION_REQUEST ||
-                    messageType == (byte) MAVLink.MAVLINK_MSG_ID.PARAM_REQUEST_LIST ||
-                    messageType == (byte) MAVLink.MAVLINK_MSG_ID.PARAM_REQUEST_READ ||
-                    messageType == (byte) MAVLink.MAVLINK_MSG_ID.RALLY_FETCH_POINT ||
-                    messageType == (byte) MAVLink.MAVLINK_MSG_ID.FENCE_FETCH_POINT
+                if (messageType == (byte) MAVLINK_MSG_ID.MISSION_REQUEST_LIST ||
+                    messageType == (byte) MAVLINK_MSG_ID.MISSION_REQUEST_PARTIAL_LIST ||
+                    messageType == (byte) MAVLINK_MSG_ID.MISSION_REQUEST ||
+                    messageType == (byte) MAVLINK_MSG_ID.PARAM_REQUEST_LIST ||
+                    messageType == (byte) MAVLINK_MSG_ID.PARAM_REQUEST_READ ||
+                    messageType == (byte) MAVLINK_MSG_ID.RALLY_FETCH_POINT ||
+                    messageType == (byte) MAVLINK_MSG_ID.FENCE_FETCH_POINT
                     )
                 {
                 }
@@ -1015,7 +1052,7 @@ Please check the following
                     {
                         mavlink_param_value_t par = buffer.ToStructure<mavlink_param_value_t>();
 
-                        string st = System.Text.ASCIIEncoding.ASCII.GetString(par.param_id);
+                        string st = ASCIIEncoding.ASCII.GetString(par.param_id);
 
                         int pos = st.IndexOf('\0');
 
@@ -1033,12 +1070,12 @@ Please check the following
                         if (MAVlist[sysid, compid].apname == MAV_AUTOPILOT.ARDUPILOTMEGA)
                         {
                             var offset = Marshal.OffsetOf(typeof(mavlink_param_value_t), "param_value");
-                            MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(Marshal.ReadInt32(par, offset.ToInt32())), MAV_PARAM_TYPE.REAL32, (MAV_PARAM_TYPE) par.param_type);
+                            MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(par.param_value), MAV_PARAM_TYPE.REAL32, (MAV_PARAM_TYPE) par.param_type);
                         }
                         else
                         {
                             var offset = Marshal.OffsetOf(typeof(mavlink_param_value_t), "param_value");
-                            MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(Marshal.ReadInt32(par, offset.ToInt32())), (MAV_PARAM_TYPE)par.param_type, (MAV_PARAM_TYPE)par.param_type);
+                            MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(par.param_value), (MAV_PARAM_TYPE)par.param_type, (MAV_PARAM_TYPE)par.param_type);
                         }
 
                         log.Info("setParam gotback " + st + " : " + MAVlist[sysid, compid].param[st]);
@@ -1051,11 +1088,13 @@ Please check the following
                         // check if enabeling this param has added subparams, queue on gui thread
                         if (currentparamcount < par.param_count)
                         {
+                            /*
                             MainV2.instance.BeginInvoke((Action) delegate
                             {
                                 Loading.ShowLoading(String.Format(Strings.ParamRefreshRequired, currentparamcount,
                                     par.param_count));
                             });
+                            */
                         }
 
                         return true;
@@ -1074,9 +1113,11 @@ Please check the following
 
         public void getParamList()
         {
+            log.InfoFormat("getParamList {0} {1}", sysidcurrent, compidcurrent);
+
             frmProgressReporter = new ProgressReporterDialogue
             {
-                StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen,
+                StartPosition = FormStartPosition.CenterScreen,
                 Text = Strings.GettingParams + " " + sysidcurrent
             };
 
@@ -1094,16 +1135,16 @@ Please check the following
             }
         }
 
-        void FrmProgressReporterGetParams(object sender, ProgressWorkerEventArgs e, object passdata = null)
+        void FrmProgressReporterGetParams(IProgressReporterDialogue sender)
         {
-            getParamListBG();
+            getParamList(MAV.sysid, MAV.compid);
         }
 
         /// <summary>
         /// Get param list from apm
         /// </summary>
         /// <returns></returns>
-        private Hashtable getParamListBG()
+        public Dictionary<string, double> getParamList(byte sysid, byte compid)
         {
             giveComport = true;
             List<int> indexsreceived = new List<int>();
@@ -1114,8 +1155,8 @@ Please check the following
             int param_total = 1;
 
             mavlink_param_request_list_t req = new mavlink_param_request_list_t();
-            req.target_system = MAV.sysid;
-            req.target_component = MAV.compid;
+            req.target_system = sysid;
+            req.target_component = compid;
 
             generatePacket((byte) MAVLINK_MSG_ID.PARAM_REQUEST_LIST, req);
 
@@ -1126,12 +1167,13 @@ Please check the following
 
             //hires.Stopwatch stopwatch = new hires.Stopwatch();
             int packets = 0;
+            int retry = 0;
             bool onebyone = false;
             DateTime lastonebyone = DateTime.MinValue;
 
             do
             {
-                if (frmProgressReporter.doWorkArgs.CancelRequested)
+                if (frmProgressReporter != null && frmProgressReporter.doWorkArgs.CancelRequested)
                 {
                     frmProgressReporter.doWorkArgs.CancelAcknowledged = true;
                     giveComport = false;
@@ -1142,6 +1184,15 @@ Please check the following
                 // 4 seconds between valid packets
                 if (!(start.AddMilliseconds(4000) > DateTime.Now) && !logreadmode)
                 {
+                    // if we have less than 75% of the total use full list pull
+                    if (retry < 6 && indexsreceived.Count < ((param_total/4) * 3))
+                    {
+                        retry++;
+                        generatePacket((byte) MAVLINK_MSG_ID.PARAM_REQUEST_LIST, req);
+                        start = DateTime.Now;
+                        continue;
+                    }
+
                     onebyone = true;
 
                     if (lastonebyone.AddMilliseconds(600) < DateTime.Now)
@@ -1154,12 +1205,12 @@ Please check the following
                         {
                             if (!indexsreceived.Contains(i))
                             {
-                                if (frmProgressReporter.doWorkArgs.CancelRequested)
+                                if (frmProgressReporter != null && frmProgressReporter.doWorkArgs.CancelRequested)
                                 {
                                     frmProgressReporter.doWorkArgs.CancelAcknowledged = true;
                                     giveComport = false;
                                     frmProgressReporter.doWorkArgs.ErrorMessage = "User Canceled";
-                                    return MAV.param;
+                                    return MAVlist[sysid, compid].param;
                                 }
 
                                 // prevent dropping out of this get params loop
@@ -1168,8 +1219,8 @@ Please check the following
                                     queued++;
 
                                     mavlink_param_request_read_t req2 = new mavlink_param_request_read_t();
-                                    req2.target_system = MAV.sysid;
-                                    req2.target_component = MAV.compid;
+                                    req2.target_system = sysid;
+                                    req2.target_component = compid;
                                     req2.param_index = i;
                                     req2.param_id = new byte[] {0x0};
 
@@ -1214,7 +1265,7 @@ Please check the following
                         param_total = (par.param_count);
                         newparamlist.TotalReported = param_total;
 
-                        string paramID = System.Text.ASCIIEncoding.ASCII.GetString(par.param_id);
+                        string paramID = ASCIIEncoding.ASCII.GetString(par.param_id);
 
                         int pos = paramID.IndexOf('\0');
                         if (pos != -1)
@@ -1225,9 +1276,10 @@ Please check the following
                         // check if we already have it
                         if (indexsreceived.Contains(par.param_index))
                         {
-                            log.Info("Already got " + (par.param_index) + " '" + paramID + "'");
-                            this.frmProgressReporter.UpdateProgressAndStatus((indexsreceived.Count*100)/param_total,
-                                "Already Got param " + paramID);
+                            log.Info("Already got " + (par.param_index) + " '" + paramID + "' " + (indexsreceived.Count * 100) / param_total);
+                            if (frmProgressReporter != null)
+                                this.frmProgressReporter.UpdateProgressAndStatus(
+                                    (indexsreceived.Count * 100) / param_total, "Already Got param " + paramID);
                             continue;
                         }
 
@@ -1239,16 +1291,15 @@ Please check the following
 
                         //Console.WriteLine(DateTime.Now.Millisecond + " gp2a ");
 
-                        if (MAV.apname == MAV_AUTOPILOT.ARDUPILOTMEGA)
+                        if (MAVlist[sysid,compid].apname == MAV_AUTOPILOT.ARDUPILOTMEGA)
                         {
                             var offset = Marshal.OffsetOf(typeof(mavlink_param_value_t), "param_value");
-                            newparamlist[paramID] = new MAVLinkParam(paramID, BitConverter.GetBytes(Marshal.ReadInt32(par, offset.ToInt32())), MAV_PARAM_TYPE.REAL32, (MAV_PARAM_TYPE)par.param_type);
+                            newparamlist[paramID] = new MAVLinkParam(paramID, BitConverter.GetBytes(par.param_value), MAV_PARAM_TYPE.REAL32, (MAV_PARAM_TYPE)par.param_type);
                         }
                         else
                         {
                             var offset = Marshal.OffsetOf(typeof(mavlink_param_value_t), "param_value");
-                            newparamlist[paramID] = new MAVLinkParam(paramID, BitConverter.GetBytes(Marshal.ReadInt32(par, offset.ToInt32())),
-                                (MAV_PARAM_TYPE)par.param_type, (MAV_PARAM_TYPE)par.param_type);
+                            newparamlist[paramID] = new MAVLinkParam(paramID, BitConverter.GetBytes(par.param_value), (MAV_PARAM_TYPE)par.param_type, (MAV_PARAM_TYPE)par.param_type);
                         }
 
                         //Console.WriteLine(DateTime.Now.Millisecond + " gp2b ");
@@ -1257,12 +1308,12 @@ Please check the following
                         if (par.param_index != 65535)
                             indexsreceived.Add(par.param_index);
 
-                        MAV.param_types[paramID] = (MAV_PARAM_TYPE) par.param_type;
+                        MAVlist[sysid, compid].param_types[paramID] = (MAV_PARAM_TYPE) par.param_type;
 
                         //Console.WriteLine(DateTime.Now.Millisecond + " gp3 ");
 
-                        this.frmProgressReporter.UpdateProgressAndStatus((indexsreceived.Count*100)/param_total,
-                            Strings.Gotparam + paramID);
+                        if(frmProgressReporter != null)
+                            this.frmProgressReporter.UpdateProgressAndStatus((indexsreceived.Count*100)/param_total,Strings.Gotparam + paramID);
 
                         // we hit the last param - lets escape eq total = 176 index = 0-175
                         if (par.param_index == (param_total - 1))
@@ -1270,7 +1321,7 @@ Please check the following
                     }
                     if (buffer.msgid == (byte) MAVLINK_MSG_ID.STATUSTEXT)
                     {
-                        var msg = buffer.ToStructure<MAVLink.mavlink_statustext_t>();
+                        var msg = buffer.ToStructure<mavlink_statustext_t>();
 
                         string logdata = Encoding.ASCII.GetString(msg.text);
 
@@ -1281,19 +1332,19 @@ Please check the following
                         if (logdata.ToLower().Contains("copter") || logdata.ToLower().Contains("rover") ||
                             logdata.ToLower().Contains("plane"))
                         {
-                            MAV.VersionString = logdata;
+                            MAVlist[sysid, compid].VersionString = logdata;
                         }
                         else if (logdata.ToLower().Contains("nuttx"))
                         {
-                            MAV.SoftwareVersions = logdata;
+                            MAVlist[sysid, compid].SoftwareVersions = logdata;
                         }
                         else if (logdata.ToLower().Contains("px4v2"))
                         {
-                            MAV.SerialString = logdata;
+                            MAVlist[sysid, compid].SerialString = logdata;
                         }
                         else if (logdata.ToLower().Contains("frame"))
                         {
-                            MAV.FrameString = logdata;
+                            MAVlist[sysid, compid].FrameString = logdata;
                         }
                     }
                     //stopwatch.Stop();
@@ -1320,10 +1371,10 @@ Please check the following
             }
             giveComport = false;
 
-            MAV.param.Clear();
-            MAV.param.TotalReported = param_total;
-            MAV.param.AddRange(newparamlist);
-            return MAV.param;
+            MAVlist[sysid, compid].param.Clear();
+            MAVlist[sysid, compid].param.TotalReported = param_total;
+            MAVlist[sysid, compid].param.AddRange(newparamlist);
+            return MAVlist[sysid, compid].param;
         }
 
         private int _parampoll = 0;
@@ -1381,7 +1432,7 @@ Please check the following
             req.param_id = new byte[] {0x0};
             if (index == -1)
             {
-                req.param_id = System.Text.ASCIIEncoding.ASCII.GetBytes(name);
+                req.param_id = ASCIIEncoding.ASCII.GetBytes(name);
             }
 
             Array.Resize(ref req.param_id, 16);
@@ -1423,7 +1474,7 @@ Please check the following
 
                         mavlink_param_value_t par = buffer.ToStructure<mavlink_param_value_t>();
 
-                        string st = System.Text.ASCIIEncoding.ASCII.GetString(par.param_id);
+                        string st = ASCIIEncoding.ASCII.GetString(par.param_id);
 
                         int pos = st.IndexOf('\0');
 
@@ -1445,12 +1496,12 @@ Please check the following
                         if (MAVlist[sysid,compid].apname == MAV_AUTOPILOT.ARDUPILOTMEGA)
                         {
                             var offset = Marshal.OffsetOf(typeof(mavlink_param_value_t), "param_value");
-                            MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(Marshal.ReadInt32(par, offset.ToInt32())), MAV_PARAM_TYPE.REAL32, (MAV_PARAM_TYPE) par.param_type);
+                            MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(par.param_value), MAV_PARAM_TYPE.REAL32, (MAV_PARAM_TYPE) par.param_type);
                         }
                         else
                         {
                             var offset = Marshal.OffsetOf(typeof(mavlink_param_value_t), "param_value");
-                            MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(Marshal.ReadInt32(par, offset.ToInt32())), (MAV_PARAM_TYPE)par.param_type, (MAV_PARAM_TYPE)par.param_type);
+                            MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(par.param_value), (MAV_PARAM_TYPE)par.param_type, (MAV_PARAM_TYPE)par.param_type);
                         }
 
                         MAVlist[sysid, compid].param_types[st] = (MAV_PARAM_TYPE) par.param_type;
@@ -1519,9 +1570,9 @@ Please check the following
             try
             {
                 generatePacket((byte) MAVLINK_MSG_ID.REQUEST_DATA_STREAM, req);
-                System.Threading.Thread.Sleep(20);
+                Thread.Sleep(20);
                 generatePacket((byte) MAVLINK_MSG_ID.REQUEST_DATA_STREAM, req);
-                System.Threading.Thread.Sleep(20);
+                Thread.Sleep(20);
                 generatePacket((byte) MAVLINK_MSG_ID.REQUEST_DATA_STREAM, req);
                 log.Info("Stopall Done");
             }
@@ -1532,7 +1583,7 @@ Please check the following
 
         public void setWPACK()
         {
-            MAVLink.mavlink_mission_ack_t req = new MAVLink.mavlink_mission_ack_t();
+            mavlink_mission_ack_t req = new mavlink_mission_ack_t();
             req.target_system = MAV.sysid;
             req.target_component = MAV.compid;
             req.type = 0;
@@ -1653,27 +1704,28 @@ Please check the following
             return doCommand(MAV_CMD.DO_GO_AROUND, 0, 0, 0, 0, 0, 0, 0);
         }
 
-        public bool doMotorTest(int motor, MAVLink.MOTOR_TEST_THROTTLE_TYPE thr_type, int throttle, int timeout, int motorcount = 0)
+        public bool doMotorTest(int motor, MOTOR_TEST_THROTTLE_TYPE thr_type, int throttle, int timeout, int motorcount = 0)
         {
-            return MainV2.comPort.doCommand(MAVLink.MAV_CMD.DO_MOTOR_TEST, (float) motor, (float) (byte) thr_type,
+            return MainV2.comPort.doCommand(MAV_CMD.DO_MOTOR_TEST, (float) motor, (float) (byte) thr_type,
                 (float) throttle, (float) timeout, (float) motorcount, 0, 0);
         }
 
         public bool doCommand(MAV_CMD actionid, float p1, float p2, float p3, float p4, float p5, float p6, float p7,
             bool requireack = true)
         {
-            return doCommand(MAV.sysid, MAV.compid, actionid, p1, p2, p3, p4, p5, p6, p7, requireack);
+            return doCommand(MAV.sysid, MAV.compid, actionid, p1, p2, p3, p4, p5, p6, p7, requireack, null);
         }
 
-        public bool doCommand(byte sysid, byte compid, MAV_CMD actionid, float p1, float p2, float p3, float p4, float p5, float p6, float p7, bool requireack = true)
+        public bool doCommand(byte sysid, byte compid, MAV_CMD actionid, float p1, float p2, float p3, float p4,
+            float p5, float p6, float p7, bool requireack = true, Action uicallback = null)
         {
             giveComport = true;
             MAVLinkMessage buffer;
 
             mavlink_command_long_t req = new mavlink_command_long_t();
 
-                req.target_system = sysid;
-                req.target_component = compid;
+            req.target_system = sysid;
+            req.target_component = compid;
 
             req.command = (ushort) actionid;
 
@@ -1710,6 +1762,14 @@ Please check the following
                 giveComport = false;
                 return true;
             }
+            else if (actionid == MAV_CMD.PREFLIGHT_CALIBRATION && p6 == 1)
+            {
+                // compassmot
+                // send again just incase
+                generatePacket((byte)MAVLINK_MSG_ID.COMMAND_LONG, req, sysid, compid);
+                giveComport = false;
+                return true;
+            }
             else if (actionid == MAV_CMD.PREFLIGHT_CALIBRATION)
             {
                 retrys = 1;
@@ -1726,14 +1786,6 @@ Please check the following
                 // 10 seconds as may need an imu calib
                 timeout = 10000;
             }
-            else if (actionid == MAV_CMD.PREFLIGHT_CALIBRATION && p6 == 1)
-            {
-                // compassmot
-                // send again just incase
-                generatePacket((byte) MAVLINK_MSG_ID.COMMAND_LONG, req, sysid, compid);
-                giveComport = false;
-                return true;
-            }
             else if (actionid == MAV_CMD.GET_HOME_POSITION)
             {
                 giveComport = false;
@@ -1746,16 +1798,7 @@ Please check the following
                 {
                     GUI = DateTime.Now;
 
-                    if (!MainV2.instance.InvokeRequired)
-                    {
-                        try
-                        {
-                            MainV2.instance.Invalidate();
-                            MainV2.instance.FlightData.Invalidate();
-                            MainV2.instance.Update();
-                        }
-                        catch { }
-                    }
+                    uicallback?.Invoke();
                 }
 
                 if (!(start.AddMilliseconds(timeout) > DateTime.Now))
@@ -1775,17 +1818,19 @@ Please check the following
                 buffer = readPacket();
                 if (buffer.Length > 5)
                 {
-                    if (buffer.msgid == (byte) MAVLINK_MSG_ID.COMMAND_ACK && buffer.sysid == sysid && buffer.compid == compid)
+                    if (buffer.msgid == (byte) MAVLINK_MSG_ID.COMMAND_ACK && buffer.sysid == sysid &&
+                        buffer.compid == compid)
                     {
                         var ack = buffer.ToStructure<mavlink_command_ack_t>();
 
                         if (ack.command != req.command)
                         {
-                            log.InfoFormat("doCommand cmd resp {0} - {1} - Commands dont match", (MAV_CMD)ack.command, (MAV_RESULT)ack.result);
+                            log.InfoFormat("doCommand cmd resp {0} - {1} - Commands dont match", (MAV_CMD) ack.command,
+                                (MAV_RESULT) ack.result);
                             continue;
                         }
 
-                        log.InfoFormat("doCommand cmd resp {0} - {1}", (MAV_CMD)ack.command, (MAV_RESULT)ack.result);
+                        log.InfoFormat("doCommand cmd resp {0} - {1}", (MAV_CMD) ack.command, (MAV_RESULT) ack.result);
 
                         if (ack.result == (byte) MAV_RESULT.ACCEPTED)
                         {
@@ -1805,13 +1850,13 @@ Please check the following
         public void SendAck()
         {
             mavlink_command_ack_t ack = new mavlink_command_ack_t();
-            ack.command = (byte) MAV_CMD.PREFLIGHT_CALIBRATION;
+            ack.command = (ushort) MAV_CMD.PREFLIGHT_CALIBRATION;
             ack.result = 0;
 
             // send twice
-            generatePacket((byte) MAVLINK_MSG_ID.COMMAND_ACK, ack);
-            System.Threading.Thread.Sleep(20);
-            generatePacket((byte) MAVLINK_MSG_ID.COMMAND_ACK, ack);
+            generatePacket(MAVLINK_MSG_ID.COMMAND_ACK, ack);
+            Thread.Sleep(20);
+            generatePacket(MAVLINK_MSG_ID.COMMAND_ACK, ack);
         }
 
         public void SendSerialControl(SERIAL_CONTROL_DEV port, ushort timeoutms, byte[] data, uint baudrate = 0,
@@ -1848,7 +1893,7 @@ Please check the following
                     Array.Copy(data, data.Length - len, ctl.data, 0, n);
 
                     // dont flood the port
-                    System.Threading.Thread.Sleep(10);
+                    Thread.Sleep(10);
 
                     generatePacket((byte) MAVLINK_MSG_ID.SERIAL_CONTROL, ctl);
 
@@ -1865,7 +1910,42 @@ Please check the following
             }
         }
 
-        public void requestDatastream(MAVLink.MAV_DATA_STREAM id, byte hzrate, int sysid = -1, int compid = -1)
+        public void SendRCOverride(byte sysid, byte compid, UInt16 rc1, UInt16 rc2, UInt16 rc3, UInt16 rc4, UInt16 rc5, UInt16 rc6, UInt16 rc7, UInt16 rc8)
+        {
+            mavlink_rc_channels_override_t rc = new mavlink_rc_channels_override_t();
+
+            rc.target_component = compid;
+            rc.target_system = sysid;
+
+            rc.chan1_raw = rc1;
+            rc.chan2_raw = rc2;
+            rc.chan3_raw = rc3;
+            rc.chan4_raw = rc4;
+            rc.chan5_raw = rc5;
+            rc.chan6_raw = rc6;
+            rc.chan7_raw = rc7;
+            rc.chan8_raw = rc8;
+
+            sendPacket(rc, rc.target_system, rc.target_component);
+        }
+
+        public void SendManualControl(byte sysid, byte compid, Int16 x, Int16 y, Int16 z, Int16 r, UInt16 buttons)
+        {
+            mavlink_manual_control_t mc = new mavlink_manual_control_t();
+
+            mc.target = sysid;
+
+            mc.x = x;
+            mc.y = y;
+            mc.z = z;
+            mc.r = r;
+
+            mc.buttons = buttons;
+
+            sendPacket(mc, sysid, compid);
+        }
+
+        public void requestDatastream(MAV_DATA_STREAM id, byte hzrate, int sysid = -1, int compid = -1)
         {
             if (sysid == -1)
                 sysid = sysidcurrent;
@@ -1877,92 +1957,123 @@ Please check the following
 
             switch (id)
             {
-                case MAVLink.MAV_DATA_STREAM.ALL:
+                case MAV_DATA_STREAM.ALL:
 
                     break;
-                case MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS:
-                    if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.SYS_STATUS] <
-                        DateTime.Now.AddSeconds(-2))
-                        break;
-                    pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.SYS_STATUS];
+                case MAV_DATA_STREAM.EXTENDED_STATUS:
+                    if (MAVlist[sysid, compid].packetspersecondbuild.ContainsKey((byte) MAVLINK_MSG_ID.SYS_STATUS))
+                    {
+                        if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.SYS_STATUS] <
+                            DateTime.Now.AddSeconds(-2))
+                            break;
+                        pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.SYS_STATUS];
+                    }
                     if (hzratecheck(pps, hzrate))
                     {
                         return;
                     }
                     break;
-                case MAVLink.MAV_DATA_STREAM.EXTRA1:
-                    if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.ATTITUDE] <
-                        DateTime.Now.AddSeconds(-2))
-                        break;
-                    pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.ATTITUDE];
+                case MAV_DATA_STREAM.EXTRA1:
+                    if (MAVlist[sysid, compid].packetspersecondbuild.ContainsKey((byte) MAVLINK_MSG_ID.ATTITUDE))
+                    {
+                        if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.ATTITUDE] <
+                            DateTime.Now.AddSeconds(-2))
+                            break;
+                        pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.ATTITUDE];
+                    }
+
                     if (hzratecheck(pps, hzrate))
                     {
                         return;
                     }
                     break;
-                case MAVLink.MAV_DATA_STREAM.EXTRA2:
-                    if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.VFR_HUD] <
-                        DateTime.Now.AddSeconds(-2))
-                        break;
-                    pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.VFR_HUD];
+                case MAV_DATA_STREAM.EXTRA2:
+                    if (MAVlist[sysid, compid].packetspersecondbuild.ContainsKey((byte) MAVLINK_MSG_ID.VFR_HUD))
+                    {
+                        if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.VFR_HUD] <
+                            DateTime.Now.AddSeconds(-2))
+                            break;
+                        pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.VFR_HUD];
+                    }
+
                     if (hzratecheck(pps, hzrate))
                     {
                         return;
                     }
                     break;
-                case MAVLink.MAV_DATA_STREAM.EXTRA3:
-                    if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.AHRS] <
-                        DateTime.Now.AddSeconds(-2))
-                        break;
-                    pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.AHRS];
+                case MAV_DATA_STREAM.EXTRA3:
+                    if (MAVlist[sysid, compid].packetspersecondbuild.ContainsKey((byte) MAVLINK_MSG_ID.AHRS))
+                    {
+                        if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.AHRS] <
+                            DateTime.Now.AddSeconds(-2))
+                            break;
+                        pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.AHRS];
+                    }
+
                     if (hzratecheck(pps, hzrate))
                     {
                         return;
                     }
                     break;
-                case MAVLink.MAV_DATA_STREAM.POSITION:
-                    if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.GLOBAL_POSITION_INT] <
-                        DateTime.Now.AddSeconds(-2))
-                        break;
-                    pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.GLOBAL_POSITION_INT];
+                case MAV_DATA_STREAM.POSITION:
+                    if (MAVlist[sysid, compid]
+                        .packetspersecondbuild.ContainsKey((byte) MAVLINK_MSG_ID.GLOBAL_POSITION_INT))
+                    {
+                        if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.GLOBAL_POSITION_INT] <
+                            DateTime.Now.AddSeconds(-2))
+                            break;
+                        pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.GLOBAL_POSITION_INT];
+                    }
+
                     if (hzratecheck(pps, hzrate))
                     {
                         return;
                     }
                     break;
-                case MAVLink.MAV_DATA_STREAM.RAW_CONTROLLER:
-                    if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.RC_CHANNELS_SCALED] <
-                        DateTime.Now.AddSeconds(-2))
-                        break;
-                    pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.RC_CHANNELS_SCALED];
+                case MAV_DATA_STREAM.RAW_CONTROLLER:
+                    if (MAVlist[sysid, compid]
+                        .packetspersecondbuild.ContainsKey((byte) MAVLINK_MSG_ID.RC_CHANNELS_SCALED))
+                    {
+                        if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.RC_CHANNELS_SCALED] <
+                            DateTime.Now.AddSeconds(-2))
+                            break;
+                        pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.RC_CHANNELS_SCALED];
+                    }
+
                     if (hzratecheck(pps, hzrate))
                     {
                         return;
                     }
                     break;
-                case MAVLink.MAV_DATA_STREAM.RAW_SENSORS:
-                    if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.RAW_IMU] <
-                        DateTime.Now.AddSeconds(-2))
-                        break;
-                    pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.RAW_IMU];
+                case MAV_DATA_STREAM.RAW_SENSORS:
+                    if (MAVlist[sysid, compid].packetspersecondbuild.ContainsKey((byte) MAVLINK_MSG_ID.RAW_IMU))
+                    {
+                        if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.RAW_IMU] <
+                            DateTime.Now.AddSeconds(-2))
+                            break;
+                        pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.RAW_IMU];
+                    }
+
                     if (hzratecheck(pps, hzrate))
                     {
                         return;
                     }
                     break;
-                case MAVLink.MAV_DATA_STREAM.RC_CHANNELS:
-                    if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.RC_CHANNELS_RAW] <
-                        DateTime.Now.AddSeconds(-2))
-                        break;
-                    pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.RC_CHANNELS_RAW];
+                case MAV_DATA_STREAM.RC_CHANNELS:
+                    if (MAVlist[sysid, compid].packetspersecondbuild.ContainsKey((byte) MAVLINK_MSG_ID.RC_CHANNELS_RAW))
+                    {
+                        if (MAVlist[sysid, compid].packetspersecondbuild[(byte) MAVLINK_MSG_ID.RC_CHANNELS_RAW] <
+                            DateTime.Now.AddSeconds(-2))
+                            break;
+                        pps = MAVlist[sysid, compid].packetspersecond[(byte) MAVLINK_MSG_ID.RC_CHANNELS_RAW];
+                    }
+
                     if (hzratecheck(pps, hzrate))
                     {
                         return;
                     }
                     break;
             }
-
-            //packetspersecond[temp[5]];
 
             if (pps == 0 && hzrate == 0)
             {
@@ -1970,8 +2081,8 @@ Please check the following
             }
 
             log.InfoFormat("Request stream {0} at {1} hz for {2}:{3}",
-                Enum.Parse(typeof (MAV_DATA_STREAM), id.ToString()), hzrate, sysid, compid);
-            getDatastream((byte)sysid, (byte)compid, id, hzrate);
+                Enum.Parse(typeof(MAV_DATA_STREAM), id.ToString()), hzrate, sysid, compid);
+            getDatastream((byte) sysid, (byte) compid, id, hzrate);
         }
 
         // returns true for ok
@@ -2005,12 +2116,12 @@ Please check the following
             return false;
         }
 
-        private void getDatastream(MAVLink.MAV_DATA_STREAM id, byte hzrate)
+        private void getDatastream(MAV_DATA_STREAM id, byte hzrate)
         {
             getDatastream(MAV.sysid, MAV.compid, id, hzrate);
         }
 
-        private void getDatastream(byte sysid, byte compid, MAVLink.MAV_DATA_STREAM id, byte hzrate)
+        private void getDatastream(byte sysid, byte compid, MAV_DATA_STREAM id, byte hzrate)
         {
             mavlink_request_data_stream_t req = new mavlink_request_data_stream_t();
             req.target_system = sysid;
@@ -2133,9 +2244,9 @@ Please check the following
         public Locationwp getWP(ushort index)
         {
             while (giveComport)
-                System.Threading.Thread.Sleep(100);
+                Thread.Sleep(100);
 
-            bool use_int = (MAV.cs.capabilities & MAV_PROTOCOL_CAPABILITY.MISSION_INT) > 0;
+            bool use_int = (MAV.cs.capabilities & (uint)MAV_PROTOCOL_CAPABILITY.MISSION_INT) > 0;
 
             object req;
 
@@ -2479,7 +2590,7 @@ Please check the following
             }
         }
 
-        public void InjectGpsData(byte[] data, byte length)
+        public void InjectGpsData(byte[] data, ushort length)
         {
             InjectGpsData(MAV.sysid, MAV.compid, data, length);
         }
@@ -2490,7 +2601,7 @@ Please check the following
         /// used to inject data into the gps ie rtcm/sbp/ubx
         /// </summary>
         /// <param name="data"></param>
-        public void InjectGpsData(byte sysid, byte compid, byte[] data, byte length, bool rtcm_message = true)
+        public void InjectGpsData(byte sysid, byte compid, byte[] data, ushort length, bool rtcm_message = true)
         {
             // new message
             if (rtcm_message)
@@ -2501,15 +2612,18 @@ Please check the following
                 if (length > msglen * 4)
                     log.Error("Message too large " + length);
 
-                // number of packets we need, not including a termination packet if needed
-                var len = (length % msglen) == 0 ? length / msglen : (length / msglen) + 1;
+                // number of packets we need, including a termination packet if needed
+                var nopackets = (length % msglen) == 0 ? length / msglen + 1 : (length / msglen) + 1;
+
+                if (nopackets >= 4)
+                    nopackets = 4;
 
                 // flags = isfrag(1)/frag(2)/seq(5)
 
-                for (int a = 0; a < len; a++)
+                for (int a = 0; a < nopackets; a++)
                 {
                     // check if its a fragment
-                    if (len > 1)
+                    if (nopackets > 1)
                         gps.flags = 1;
                     else
                         gps.flags = 0;
@@ -2533,14 +2647,6 @@ Please check the following
                     gps.len = (byte)copy;
 
                     generatePacket((byte) MAVLINK_MSG_ID.GPS_RTCM_DATA, gps, sysid, compid);
-                }
-
-                // packet is perfectly aligned and larger than one packet, send termination packet
-                if ((length % msglen) == 0 && (length > msglen))
-                {
-                    gps.len = 0;
-                    gps.data = new byte[msglen];
-                    generatePacket((byte)MAVLINK_MSG_ID.GPS_RTCM_DATA, gps, sysid, compid);
                 }
 
                 inject_seq_no++;
@@ -2568,6 +2674,12 @@ Please check the following
             }
         }
 
+        public MAV_MISSION_RESULT setWP(Locationwp loc, ushort index, MAV_FRAME frame, byte current = 0,
+            byte autocontinue = 1, bool use_int = false)
+        {
+            return setWP(MAV.sysid, MAV.compid, loc, index, frame, current, autocontinue, use_int);
+        }
+
         /// <summary>
         /// Save wp to eeprom
         /// </summary>
@@ -2575,15 +2687,15 @@ Please check the following
         /// <param name="index">wp no</param>
         /// <param name="frame">global or relative</param>
         /// <param name="current">0 = no , 2 = guided mode</param>
-        public MAV_MISSION_RESULT setWP(Locationwp loc, ushort index, MAV_FRAME frame, byte current = 0,
+        public MAV_MISSION_RESULT setWP(byte sysid, byte compid, Locationwp loc, ushort index, MAV_FRAME frame, byte current = 0,
             byte autocontinue = 1, bool use_int = false)
         {
             if (use_int)
             {
                 mavlink_mission_item_int_t req = new mavlink_mission_item_int_t();
 
-                req.target_system = MAV.sysid;
-                req.target_component = MAV.compid;
+                req.target_system = sysid;
+                req.target_component = compid;
 
                 req.command = loc.id;
 
@@ -2616,8 +2728,8 @@ Please check the following
             {
                 mavlink_mission_item_t req = new mavlink_mission_item_t();
 
-                req.target_system = MAV.sysid;
-                req.target_component = MAV.compid;
+                req.target_system = sysid;
+                req.target_component = compid;
 
                 req.command = loc.id;
 
@@ -2646,8 +2758,8 @@ Please check the following
 
             ushort index = req.seq;
 
-            log.InfoFormat("setWP {6} frame {0} cmd {1} p1 {2} x {3} y {4} z {5}", req.frame, req.command, req.param1,
-                req.x, req.y, req.z, index);
+            log.InfoFormat("setWP {7}:{8} {6} frame {0} cmd {1} p1 {2} x {3} y {4} z {5}", req.frame, req.command, req.param1,
+                req.x, req.y, req.z, index, req.target_system,req.target_component);
 
             // request
             generatePacket((byte) MAVLINK_MSG_ID.MISSION_ITEM, req);
@@ -2680,21 +2792,25 @@ Please check the following
                         var ans = buffer.ToStructure<mavlink_mission_ack_t>();
                         log.Info("set wp " + index + " ACK 47 : " + buffer.msgid + " ans " +
                                  Enum.Parse(typeof (MAV_MISSION_RESULT), ans.type.ToString()));
-                        giveComport = false;
+
 
                         if (req.current == 2)
                         {
-                            MAV.GuidedMode = req;
+                            MAVlist[req.target_system, req.target_component].GuidedMode = req;
                         }
                         else if (req.current == 3)
                         {
                         }
                         else
                         {
-                            MAV.wps[req.seq] = req;
+                            MAVlist[req.target_system, req.target_component].wps[req.seq] = req;
                         }
 
-                        return (MAV_MISSION_RESULT) ans.type;
+                        //if (ans.target_system == req.target_system && ans.target_component == req.target_component)
+                        {
+                            giveComport = false;
+                            return (MAV_MISSION_RESULT) ans.type;
+                        }
                     }
                     else if (buffer.msgid == (byte) MAVLINK_MSG_ID.MISSION_REQUEST)
                     {
@@ -2706,17 +2822,21 @@ Please check the following
 
                             if (req.current == 2)
                             {
-                                MAV.GuidedMode = req;
+                                MAVlist[req.target_system, req.target_component].GuidedMode = req;
                             }
                             else if (req.current == 3)
                             {
                             }
                             else
                             {
-                                MAV.wps[req.seq] = req;
+                                MAVlist[req.target_system, req.target_component].wps[req.seq] = req;
                             }
 
-                            return MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED;
+                            //if (ans.target_system == req.target_system && ans.target_component == req.target_component)
+                            {
+                                giveComport = false;
+                                return MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED;
+                            }
                         }
                         else
                         {
@@ -2743,8 +2863,8 @@ Please check the following
 
             ushort index = req.seq;
 
-            log.InfoFormat("setWPint {6} frame {0} cmd {1} p1 {2} x {3} y {4} z {5}", req.frame, req.command, req.param1,
-                req.x / 1.0e7, req.y /1.0e7 , req.z, index);
+            log.InfoFormat("setWPint {7}:{8} {6} frame {0} cmd {1} p1 {2} x {3} y {4} z {5}", req.frame, req.command, req.param1,
+                req.x / 1.0e7, req.y /1.0e7 , req.z, index, req.target_system, req.target_component);
 
             // request
             generatePacket((byte)MAVLINK_MSG_ID.MISSION_ITEM_INT, req);
@@ -2780,17 +2900,21 @@ Please check the following
 
                         if (req.current == 2)
                         {
-                            MAV.GuidedMode = (Locationwp)req;
+                            MAVlist[req.target_system,req.target_component].GuidedMode = (Locationwp)req;
                         }
                         else if (req.current == 3)
                         {
                         }
                         else
                         {
-                            MAV.wps[req.seq] = (Locationwp)req;
+                            MAVlist[req.target_system, req.target_component].wps[req.seq] = (Locationwp)req;
                         }
 
-                        return (MAV_MISSION_RESULT)ans.type;
+                        //if (ans.target_system == req.target_system && ans.target_component == req.target_component)
+                        {
+                            giveComport = false;
+                            return (MAV_MISSION_RESULT) ans.type;
+                        }
                     }
                     else if (buffer.msgid == (byte)MAVLINK_MSG_ID.MISSION_REQUEST)
                     {
@@ -2802,7 +2926,7 @@ Please check the following
 
                             if (req.current == 2)
                             {
-                                MAV.GuidedMode = (Locationwp)req;
+                                MAVlist[req.target_system, req.target_component].GuidedMode = (Locationwp)req;
                             }
                             else if (req.current == 3)
                             {
@@ -2810,10 +2934,14 @@ Please check the following
                             }
                             else
                             {
-                                MAV.wps[req.seq] = (Locationwp)req;
+                                MAVlist[req.target_system, req.target_component].wps[req.seq] = (Locationwp)req;
                             }
 
-                            return MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED;
+                            //if (ans.target_system == req.target_system && ans.target_component == req.target_component)
+                            {
+                                giveComport = false;
+                                return MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED;
+                            }
                         }
                         else
                         {
@@ -2894,6 +3022,11 @@ Please check the following
 
         public void setGuidedModeWP(Locationwp gotohere, bool setguidedmode = true)
         {
+            setGuidedModeWP(MAV.sysid, MAV.compid, gotohere, setguidedmode);
+        }
+
+        public void setGuidedModeWP(byte sysid, byte compid, Locationwp gotohere, bool setguidedmode = true)
+        {
             if (gotohere.alt == 0 || gotohere.lat == 0 || gotohere.lng == 0)
                 return;
 
@@ -2906,14 +3039,25 @@ Please check the following
                 if (setguidedmode)
                 {
                     // fix for followme change
-                    if (MAV.cs.mode.ToUpper() != "GUIDED")
-                        setMode("GUIDED");
+                    if (MAVlist[sysid, compid].cs.mode.ToUpper() != "GUIDED")
+                        setMode(sysid, compid, "GUIDED");
                 }
 
-                MAV_MISSION_RESULT ans = setWP(gotohere, 0, MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT, (byte) 2);
+                log.InfoFormat("setGuidedModeWP {0}:{1} lat {2} lng {3} alt {4}", sysid, compid, gotohere.lat, gotohere.lng, gotohere.alt);
 
-                if (ans != MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED)
-                    throw new Exception("Guided Mode Failed");
+                if (MAVlist[sysid,compid].cs.firmware == MainV2.Firmwares.ArduPlane)
+                {
+                    MAV_MISSION_RESULT ans = setWP(sysid, compid, gotohere, 0, MAV_FRAME.GLOBAL_RELATIVE_ALT, (byte)2);
+
+                    if (ans != MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED)
+                        throw new Exception("Guided Mode Failed");
+                }
+                else
+                {
+                    setPositionTargetGlobalInt((byte)sysid, (byte)compid,
+                        true, false, false, false, MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT_INT,
+                        gotohere.lat, gotohere.lng, MainV2.comPort.MAV.GuidedMode.z, 0, 0, 0, 0, 0);
+                }
             }
             catch (Exception ex)
             {
@@ -2925,16 +3069,30 @@ Please check the following
 
         public void setNewWPAlt(Locationwp gotohere)
         {
+            setNewWPAlt((byte)sysidcurrent, (byte)compidcurrent, gotohere);
+        }
+
+        public void setNewWPAlt(byte sysid, byte compid, Locationwp gotohere)
+        {
             giveComport = true;
 
             try
             {
                 gotohere.id = (ushort)MAV_CMD.WAYPOINT;
 
-                MAV_MISSION_RESULT ans = setWP(gotohere, 0, MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT, (byte) 3);
+                log.InfoFormat("setNewWPAlt {0}:{1} lat {2} lng {3} alt {4}", sysid, compid, gotohere.lat, gotohere.lng, gotohere.alt);
+
+                MAV_MISSION_RESULT ans = setWP(gotohere, 0, MAV_FRAME.GLOBAL_RELATIVE_ALT, (byte)3);
 
                 if (ans != MAV_MISSION_RESULT.MAV_MISSION_ACCEPTED)
                     throw new Exception("Alt Change Failed");
+
+                /*
+                // currently plane supports just an alt change, copter requires all lat/lng/alt
+                setPositionTargetGlobalInt((byte)sysid, (byte)compid,
+                    true, false, false, false, MAVLink.MAV_FRAME.GLOBAL_RELATIVE_ALT_INT,
+                    gotohere.lat, gotohere.lng, gotohere.alt, 0, 0, 0, 0, 0);
+                    */
             }
             catch (Exception ex)
             {
@@ -2946,34 +3104,52 @@ Please check the following
             giveComport = false;
         }
 
-        public void setPositionTargetGlobalInt(byte sysid, byte compid, bool pos, bool vel, bool acc, MAV_FRAME frame, double lat, double lng, double alt, double vx, double vy, double vz)
+        public void setPositionTargetGlobalInt(byte sysid, byte compid, bool pos, bool vel, bool acc, bool yaw, MAV_FRAME frame, double lat, double lng, double alt, double vx, double vy, double vz, double yawangle, double yawrate)
         {
             // for mavlink SET_POSITION_TARGET messages
             const ushort MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE = ((1 << 0) | (1 << 1) | (1 << 2));
+            const ushort MAVLINK_SET_POS_TYPE_MASK_ALT_IGNORE = ((0 << 0) | (0 << 1) | (1 << 2));
             const ushort MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE = ((1 << 3) | (1 << 4) | (1 << 5));
             const ushort MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE = ((1 << 6) | (1 << 7) | (1 << 8));
+            const ushort MAVLINK_SET_POS_TYPE_MASK_FORCE = ((1 << 9));
+            const ushort MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE = ((1 << 10) | (1 << 11));
 
             mavlink_set_position_target_global_int_t target = new mavlink_set_position_target_global_int_t()
             {
                 target_system = sysid,
                 target_component = compid,
-                alt = (float) alt,
-                lat_int = (int) (lat*1e7),
-                lon_int = (int) (lng*1e7),
-                coordinate_frame = (byte) frame,
-                vx = (float) vx,
-                vy = (float) vy,
-                vz = (float) vz
+                alt = (float)alt,
+                lat_int = (int)(lat * 1e7),
+                lon_int = (int)(lng * 1e7),
+                coordinate_frame = (byte)frame,
+                vx = (float)vx,
+                vy = (float)vy,
+                vz = (float)vz,
+                yaw = (float)yawangle,
+                yaw_rate = (float)yawrate
             };
 
-            target.type_mask = 7 + 56 + 448;
+            target.type_mask = ushort.MaxValue;
+
+            if (pos && lat != 0 && lng != 0)
+                target.type_mask -= MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE;
+            if (pos && lat == 0 && lng == 0)
+                target.type_mask -= MAVLINK_SET_POS_TYPE_MASK_ALT_IGNORE;
+            if (vel)
+                target.type_mask -= MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE;
+            if (acc)
+                target.type_mask -= MAVLINK_SET_POS_TYPE_MASK_ACC_IGNORE;
+            if (yaw)
+                target.type_mask -= MAVLINK_SET_POS_TYPE_MASK_YAW_IGNORE;
 
             if (pos)
-                target.type_mask -= 7;
-            if (vel)
-                target.type_mask -= 56;
-            if (acc)
-                target.type_mask -= 448;
+            {
+                if (lat != 0)
+                    MAVlist[sysid, compid].GuidedMode.x = (float)lat;
+                if (lng != 0)
+                    MAVlist[sysid, compid].GuidedMode.y = (float)lng;
+                MAVlist[sysid, compid].GuidedMode.z = (float)alt;
+            }
 
             bool pos_ignore = (target.type_mask & MAVLINK_SET_POS_TYPE_MASK_POS_IGNORE)>0;
             bool vel_ignore = (target.type_mask & MAVLINK_SET_POS_TYPE_MASK_VEL_IGNORE)>0;
@@ -3026,16 +3202,21 @@ Please check the following
             req.stab_yaw = (stabyaw == true) ? (byte) 1 : (byte) 0;
 
             generatePacket((byte) MAVLINK_MSG_ID.MOUNT_CONFIGURE, req);
-            System.Threading.Thread.Sleep(20);
+            Thread.Sleep(20);
             generatePacket((byte) MAVLINK_MSG_ID.MOUNT_CONFIGURE, req);
         }
 
         public void setMountControl(double pa, double pb, double pc, bool islatlng)
         {
+            setMountControl(MAV.sysid, MAV.compid, pa, pb, pc, islatlng);
+        }
+
+        public void setMountControl(byte sysid, byte compid, double pa, double pb, double pc, bool islatlng)
+        {
             mavlink_mount_control_t req = new mavlink_mount_control_t();
 
-            req.target_system = MAV.sysid;
-            req.target_component = MAV.compid;
+            req.target_system = sysid;
+            req.target_component = compid;
             if (!islatlng)
             {
                 req.input_a = (int) pa;
@@ -3050,7 +3231,7 @@ Please check the following
             }
 
             generatePacket((byte) MAVLINK_MSG_ID.MOUNT_CONTROL, req);
-            System.Threading.Thread.Sleep(20);
+            Thread.Sleep(20);
             generatePacket((byte) MAVLINK_MSG_ID.MOUNT_CONTROL, req);
         }
 
@@ -3061,18 +3242,11 @@ Please check the following
 
         public void setMode(byte sysid, byte compid, string modein)
         {
-            try
-            {
-                MAVLink.mavlink_set_mode_t mode = new MAVLink.mavlink_set_mode_t();
+            mavlink_set_mode_t mode = new mavlink_set_mode_t();
 
-                if (translateMode(sysid, compid, modein, ref mode))
-                {
-                    setMode(sysid, compid, mode);
-                }
-            }
-            catch
+            if (translateMode(sysid, compid, modein, ref mode))
             {
-                System.Windows.Forms.MessageBox.Show("Failed to change Modes");
+                setMode(sysid, compid, mode);
             }
         }
 
@@ -3085,9 +3259,9 @@ Please check the following
         {
             mode.base_mode |= (byte) base_mode;
 
-            generatePacket((byte) (byte) MAVLink.MAVLINK_MSG_ID.SET_MODE, mode, sysid, compid);
-            System.Threading.Thread.Sleep(10);
-            generatePacket((byte) (byte) MAVLink.MAVLINK_MSG_ID.SET_MODE, mode, sysid, compid);
+            generatePacket((byte) (byte) MAVLINK_MSG_ID.SET_MODE, mode, sysid, compid);
+            Thread.Sleep(10);
+            generatePacket((byte) (byte) MAVLINK_MSG_ID.SET_MODE, mode, sysid, compid);
         }
 
         /// <summary>
@@ -3154,7 +3328,7 @@ Please check the following
                                         length);
                                     throw new TimeoutException("Timeout");
                                 }
-                                System.Threading.Thread.Sleep(1);
+                                Thread.Sleep(1);
                                 //Console.WriteLine(DateTime.Now.Millisecond + " SR0b " + BaseStream.BytesToRead);
                             }
                             //Console.WriteLine(DateTime.Now.Millisecond + " SR1a " + BaseStream.BytesToRead);
@@ -3185,6 +3359,7 @@ Please check the following
                                 if (buildplaintxtline.Length > 3)
                                     plaintxtline = buildplaintxtline;
 
+                                log.Info(plaintxtline);
                                 // reset for next line
                                 buildplaintxtline = "";
                             }
@@ -3205,14 +3380,14 @@ Please check the following
 
                     //Console.WriteLine(DateTime.Now.Millisecond + " SR2 " + BaseStream.BytesToRead);
 
-                    var mavlinkv2 = buffer[0] == MAVLINK_STX ? true : false;
-
-                    int headerlength = mavlinkv2 ? MAVLINK_CORE_HEADER_LEN : MAVLINK_CORE_HEADER_MAVLINK1_LEN;
-                    int headerlengthstx = headerlength + 1;
-
                     // check for a header
                     if (buffer[0] == 0xfe || buffer[0] == 0xfd || buffer[0] == 'U')
                     {
+                        var mavlinkv2 = buffer[0] == MAVLINK_STX ? true : false;
+    
+                        int headerlength = mavlinkv2 ? MAVLINK_CORE_HEADER_LEN : MAVLINK_CORE_HEADER_MAVLINK1_LEN;
+                        int headerlengthstx = headerlength + 1;
+
                         // if we have the header, and no other chars, get the length and packet identifiers
                         if (count == 0 && !logreadmode)
                         {
@@ -3226,7 +3401,7 @@ Please check the following
                                         length);
                                     throw new TimeoutException("Timeout");
                                 }
-                                System.Threading.Thread.Sleep(1);
+                                Thread.Sleep(1);
                             }
                             int read = BaseStream.Read(buffer, 1, headerlength);
                             count = read;
@@ -3235,9 +3410,9 @@ Please check the following
                         }
 
                         // packet length
-                        if (buffer[0] == 0xfd)
+                        if (buffer[0] == MAVLINK_STX)
                         {
-                            length = buffer[1] + headerlengthstx + 2 - 2; // data + header + checksum - magic - length
+                            length = buffer[1] + headerlengthstx + MAVLINK_NUM_CHECKSUM_BYTES; // data + header + checksum - magic - length
                             if ((buffer[2] & MAVLINK_IFLAG_SIGNED) > 0)
                             {
                                 length += MAVLINK_SIGNATURE_BLOCK_LEN;
@@ -3245,7 +3420,7 @@ Please check the following
                         }
                         else
                         {
-                            length = buffer[1] + headerlengthstx + 2 - 2; // data + header + checksum - U - length    
+                            length = buffer[1] + headerlengthstx + MAVLINK_NUM_CHECKSUM_BYTES; // data + header + checksum - U - length    
                         }
 
                         if (count >= headerlength || logreadmode)
@@ -3259,7 +3434,7 @@ Please check the following
                                 {
                                     DateTime to = DateTime.Now.AddMilliseconds(BaseStream.ReadTimeout);
 
-                                    while (BaseStream.IsOpen && BaseStream.BytesToRead < (length - count))
+                                    while (BaseStream.IsOpen && BaseStream.BytesToRead < (length - (headerlengthstx)))
                                     {
                                         if (DateTime.Now > to)
                                         {
@@ -3267,11 +3442,14 @@ Please check the following
                                                 BaseStream.BytesToRead, length);
                                             break;
                                         }
-                                        System.Threading.Thread.Sleep(1);
+                                        Thread.Sleep(1);
                                     }
                                     if (BaseStream.IsOpen)
                                     {
-                                        int read = BaseStream.Read(buffer, headerlengthstx, length - (headerlengthstx-2));
+                                        int read = BaseStream.Read(buffer, headerlengthstx, length - (headerlengthstx));
+                                        if (read != (length - headerlengthstx))
+                                            log.InfoFormat("MAVLINK: bad read {0}, {1}, {2}", headerlengthstx, length,
+                                                count);
                                         if (rawlogfile != null && rawlogfile.CanWrite)
                                         {
                                             // write only what we read, temp is the whole packet, so 6-end
@@ -3279,7 +3457,7 @@ Please check the following
                                         }
                                     }
                                 }
-                                count = length + 2;
+                                count = length;
                             }
                             catch
                             {
@@ -3316,7 +3494,7 @@ Please check the following
                     btr = logplaybackfile.BaseStream.Length - logplaybackfile.BaseStream.Position;
                 }
                 Console.Write("bps {0} loss {1} left {2} mem {3} mav2 {4} sign {5} mav1 {6} mav2 {7} signed {8}      \n", _bps1, MAV.synclost, btr,
-                    System.GC.GetTotalMemory(false)/1024/1024.0, MAV.mavlinkv2, MAV.signing, _mavlink1count, _mavlink2count, _mavlink2signed);
+                    GC.GetTotalMemory(false)/1024/1024.0, MAV.mavlinkv2, MAV.signing, _mavlink1count, _mavlink2count, _mavlink2signed);
                 _bps2 = _bps1; // prev sec
                 _bps1 = 0; // current sec
                 _bpstime = DateTime.Now;
@@ -3331,7 +3509,7 @@ Please check the following
                 return MAVLinkMessage.Invalid;
 
             if (message == null)
-                message = new MAVLinkMessage(buffer);
+                message = new MAVLinkMessage(buffer, DateTime.UtcNow);
 
             uint msgid = message.msgid;
 
@@ -3403,7 +3581,7 @@ Please check the following
             {
                 _mavlink2signed++;
 
-                bool valid = false;
+                bool valid = true;
 
                 foreach (var AuthKey in MAVAuthKeys.Keys.Values)
                 {
@@ -3422,13 +3600,15 @@ Please check the following
                             if (ctx[i] != message.sig[7 + i])
                             {
                                 // not this key, check next
-                                continue;
+                                valid = false;
+                                break;
                             }
                         }
 
-                        // got valid key
-                        valid = true;
+                        if(!valid)
+                            continue;
 
+                        // got valid key
                         MAVlist[sysid, compid].linkid = message.sig[0];
 
                         MAVlist[sysid, compid].signingKey = AuthKey.Key;
@@ -3451,7 +3631,7 @@ Please check the following
             // extract wp's/rally/fence/camera feedback/params from stream, including gcs packets on playback
             if (buffer.Length >= 5)
             {
-                getWPsfromstream(ref message, sysid, compid);
+                getInfoFromStream(ref message, sysid, compid);
             }
 
             // if its a gcs packet - dont process further
@@ -3501,7 +3681,7 @@ Please check the following
                             MAVlist[sysid, compid].packetslost += numLost;
                             WhenPacketLost.OnNext(numLost);
 
-                            if(!logreadmode)
+                           if(!logreadmode)
                                 log.InfoFormat("mav {2}-{4} seqno {0} exp {3} pkts lost {1}", packetSeqNo, numLost, sysid,
                                     expectedPacketSeqNo,compid);
                         }
@@ -3515,8 +3695,10 @@ Please check the following
                     WhenPacketReceived.OnNext(1);
 
                     // packet stats per mav
-                    if (double.IsInfinity(MAVlist[sysid, compid].packetspersecond[msgid]))
+                    if (!MAVlist[sysid, compid].packetspersecond.ContainsKey(msgid) || double.IsInfinity(MAVlist[sysid, compid].packetspersecond[msgid]))
                         MAVlist[sysid, compid].packetspersecond[msgid] = 0;
+                    if (!MAVlist[sysid, compid].packetspersecondbuild.ContainsKey(msgid))
+                        MAVlist[sysid, compid].packetspersecondbuild[msgid] = DateTime.Now;
 
                     MAVlist[sysid, compid].packetspersecond[msgid] = (((1000 /
                                                                             ((DateTime.Now -
@@ -3535,16 +3717,16 @@ Please check the following
                         MAVlist[sysid, compid].addPacket(message);
 
                         // 3dr radio status packet are injected into the current mav
-                        if (msgid == (byte)MAVLink.MAVLINK_MSG_ID.RADIO_STATUS ||
-                            msgid == (byte)MAVLink.MAVLINK_MSG_ID.RADIO)
+                        if (msgid == (byte)MAVLINK_MSG_ID.RADIO_STATUS ||
+                            msgid == (byte)MAVLINK_MSG_ID.RADIO)
                         {
                             MAVlist[sysidcurrent, compidcurrent].addPacket(message);
                         }
 
                         // adsb packets are forwarded and can be from any sysid/compid
-                        if (msgid == (byte)MAVLink.MAVLINK_MSG_ID.ADSB_VEHICLE)
+                        if (msgid == (byte)MAVLINK_MSG_ID.ADSB_VEHICLE)
                         {
-                            var adsb = message.ToStructure<MAVLink.mavlink_adsb_vehicle_t>();
+                            var adsb = message.ToStructure<mavlink_adsb_vehicle_t>();
 
                             var id = adsb.ICAO_address.ToString("X5");
 
@@ -3568,15 +3750,15 @@ Please check the following
                             }
                         }
 
-                        if (msgid == (byte) MAVLink.MAVLINK_MSG_ID.COLLISION)
+                        if (msgid == (byte) MAVLINK_MSG_ID.COLLISION)
                         {
-                            var coll = message.ToStructure<MAVLink.mavlink_collision_t>();
+                            var coll = message.ToStructure<mavlink_collision_t>();
 
                             var id = coll.id.ToString("X5");
 
-                            var coll_type = (MAVLink.MAV_COLLISION_SRC)coll.src;
+                            var coll_type = (MAV_COLLISION_SRC)coll.src;
 
-                            var action = (MAVLink.MAV_COLLISION_ACTION)coll.action;
+                            var action = (MAV_COLLISION_ACTION)coll.action;
 
                             if (action > MAV_COLLISION_ACTION.REPORT)
                             {
@@ -3584,7 +3766,7 @@ Please check the following
 
                             }
 
-                            var threat_level = (MAVLink.MAV_COLLISION_THREAT_LEVEL)coll.threat_level;
+                            var threat_level = (MAV_COLLISION_THREAT_LEVEL)coll.threat_level;
 
                             if (MainV2.instance.adsbPlanes.ContainsKey(id))
                             {
@@ -3594,7 +3776,23 @@ Please check the following
                     }
 
                     // set seens sysid's based on hb packet - this will hide 3dr radio packets
-                    if (msgid == (byte)MAVLink.MAVLINK_MSG_ID.HEARTBEAT)
+                    if (msgid == (uint) MAVLINK_MSG_ID.UAVCAN_NODE_STATUS)
+                    {
+                        var cannode = message.ToStructure<mavlink_uavcan_node_status_t>();
+
+                        // add a seen sysid
+                        if (!MAVlist.Contains(sysid, compid, false))
+                        {
+                            // ensure its set from connect or log playback
+                            MAVlist.Create(sysid, compid);
+                            MAVlist[sysid, compid].aptype = MAV_TYPE.ONBOARD_CONTROLLER;
+                            MAVlist[sysid, compid].apname = MAV_AUTOPILOT.INVALID;
+                            setAPType(sysid, compid);
+                        }
+                    }
+
+                    // set seens sysid's based on hb packet - this will hide 3dr radio packets
+                    if (msgid == (byte)MAVLINK_MSG_ID.HEARTBEAT)
                     {
                         mavlink_heartbeat_t hb = message.ToStructure<mavlink_heartbeat_t>();
 
@@ -3625,12 +3823,14 @@ Please check the following
                     if (sysidcurrent == sysid && compidcurrent == compid)
                         PacketReceived(message);
 
+                    OnPacketReceived?.Invoke(this, message);
+
                     if (debugmavlink)
                         DebugPacket(message);
 
-                    if (msgid == (byte)MAVLink.MAVLINK_MSG_ID.STATUSTEXT) // status text
+                    if (msgid == (byte)MAVLINK_MSG_ID.STATUSTEXT) // status text
                     {
-                        var msg = message.ToStructure<MAVLink.mavlink_statustext_t>();
+                        var msg = message.ToStructure<mavlink_statustext_t>();
 
                         byte sev = msg.severity;
 
@@ -3684,14 +3884,16 @@ Please check the following
                             }
                         }
                     }
-
-                    if (lastparamset != DateTime.MinValue && lastparamset.AddSeconds(10) < DateTime.Now)
+                    if (Settings.Instance["autoParamCommit"] == null || Settings.Instance.GetBoolean("autoParamCommit") == true)
                     {
-                        lastparamset = DateTime.MinValue;
-
-                        if (BaseStream.IsOpen)
+                        if (lastparamset != DateTime.MinValue && lastparamset.AddSeconds(10) < DateTime.Now)
                         {
-                            doCommand(MAV_CMD.PREFLIGHT_STORAGE, 0, 0, 0, 0, 0, 0, 0, false);
+                            lastparamset = DateTime.MinValue;
+
+                            if (BaseStream.IsOpen)
+                            {
+                                doCommand(MAV_CMD.PREFLIGHT_STORAGE, 1, 0, 0, 0, 0, 0, 0, false);
+                            }
                         }
                     }
 
@@ -3832,7 +4034,7 @@ Please check the following
         /// Used to extract mission from log file - both sent or received
         /// </summary>
         /// <param name="buffer">packet</param>
-        void getWPsfromstream(ref MAVLinkMessage buffer, byte sysid, byte compid)
+        private void getInfoFromStream(ref MAVLinkMessage buffer, byte sysid, byte compid)
         {
             if (buffer.msgid == (byte) MAVLINK_MSG_ID.MISSION_COUNT)
             {
@@ -3847,8 +4049,7 @@ Please check the following
 
                 MAVlist[wp.target_system, wp.target_component].wps.Clear();
             }
-
-            if (buffer.msgid == (byte)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM)
+            else if (buffer.msgid == (byte) MAVLINK_MSG_ID.MISSION_ITEM)
             {
                 mavlink_mission_item_t wp = buffer.ToStructure<mavlink_mission_item_t>();
 
@@ -3871,8 +4072,7 @@ Please check the following
                 Console.WriteLine("WP # {7} cmd {8} p1 {0} p2 {1} p3 {2} p4 {3} x {4} y {5} z {6}", wp.param1, wp.param2,
                     wp.param3, wp.param4, wp.x, wp.y, wp.z, wp.seq, wp.command);
             }
-
-            if (buffer.msgid == (byte)MAVLink.MAVLINK_MSG_ID.MISSION_ITEM_INT)
+            else if (buffer.msgid == (byte) MAVLINK_MSG_ID.MISSION_ITEM_INT)
             {
                 mavlink_mission_item_int_t wp = buffer.ToStructure<mavlink_mission_item_int_t>();
 
@@ -3885,18 +4085,27 @@ Please check the following
                 if (wp.current == 2)
                 {
                     // guide mode wp
-                    MAVlist[wp.target_system, wp.target_component].GuidedMode = (mavlink_mission_item_t)(Locationwp)wp;
+                    MAVlist[wp.target_system, wp.target_component].GuidedMode = (mavlink_mission_item_t) (Locationwp) wp;
                 }
                 else
                 {
-                    MAVlist[wp.target_system, wp.target_component].wps[wp.seq] = (mavlink_mission_item_t)(Locationwp)wp;
+                    MAVlist[wp.target_system, wp.target_component].wps[wp.seq] =
+                        (mavlink_mission_item_t) (Locationwp) wp;
                 }
 
-                Console.WriteLine("WP INT # {7} cmd {8} p1 {0} p2 {1} p3 {2} p4 {3} x {4} y {5} z {6}", wp.param1, wp.param2,
+                Console.WriteLine("WP INT # {7} cmd {8} p1 {0} p2 {1} p3 {2} p4 {3} x {4} y {5} z {6}", wp.param1,
+                    wp.param2,
                     wp.param3, wp.param4, wp.x, wp.y, wp.z, wp.seq, wp.command);
             }
+            else if (buffer.msgid == (byte)MAVLINK_MSG_ID.SET_POSITION_TARGET_GLOBAL_INT)
+            {
+                mavlink_set_position_target_global_int_t setpos = buffer.ToStructure<mavlink_set_position_target_global_int_t>();
 
-            if (buffer.msgid == (byte) MAVLINK_MSG_ID.RALLY_POINT)
+                MAVlist[setpos.target_system, setpos.target_component].GuidedMode = (mavlink_mission_item_t)(Locationwp)setpos;
+
+                Console.WriteLine("SET_POSITION_TARGET_GLOBAL_INT x {0} y {1} z {2} frame {3}", setpos.lat_int/1e7, setpos.lon_int/1e7, setpos.alt, setpos.coordinate_frame);
+            }
+            else if (buffer.msgid == (byte) MAVLINK_MSG_ID.RALLY_POINT)
             {
                 mavlink_rally_point_t rallypt = buffer.ToStructure<mavlink_rally_point_t>();
 
@@ -3911,18 +4120,17 @@ Please check the following
                 Console.WriteLine("RP # {0} {1} {2} {3} {4}", rallypt.idx, rallypt.lat, rallypt.lng, rallypt.alt,
                     rallypt.break_alt);
             }
-
-            if (buffer.msgid == (byte)MAVLINK_MSG_ID.CAMERA_FEEDBACK)
+            else if (buffer.msgid == (byte) MAVLINK_MSG_ID.CAMERA_FEEDBACK)
             {
                 mavlink_camera_feedback_t camerapt = buffer.ToStructure<mavlink_camera_feedback_t>();
 
-                if (MAVlist[sysid, compid].camerapoints.Count == 0 || MAVlist[sysid, compid].camerapoints.Last().time_usec != camerapt.time_usec)
+                if (MAVlist[sysid, compid].camerapoints.Count == 0 ||
+                    MAVlist[sysid, compid].camerapoints.Last().time_usec != camerapt.time_usec)
                 {
                     MAVlist[sysid, compid].camerapoints.Add(camerapt);
                 }
             }
-
-            if (buffer.msgid == (byte) MAVLINK_MSG_ID.FENCE_POINT)
+            else if (buffer.msgid == (byte) MAVLINK_MSG_ID.FENCE_POINT)
             {
                 mavlink_fence_point_t fencept = buffer.ToStructure<mavlink_fence_point_t>();
 
@@ -3934,12 +4142,11 @@ Please check the following
 
                 MAVlist[fencept.target_system, fencept.target_component].fencepoints[fencept.idx] = fencept;
             }
-
-            if (buffer.msgid == (byte) MAVLINK_MSG_ID.PARAM_VALUE)
+            else if (buffer.msgid == (byte) MAVLINK_MSG_ID.PARAM_VALUE)
             {
                 mavlink_param_value_t value = buffer.ToStructure<mavlink_param_value_t>();
 
-                string st = System.Text.ASCIIEncoding.ASCII.GetString(value.param_id);
+                string st = ASCIIEncoding.ASCII.GetString(value.param_id);
 
                 int pos = st.IndexOf('\0');
 
@@ -3948,25 +4155,62 @@ Please check the following
                     st = st.Substring(0, pos);
                 }
 
-                if (MAV.apname == MAV_AUTOPILOT.ARDUPILOTMEGA)
+                MAVlist[sysid, compid].param_types[st] = (MAV_PARAM_TYPE)value.param_type;
+
+                if (MAVlist[sysid, compid].apname == MAV_AUTOPILOT.ARDUPILOTMEGA && buffer.compid != (byte)MAV_COMPONENT.MAV_COMP_ID_UDP_BRIDGE)
                 {
-                    var offset = Marshal.OffsetOf(typeof(mavlink_param_value_t), "param_value");
-                    MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(Marshal.ReadInt32(value, offset.ToInt32())), MAV_PARAM_TYPE.REAL32, (MAV_PARAM_TYPE)value.param_type);
+                    var offset = Marshal.OffsetOf(typeof (mavlink_param_value_t), "param_value");
+                    MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(value.param_value),
+                        MAV_PARAM_TYPE.REAL32, (MAV_PARAM_TYPE) value.param_type);
                 }
                 else
                 {
-                    var offset = Marshal.OffsetOf(typeof(mavlink_param_value_t), "param_value");
-                    MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(Marshal.ReadInt32(value, offset.ToInt32())),
-                        (MAV_PARAM_TYPE)value.param_type, (MAV_PARAM_TYPE)value.param_type);
+                    var offset = Marshal.OffsetOf(typeof (mavlink_param_value_t), "param_value");
+                    MAVlist[sysid, compid].param[st] = new MAVLinkParam(st, BitConverter.GetBytes(value.param_value),
+                        (MAV_PARAM_TYPE) value.param_type, (MAV_PARAM_TYPE) value.param_type);
                 }
 
-                MAVlist[sysid,compid].param.TotalReported = value.param_count;
+                MAVlist[sysid, compid].param.TotalReported = value.param_count;
+            }
+            else if (buffer.msgid == (byte) MAVLINK_MSG_ID.TIMESYNC)
+            {
+                Int64 now_ns =
+                    (Int64) ((DateTime.Now - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalMilliseconds*
+                             1000000);
+
+                mavlink_timesync_t tsync = buffer.ToStructure<mavlink_timesync_t>();
+                // tc1 - client
+                // ts1 - server
+
+                // system does not know the time
+                if (tsync.tc1 == 0)
+                {
+                    tsync.tc1 = now_ns;
+                    sendPacket(tsync, buffer.sysid, buffer.compid);
+                } // system knows the time 
+                else if (tsync.tc1 > 0)
+                {
+                    Int64 offset_ns = (tsync.ts1 + now_ns - tsync.tc1*2)/2;
+                    Int64 dt = MAVlist[buffer.sysid, buffer.compid].time_offset_ns - offset_ns;
+
+                    if (Math.Abs(dt) > 10000000) // 10 millisecond skew
+                    {
+                        MAVlist[buffer.sysid, buffer.compid].time_offset_ns = offset_ns; // hard-set it.
+                    }
+                    else
+                    {
+                        var offset_avg_alpha = 0.6;
+                        var avg = (offset_avg_alpha*offset_ns) +
+                                  (1.0 - offset_avg_alpha)*MAVlist[buffer.sysid, buffer.compid].time_offset_ns;
+                        MAVlist[buffer.sysid, buffer.compid].time_offset_ns = (long) avg;
+                    }
+                }
             }
         }
 
         public bool getVersion()
         {
-            MAVLink.mavlink_autopilot_version_request_t req = new mavlink_autopilot_version_request_t();
+            mavlink_autopilot_version_request_t req = new mavlink_autopilot_version_request_t();
 
             req.target_component = MAV.compid;
             req.target_system = MAV.sysid;
@@ -4165,7 +4409,7 @@ Please check the following
             log.Info("totallength " + totallength);
             log.Info("current length " + ms.Length);
 
-            while (true)
+            while (true && (BaseStream.IsOpen || logreadmode))
             {
                 if (totallength == ms.Length && set.Count >= ((totallength) / 90 + 1))
                 {
@@ -4190,7 +4434,8 @@ Please check the following
 
                             req.ofs = (uint) (a*90);
                             req.count = bytereq;
-                            log.Info("req missing " + req.ofs + " " + req.count);
+                            log.Info("req missing " + req.ofs + " bytes " + req.count + " got " + set.Count + "/" +
+                                     ((totallength)/90 + 1));
                             generatePacket((byte) MAVLINK_MSG_ID.LOG_REQUEST_DATA, req);
                             start = DateTime.Now;
                             break;
@@ -4249,6 +4494,8 @@ Please check the following
                     }
                 }
             }
+
+            throw new Exception("Failed to get log");
         }
 
         public List<mavlink_log_entry_t> GetLogList()
@@ -4272,7 +4519,7 @@ Please check the following
 
         public void GetMountStatus()
         {
-            mavlink_mount_status_t req = new MAVLink.mavlink_mount_status_t();
+            mavlink_mount_status_t req = new mavlink_mount_status_t();
             req.target_component = MAV.compid;
             req.target_system = MAV.sysid;
 
@@ -4587,7 +4834,7 @@ Please check the following
                 {
                     case 0:
                         byte0 = tempb;
-                        if (byte0 != 'U' && byte0 != 254 && byte0 != 253)
+                        if (byte0 != 'U' && byte0 != MAVLINK_STX_MAVLINK1 && byte0 != MAVLINK_STX)
                         {
                             log.DebugFormat("logread - lost sync byte {0} pos {1}", byte0,
                                 logplaybackfile.BaseStream.Position);
@@ -4596,7 +4843,7 @@ Please check the following
                             {
                                 byte0 = logplaybackfile.ReadByte();
                             }
-                            while (byte0 != 'U' && byte0 != 254 && byte0 != 253);
+                            while (byte0 != 'U' && byte0 != MAVLINK_STX_MAVLINK1 && byte0 != MAVLINK_STX);
                             a = 1;
                             continue;
                         }
@@ -4637,19 +4884,19 @@ Please check the following
                 a++;
             }
 
-            MAVLinkMessage tmp = new MAVLinkMessage(temp);
+            MAVLinkMessage tmp = new MAVLinkMessage(temp, lastlogread);
 
             MAVlist[tmp.sysid, tmp.compid].cs.datetime = lastlogread;
 
             return tmp;
         }
 
-        public bool translateMode(string modein, ref MAVLink.mavlink_set_mode_t mode)
+        public bool translateMode(string modein, ref mavlink_set_mode_t mode)
         {
             return translateMode(MAV.sysid, MAV.compid, modein, ref mode);
         }
 
-        public bool translateMode(byte sysid,byte compid, string modein, ref MAVLink.mavlink_set_mode_t mode)
+        public bool translateMode(byte sysid,byte compid, string modein, ref mavlink_set_mode_t mode)
         {
             mode.target_system = sysid;
 
@@ -4658,26 +4905,26 @@ Please check the following
 
             try
             {
-                List<KeyValuePair<int, string>> modelist = Common.getModesList(MAVlist[sysid,compid].cs);
+                List<KeyValuePair<int, string>> modelist = Common.getModesList(MAVlist[sysid,compid].cs.firmware);
 
                 foreach (KeyValuePair<int, string> pair in modelist)
                 {
                     if (pair.Value.ToLower() == modein.ToLower())
                     {
-                        mode.base_mode = (byte) MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
+                        mode.base_mode = (byte) MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
                         mode.custom_mode = (uint) pair.Key;
                     }
                 }
 
                 if (mode.base_mode == 0)
                 {
-                    MessageBox.Show("No Mode Changed " + modein);
+                    log.Error("No Mode Changed " + modein);
                     return false;
                 }
             }
             catch
             {
-                System.Windows.Forms.MessageBox.Show("Failed to find Mode");
+                log.Error("Failed to find Mode");
                 return false;
             }
 
@@ -4694,38 +4941,42 @@ Please check the following
                 case MAV_AUTOPILOT.ARDUPILOTMEGA:
                     switch (MAVlist[sysid, compid].aptype)
                     {
-                        case MAVLink.MAV_TYPE.FIXED_WING:
+                        case MAV_TYPE.FIXED_WING:
                             MAVlist[sysid, compid].cs.firmware = MainV2.Firmwares.ArduPlane;
                             break;
-                        case MAVLink.MAV_TYPE.QUADROTOR:
+                        case MAV_TYPE.QUADROTOR:
                             MAVlist[sysid, compid].cs.firmware = MainV2.Firmwares.ArduCopter2;
                             break;
-                        case MAVLink.MAV_TYPE.TRICOPTER:
+                        case MAV_TYPE.TRICOPTER:
                             MAVlist[sysid, compid].cs.firmware = MainV2.Firmwares.ArduCopter2;
                             break;
-                        case MAVLink.MAV_TYPE.HEXAROTOR:
+                        case MAV_TYPE.HEXAROTOR:
                             MAVlist[sysid, compid].cs.firmware = MainV2.Firmwares.ArduCopter2;
                             break;
-                        case MAVLink.MAV_TYPE.OCTOROTOR:
+                        case MAV_TYPE.OCTOROTOR:
                             MAVlist[sysid, compid].cs.firmware = MainV2.Firmwares.ArduCopter2;
                             break;
-                        case MAVLink.MAV_TYPE.HELICOPTER:
+                        case MAV_TYPE.HELICOPTER:
                             MAVlist[sysid, compid].cs.firmware = MainV2.Firmwares.ArduCopter2;
                             break;
-                        case MAVLink.MAV_TYPE.GROUND_ROVER:
+                        case MAV_TYPE.GROUND_ROVER:
                             MAVlist[sysid, compid].cs.firmware = MainV2.Firmwares.ArduRover;
+                            break;
+                        case MAV_TYPE.SUBMARINE:
+                            MAVlist[sysid, compid].cs.firmware = MainV2.Firmwares.ArduSub;
                             break;
                         case MAV_TYPE.ANTENNA_TRACKER:
                             MAVlist[sysid, compid].cs.firmware = MainV2.Firmwares.ArduTracker;
                             break;
                         default:
+                            log.Error(MAVlist[sysid, compid].aptype + " not registered as valid type");
                             break;
                     }
                     break;
                 case MAV_AUTOPILOT.UDB:
                     switch (MAVlist[sysid, compid].aptype)
                     {
-                        case MAVLink.MAV_TYPE.FIXED_WING:
+                        case MAV_TYPE.FIXED_WING:
                             MAVlist[sysid, compid].cs.firmware = MainV2.Firmwares.ArduPlane;
                             break;
                     }
@@ -4733,7 +4984,7 @@ Please check the following
                 case MAV_AUTOPILOT.GENERIC:
                     switch (MAVlist[sysid, compid].aptype)
                     {
-                        case MAVLink.MAV_TYPE.FIXED_WING:
+                        case MAV_TYPE.FIXED_WING:
                             MAVlist[sysid, compid].cs.firmware = MainV2.Firmwares.Ateryx;
                             break;
                     }

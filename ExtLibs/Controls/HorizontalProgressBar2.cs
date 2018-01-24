@@ -28,19 +28,19 @@ using System.Drawing.Drawing2D;
 
 namespace MissionPlanner.Controls
 {
-    public class HorizontalProgressBar2 : BSE.Windows.Forms.ProgressBar
+    public class HorizontalProgressBar2:  BSE.Windows.Forms.ProgressBar
     {
         private string m_Text;
         int offset = 0;
         int _min = 0;
         int _max = 0;
         int _value = 0;
-        System.Windows.Forms.Label lbl1 = new System.Windows.Forms.Label();
-        System.Windows.Forms.Label lbl = new System.Windows.Forms.Label();
         public bool reverse = false;
         int displayvalue = 0;
         bool ctladded = false;
         bool _drawlabel = true;
+
+        //BSE.Windows.Forms.ProgressBar basepb = new BSE.Windows.Forms.ProgressBar();
 
         [System.ComponentModel.Browsable(true),
 System.ComponentModel.Category("Mine"),
@@ -54,21 +54,33 @@ System.ComponentModel.Description("draw text under Bar")]
             set
             {
                 _drawlabel = value;
-                if (_drawlabel == false)
-                {
-                    if (this.Parent != null && ctladded == true)
-                    {
-                        this.Parent.Controls.Remove(lbl);
-                        this.Parent.Controls.Remove(lbl1);
-                    }
-                    ctladded = true;
-                }
+            }
+        }
+
+        internal class proxyvpb: BSE.Windows.Forms.ProgressBar
+        {
+            protected override void OnPaint(PaintEventArgs e)
+            {
+                e.Graphics.TranslateTransform(0, e.Graphics.ClipBounds.Height);
+                e.Graphics.RotateTransform(270);
+                e.Graphics.ScaleTransform((float)this.Height / (float)this.Width, (float)this.Width / (float)this.Height);
+                base.OnPaint(e);
             }
         }
 
         public HorizontalProgressBar2()
-            : base()
         {
+            if ((Type) this.GetType() == typeof (VerticalProgressBar2))
+            {
+                //basepb = new proxyvpb();
+            }
+
+            this.SetStyle(
+    ControlStyles.ResizeRedraw |
+    ControlStyles.OptimizedDoubleBuffer |
+    ControlStyles.AllPaintingInWmPaint |
+    ControlStyles.SupportsTransparentBackColor |
+    ControlStyles.UserPaint, true);
         }
 
         public new int Value
@@ -99,14 +111,9 @@ System.ComponentModel.Description("draw text under Bar")]
 
                 base.Value = ans;
 
-                if (this.DesignMode) return;
+                this.Invalidate();
 
-                if (this.Parent != null && ctladded == false)
-                {
-                    this.Parent.Controls.Add(lbl);
-                    this.Parent.Controls.Add(lbl1);
-                    ctladded = true;
-                }
+                if (this.DesignMode) return;
             }
         }
 
@@ -158,19 +165,26 @@ System.ComponentModel.Description("values scaled for display")]
 
         private float _displayscale = 1;
 
+        StringFormat drawFormat = new StringFormat() { Alignment = StringAlignment.Center, LineAlignment = StringAlignment.Center };
+
         private void drawlbl(Graphics e)
         {
             if (DrawLabel)
             {
-                lbl.Location = new Point(this.Location.X, this.Location.Y + this.Height + 2);
-                lbl.ClientSize = new Size(this.Width, 13);
-                lbl.TextAlign = ContentAlignment.MiddleCenter;
-                lbl.Text = m_Text;
+                var rect = new RectangleF(0, 0, Width, Height);
+                var tran = e.Transform;
+                e.ResetTransform();
+                if (Width < Height)
+                {
+                    drawFormat.FormatFlags = StringFormatFlags.DirectionVertical;
+                }
+                else
+                {
+                    drawFormat.FormatFlags = 0;
+                }
 
-                lbl1.Location = new Point(this.Location.X, this.Location.Y + this.Height + 15);
-                lbl1.ClientSize = new Size(this.Width, 13);
-                lbl1.TextAlign = ContentAlignment.MiddleCenter;
-                lbl1.Text = (Value * _displayscale).ToString();
+                e.DrawString((m_Text + "  " + (Value * _displayscale).ToString()+" ").Trim(), this.Font, new SolidBrush(this.ForeColor), rect, drawFormat);
+                e.Transform = tran;
             }
 
             if (minline != 0 && maxline != 0)
@@ -184,7 +198,7 @@ System.ComponentModel.Description("values scaled for display")]
                 if ((Type)this.GetType() == typeof(VerticalProgressBar2))
                 {
                     e.ResetTransform();
-                    range2 = this.Height;
+                    range2 = base.Height;
                     if (reverse)
                     {
                         e.DrawLine(redPen, 0, (maxline - this.Minimum) / range * range2 + 0, this.Width, (maxline - this.Minimum) / range * range2 + 0);
@@ -220,16 +234,44 @@ System.ComponentModel.Description("values scaled for display")]
             }
         }
 
+        protected override void OnResize(EventArgs e)
+        {
+            //base.Width = this.Width;
+            //base.Height = this.Height - 30;
+            base.OnResize(e);
+        }
+
         public int minline { get; set; }
         public int maxline { get; set; }
+
+        public Color BackgroundColor
+        {
+            get { return base.BackgroundColor; }
+            set { base.BackgroundColor = value; }
+        }
+
+        public Color ValueColor
+        {
+            get { return base.ValueColor; }
+            set { base.ValueColor = value; }
+        }
+
+        public Color BorderColor
+        {
+            get { return base.BorderColor; }
+            set { base.BorderColor = value; }
+        }
+
+        public string Text
+        {
+            get { return base.Text; }
+            set { base.Text = value; }
+        }
 
         protected override void OnPaint(PaintEventArgs e)
         {
             base.OnPaint(e);
             drawlbl(e.Graphics);
         }
-
     }
-
-
 }

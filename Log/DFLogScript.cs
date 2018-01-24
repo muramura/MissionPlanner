@@ -5,12 +5,12 @@ using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using Core.ExtendedObjects;
-using MissionPlanner.HIL;
+using MissionPlanner.Utilities;
 using ZedGraph;
 
 namespace MissionPlanner.Log
 {
-    public class DFLogScript : HIL.Utils
+    public class DFLogScript : Utils
     {
         public static Vector3 earth_accel_df(IMU_t IMU, ATT_t ATT)
         {
@@ -115,11 +115,11 @@ namespace MissionPlanner.Log
                     }
                 }
 
+                IMU_t IMU = new IMU_t();
+                ATT_t ATT = new ATT_t();
+
                 foreach (var item in logdata.GetEnumeratorType(msglist.ToArray()))
                 {
-                    IMU_t IMU = new IMU_t();
-                    ATT_t ATT = new ATT_t();
-
                     if (item.msgtype == "ATT")
                     {
                         ATT.Roll = double.Parse(item.items[dflog.FindMessageOffset("ATT", "Roll")]);

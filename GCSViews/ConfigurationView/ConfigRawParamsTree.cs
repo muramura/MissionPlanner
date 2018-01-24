@@ -3,9 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Drawing;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Timers;
 using System.Windows.Forms;
 using BrightIdeasSoftware;
 using log4net;
@@ -37,6 +39,11 @@ namespace MissionPlanner.GCSViews.ConfigurationView
         public void Activate()
         {
             startup = true;
+
+            BUT_writePIDS.Enabled = MainV2.comPort.BaseStream.IsOpen;
+            BUT_rerequestparams.Enabled = MainV2.comPort.BaseStream.IsOpen;
+            BUT_reset_params.Enabled = MainV2.comPort.BaseStream.IsOpen;
+            BUT_commitToFlash.Visible = MainV2.DisplayConfiguration.displayParamCommitButton;
 
             SuspendLayout();
 
@@ -90,25 +97,34 @@ namespace MissionPlanner.GCSViews.ConfigurationView
                 AddExtension = true,
                 DefaultExt = ".param",
                 RestoreDirectory = true,
-                Filter = "Param List|*.param;*.parm"
+                Filter = ParamFile.FileMask
             })
             {
                 var dr = ofd.ShowDialog();
 
                 if (dr == DialogResult.OK)
                 {
-                    loadparamsfromfile(ofd.FileName);
+                    loadparamsfromfile(ofd.FileName, !MainV2.comPort.BaseStream.IsOpen);
+
+                    if (!MainV2.comPort.BaseStream.IsOpen)
+                        Activate();
                 }
             }
         }
 
-        private void loadparamsfromfile(string fn)
+        private void loadparamsfromfile(string fn, bool offline = false)
         {
             var param2 = ParamFile.loadParamFile(fn);
 
             foreach (string name in param2.Keys)
             {
                 var value = param2[name].ToString();
+
+                if (offline)
+                {
+                    MainV2.comPort.MAV.param.Add(new MAVLink.MAVLinkParam(name, double.Parse(value),
+                        MAVLink.MAV_PARAM_TYPE.REAL32));
+                }
 
                 checkandupdateparam(name, value);
             }
@@ -214,14 +230,14 @@ namespace MissionPlanner.GCSViews.ConfigurationView
 
         private void BUT_compare_Click(object sender, EventArgs e)
         {
-            var param2 = new Hashtable();
+            var param2 = new Dictionary<string, double>();
 
             using (var ofd = new OpenFileDialog
             {
                 AddExtension = true,
                 DefaultExt = ".param",
                 RestoreDirectory = true,
-                Filter = "Param List|*.param;*.parm"
+                Filter = ParamFile.FileMask
             })
             {
                 var dr = ofd.ShowDialog();
@@ -402,7 +418,7 @@ namespace MissionPlanner.GCSViews.ConfigurationView
             {
                 if (paramfiles == null)
                 {
-                    paramfiles = GitHubContent.GetDirContent("diydrones", "ardupilot", "/Tools/Frame_params/", ".param");
+                    paramfiles = GitHubContent.GetDirContent("ardupilot", "ardupilot", "/Tools/Frame_params/", ".param");
                 }
 
                 BeginInvoke((Action) delegate
@@ -423,10 +439,37 @@ namespace MissionPlanner.GCSViews.ConfigurationView
         {
             if (searchfor.Length >= 2 || searchfor.Length == 0)
             {
+                var expanded = Params.ExpandedObjects.OfType<object>().Where((o, i) =>
+                {
+                    var count = Params.VirtualListDataSource.GetObjectCount();
+                    for (int a = 0; a < count; a++)
+                    {
+                        var obj = Params.VirtualListDataSource.GetNthObject(a);
+                        if (obj == o)
+                            return true;
+                    }
+
+                    return false;
+                }) .ToArray();
+
+                Params.Visible = false;
                 Params.UseFiltering = false;
+                Params.ExpandAll();
                 Params.ModelFilter = TextMatchFilter.Regex(Params, searchfor.ToLower());
                 Params.DefaultRenderer = new HighlightTextRenderer((TextMatchFilter) Params.ModelFilter);
                 Params.UseFiltering = true;
+
+                if (Params.Items.Count > 0)
+                {
+                    if(searchfor.Length == 0)
+                        Params.CollapseAll();
+
+                    foreach (var row in expanded)
+                    {
+                        Params.Expand(row);
+                    }
+                }
+                Params.Visible = true;
             }
         }
 
@@ -455,7 +498,7 @@ namespace MissionPlanner.GCSViews.ConfigurationView
 
                 // no activate the user needs to click write.
                 //this.Activate();
-            }
+            } 
             catch (Exception ex)
             {
                 CustomMessageBox.Show("Failed to load file.\n" + ex);
@@ -549,14 +592,16 @@ namespace MissionPlanner.GCSViews.ConfigurationView
                     }
                 }
 
+                // add to change record
                 _changes[((data) e.RowObject).paramname] = newvalue;
 
+                // update underlying data
                 ((data) e.RowObject).Value = e.NewValue.ToString();
 
-                var typer = e.RowObject.GetType();
 
-                e.Cancel = true;
+                e.Cancel = false;
 
+                // refresh from underlying data
                 Params.RefreshObject(e.RowObject);
             }
         }
@@ -593,9 +638,24 @@ namespace MissionPlanner.GCSViews.ConfigurationView
             public string Value;
         }
 
+        private System.Timers.Timer filterTimer = new System.Timers.Timer();
+
         private void txt_search_TextChanged(object sender, EventArgs e)
         {
-            filterList(txt_search.Text);
+            filterTimer.Elapsed -= FilterTimerOnElapsed;
+            filterTimer.Stop();
+            filterTimer.Interval = 500;
+            filterTimer.Elapsed += FilterTimerOnElapsed;
+            filterTimer.Start();
+        }
+
+        private void FilterTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
+        {
+            filterTimer.Stop();
+            Invoke((Action)delegate
+            {
+                filterList(txt_search.Text);
+            });
         }
 
         private void Params_CellClick(object sender, CellClickEventArgs e)
@@ -610,6 +670,22 @@ namespace MissionPlanner.GCSViews.ConfigurationView
                 ConfigRawParams.CheckForUrlAndLaunchInBrowser(descStr);
             }
             catch { }
+        }
+
+        private void BUT_commitToFlash_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_STORAGE, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+            }
+            catch
+            {
+                CustomMessageBox.Show("Invalid command");
+                return;
+            }
+
+            CustomMessageBox.Show("Parameters committed to non-volatile memory");
+            return;
         }
     }
 }

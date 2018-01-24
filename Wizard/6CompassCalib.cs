@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Windows.Forms;
 using MissionPlanner.Controls;
+using MissionPlanner.Utilities;
 
 namespace MissionPlanner.Wizard
 {
@@ -93,10 +94,10 @@ namespace MissionPlanner.Wizard
         }
 
         int step = 0;
-        HIL.Vector3 north;
-        HIL.Vector3 east;
-        HIL.Vector3 south;
-        HIL.Vector3 west;
+        Vector3 north;
+        Vector3 east;
+        Vector3 south;
+        Vector3 west;
 
         private void BUT_compassorient_Click(object sender, EventArgs e)
         {
@@ -110,19 +111,19 @@ namespace MissionPlanner.Wizard
                     label5.Text = "Please face the autopilot north";
                     break;
                 case 1:
-                    north = new HIL.Vector3(MainV2.comPort.MAV.cs.mx, MainV2.comPort.MAV.cs.my, MainV2.comPort.MAV.cs.mz);
+                    north = new Vector3(MainV2.comPort.MAV.cs.mx, MainV2.comPort.MAV.cs.my, MainV2.comPort.MAV.cs.mz);
                     label5.Text = "Please face the autopilot east";
                     break;
                 case 2:
-                    east = new HIL.Vector3(MainV2.comPort.MAV.cs.mx, MainV2.comPort.MAV.cs.my, MainV2.comPort.MAV.cs.mz);
+                    east = new Vector3(MainV2.comPort.MAV.cs.mx, MainV2.comPort.MAV.cs.my, MainV2.comPort.MAV.cs.mz);
                     label5.Text = "Please face the autopilot south";
                     break;
                 case 3:
-                    south = new HIL.Vector3(MainV2.comPort.MAV.cs.mx, MainV2.comPort.MAV.cs.my, MainV2.comPort.MAV.cs.mz);
+                    south = new Vector3(MainV2.comPort.MAV.cs.mx, MainV2.comPort.MAV.cs.my, MainV2.comPort.MAV.cs.mz);
                     label5.Text = "Please face the autopilot west";
                     break;
                 case 4:
-                    west = new HIL.Vector3(MainV2.comPort.MAV.cs.mx, MainV2.comPort.MAV.cs.my, MainV2.comPort.MAV.cs.mz);
+                    west = new Vector3(MainV2.comPort.MAV.cs.mx, MainV2.comPort.MAV.cs.my, MainV2.comPort.MAV.cs.mz);
                     label5.Text = "Calculating";
                     if (docalc())
                     {
@@ -138,12 +139,9 @@ namespace MissionPlanner.Wizard
             step++;
         }
 
-        const float rad2deg = (float) (180/Math.PI);
-        const float deg2rad = (float) (1.0/rad2deg);
-
-        float calcheading(HIL.Vector3 mag)
+        float calcheading(Vector3 mag)
         {
-            HIL.Matrix3 dcm_matrix = new HIL.Matrix3();
+            Matrix3 dcm_matrix = new Matrix3();
             dcm_matrix.from_euler(0, 0, 0);
 
             // Tilt compensated magnetic field Y component:
@@ -156,7 +154,7 @@ namespace MissionPlanner.Wizard
             // 6/4/11 - added constrain to keep bad values from ruining DCM Yaw - Jason S.
             double heading = constrain_float((float) Math.Atan2(-headY, headX), -3.15f, 3.15f);
 
-            return (float) ((heading*rad2deg) + 360)%360f;
+            return (float) ((heading*MathHelper.rad2deg) + 360)%360f;
         }
 
         float constrain_float(float input, float min, float max)
@@ -183,13 +181,13 @@ namespace MissionPlanner.Wizard
             {
             }
 
-            foreach (Common.Rotation item in Enum.GetValues(typeof (Common.Rotation)))
+            foreach (Rotation item in Enum.GetValues(typeof (Rotation)))
             {
                 // copy them, as we dont want to change the originals
-                HIL.Vector3 northc = new HIL.Vector3(north);
-                HIL.Vector3 eastc = new HIL.Vector3(east);
-                HIL.Vector3 southc = new HIL.Vector3(south);
-                HIL.Vector3 westc = new HIL.Vector3(west);
+                Vector3 northc = new Vector3(north);
+                Vector3 eastc = new Vector3(east);
+                Vector3 southc = new Vector3(south);
+                Vector3 westc = new Vector3(west);
 
                 northc.rotate(item);
                 eastc.rotate(item);

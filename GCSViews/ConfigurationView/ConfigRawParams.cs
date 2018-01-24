@@ -8,8 +8,10 @@ using System.Reflection;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
+using System.Timers;
 using System.Windows.Forms;
 using log4net;
+using Microsoft.Scripting.Utils;
 using MissionPlanner.Controls;
 using MissionPlanner.Utilities;
 
@@ -38,6 +40,11 @@ namespace MissionPlanner.GCSViews.ConfigurationView
         public void Activate()
         {
             startup = true;
+
+            BUT_writePIDS.Enabled = MainV2.comPort.BaseStream.IsOpen;
+            BUT_rerequestparams.Enabled = MainV2.comPort.BaseStream.IsOpen;
+            BUT_reset_params.Enabled = MainV2.comPort.BaseStream.IsOpen;
+            BUT_commitToFlash.Visible = MainV2.DisplayConfiguration.displayParamCommitButton;
 
             CMB_paramfiles.Enabled = false;
             BUT_paramfileload.Enabled = false;
@@ -91,19 +98,22 @@ namespace MissionPlanner.GCSViews.ConfigurationView
                 AddExtension = true,
                 DefaultExt = ".param",
                 RestoreDirectory = true,
-                Filter = "Param List|*.param;*.parm"
+                Filter = ParamFile.FileMask
             })
             {
                 var dr = ofd.ShowDialog();
 
                 if (dr == DialogResult.OK)
                 {
-                    loadparamsfromfile(ofd.FileName);
+                    loadparamsfromfile(ofd.FileName, !MainV2.comPort.BaseStream.IsOpen);
+
+                    if(!MainV2.comPort.BaseStream.IsOpen)
+                        Activate();
                 }
             }
         }
 
-        private void loadparamsfromfile(string fn)
+        private void loadparamsfromfile(string fn, bool offline = false)
         {
             var param2 = ParamFile.loadParamFile(fn);
 
@@ -147,6 +157,13 @@ namespace MissionPlanner.GCSViews.ConfigurationView
                             row.Cells[1].Value = value;
                         break;
                     }
+                }
+
+                if (offline && !set)
+                {
+                    set = true;
+                    MainV2.comPort.MAV.param.Add(new MAVLink.MAVLinkParam(name, double.Parse(value),
+                        MAVLink.MAV_PARAM_TYPE.REAL32));
                 }
 
                 if (set)
@@ -263,14 +280,14 @@ namespace MissionPlanner.GCSViews.ConfigurationView
 
         private void BUT_compare_Click(object sender, EventArgs e)
         {
-            var param2 = new Hashtable();
+            var param2 = new Dictionary<string, double>();
 
             using (var ofd = new OpenFileDialog
             {
                 AddExtension = true,
                 DefaultExt = ".param",
                 RestoreDirectory = true,
-                Filter = "Param List|*.param;*.parm"
+                Filter = ParamFile.FileMask
             })
             {
                 var dr = ofd.ShowDialog();
@@ -337,6 +354,22 @@ namespace MissionPlanner.GCSViews.ConfigurationView
                 var value = (string) Params[e.ColumnIndex, e.RowIndex].Value;
 
                 var newvalue = float.Parse(value.Replace(',', '.'), CultureInfo.InvariantCulture);
+
+                var readonly1 = ParameterMetaDataRepository.GetParameterMetaData(
+                    Params[Command.Index, e.RowIndex].Value.ToString(),
+                    ParameterMetaDataConstants.ReadOnly, MainV2.comPort.MAV.cs.firmware.ToString());
+                if(!String.IsNullOrEmpty(readonly1))
+                {
+                    var readonly2 = bool.Parse(readonly1);
+                    if (readonly2)
+                    {
+                        CustomMessageBox.Show(
+                            Params[Command.Index, e.RowIndex].Value +
+                            " is marked as ReadOnly, and should not be changed", "ReadOnly",
+                            MessageBoxButtons.OK);
+
+                    }
+                }
 
                 if (ParameterMetaDataRepository.GetParameterRange(Params[Command.Index, e.RowIndex].Value.ToString(),
                     ref min, ref max, MainV2.comPort.MAV.cs.firmware.ToString()))
@@ -470,7 +503,7 @@ namespace MissionPlanner.GCSViews.ConfigurationView
             {
                 if (paramfiles == null)
                 {
-                    paramfiles = GitHubContent.GetDirContent("diydrones", "ardupilot", "/Tools/Frame_params/", ".param");
+                    paramfiles = GitHubContent.GetDirContent("ardupilot", "ardupilot", "/Tools/Frame_params/", ".param");
                 }
 
                 BeginInvoke((Action) delegate
@@ -579,9 +612,24 @@ namespace MissionPlanner.GCSViews.ConfigurationView
             public float scale;
         }
 
+        private System.Timers.Timer filterTimer = new System.Timers.Timer();
+
         private void txt_search_TextChanged(object sender, EventArgs e)
         {
-            filterList(txt_search.Text);
+            filterTimer.Elapsed -= FilterTimerOnElapsed;
+            filterTimer.Stop();
+            filterTimer.Interval = 500;
+            filterTimer.Elapsed += FilterTimerOnElapsed;
+            filterTimer.Start();
+        }
+
+        private void FilterTimerOnElapsed(object sender, ElapsedEventArgs elapsedEventArgs)
+        {
+            filterTimer.Stop();
+            Invoke((Action) delegate
+            {
+                filterList(txt_search.Text);
+            });
         }
 
         private void Params_CellContentClick(object sender, DataGridViewCellEventArgs e)
@@ -623,6 +671,22 @@ namespace MissionPlanner.GCSViews.ConfigurationView
                     return;
                 }
             }
+        }
+
+        private void BUT_commitToFlash_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                MainV2.comPort.doCommand(MAVLink.MAV_CMD.PREFLIGHT_STORAGE, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+            }
+            catch
+            {
+                CustomMessageBox.Show("Invalid command");
+                return;
+            }
+
+            CustomMessageBox.Show("Parameters committed to non-volatile memory");
+            return;
         }
     }
 }

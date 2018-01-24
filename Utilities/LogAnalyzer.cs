@@ -22,6 +22,12 @@ namespace MissionPlanner.Utilities
 
         public static string CheckLogFile(string FileName)
         {
+            if (Program.WindowsStoreApp)
+            {
+                CustomMessageBox.Show(Strings.Not_available_when_used_as_a_windows_store_app);
+                return "";
+            }
+
             var dir = Settings.GetDataDirectory() + "LogAnalyzer" +
                       Path.DirectorySeparatorChar;
 
@@ -38,13 +44,13 @@ namespace MissionPlanner.Utilities
                 bool gotit = false;
                 if (Environment.Is64BitOperatingSystem)
                 {
-                    gotit = Common.getFilefromNet(
+                    gotit = Download.getFilefromNet(
                         "http://firmware.ardupilot.org/Tools/MissionPlanner/LogAnalyzer/LogAnalyzer64.zip",
                         zip);
                 }
                 else
                 {
-                    gotit = Common.getFilefromNet(
+                    gotit = Download.getFilefromNet(
                         "http://firmware.ardupilot.org/Tools/MissionPlanner/LogAnalyzer/LogAnalyzer.zip",
                         zip);
                 }
@@ -59,8 +65,11 @@ namespace MissionPlanner.Utilities
                 }
                 else
                 {
-                    CustomMessageBox.Show("Failed to download LogAnalyzer");
-                    return "";
+                    if (!File.Exists(runner))
+                    {
+                        CustomMessageBox.Show("Failed to download LogAnalyzer");
+                        return "";
+                    }
                 }
 
             }
