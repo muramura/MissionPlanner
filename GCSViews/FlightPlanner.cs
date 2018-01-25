@@ -4103,7 +4103,7 @@ namespace MissionPlanner.GCSViews
                 } catch (Exception ex)
                 {
                     log.Error(ex);
-                    CustomMessageBox.Show("Invalid Lat/Lng, please fix",Strings.ERROR);
+                    CustomMessageBox.Show("Invalid Lat/Long, please fix",Strings.ERROR);
                 }
             }
 
@@ -7099,6 +7099,11 @@ Column 1: Field type (RALLY is the only one at the moment -- may have RALLY_LAND
             GridPlugin grid = new GridPlugin();
             grid.Host = new PluginHost();
             grid.but_Click(sender, e);
+        }
+        
+        private void Commands_RowsRemoved(object sender, DataGridViewRowsRemovedEventArgs e)
+        {
+            writeKML();
         }
     }
 }

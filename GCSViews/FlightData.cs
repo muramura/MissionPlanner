@@ -141,7 +141,7 @@ namespace MissionPlanner.GCSViews
             try
             {
                 if (hud1 != null)
-                    Settings.Instance["FlightSplitter"] = hud1.Width.ToString();
+                    Settings.Instance["FlightSplitter"] = MainH.SplitterDistance.ToString();
             }
             catch
             {
@@ -666,6 +666,9 @@ namespace MissionPlanner.GCSViews
 
             if (Settings.Instance["CHK_autopan"] != null)
                 CHK_autopan.Checked = Settings.Instance.GetBoolean("CHK_autopan");
+
+            if (Settings.Instance.ContainsKey("HudSwap") && Settings.Instance["HudSwap"] == "true")
+                SwapHud1AndMap();
 
             if (Settings.Instance.ContainsKey("FlightSplitter"))
             {
@@ -3790,7 +3793,7 @@ namespace MissionPlanner.GCSViews
 
         private void BUT_matlab_Click(object sender, EventArgs e)
         {
-            MatLab.ProcessLog();
+            MatLabForms.ProcessLog();
         }
 
         private void BUT_mountmode_Click(object sender, EventArgs e)
@@ -4200,11 +4203,13 @@ namespace MissionPlanner.GCSViews
 
             if (this.SubMainLeft.Panel1.Controls.Contains(hud1))
             {
+                Settings.Instance["HudSwap"] = "true";
                 MainH.Panel2.Controls.Add(hud1);
                 SubMainLeft.Panel1.Controls.Add(tableMap);
             }
             else
             {
+                Settings.Instance["HudSwap"] = "false";
                 MainH.Panel2.Controls.Add(tableMap);
                 SubMainLeft.Panel1.Controls.Add(hud1);
             }
