@@ -126,6 +126,7 @@ public class TestPlugin : Plugin
         return true;
     }
 
+    [Obsolete]
     public override bool Loop()
     {
         UTM.Telemetry(clientid);
