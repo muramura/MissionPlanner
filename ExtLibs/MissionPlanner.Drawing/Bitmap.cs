@@ -77,13 +77,13 @@ namespace System.Drawing
             nativeSkBitmap = image.nativeSkBitmap.Copy();
         }
 
-        public static Bitmap FromFile(string filename)
+        public static new Bitmap FromFile(string filename)
         {
             using (var ms = File.OpenRead(filename))
                 return FromStream(ms);
         }
 
-        public static Bitmap FromStream(Stream ms)
+        public static new Bitmap FromStream(Stream ms)
         {
             MemoryStream ms2 = new MemoryStream();
             ms.CopyTo(ms2);
@@ -134,7 +134,7 @@ namespace System.Drawing
         {
         }
 
-        public PixelFormat PixelFormat
+        public new PixelFormat PixelFormat
         {
             get
             {
@@ -208,7 +208,7 @@ namespace System.Drawing
             return LockBits(rectangle, readWrite, SKColorType.Rgba8888);
         }
 
-        public void RotateFlip(RotateFlipType rotateNoneFlipX)
+        public new void RotateFlip(RotateFlipType rotateNoneFlipX)
         {
             //
         }
