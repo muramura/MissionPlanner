@@ -844,8 +844,8 @@ namespace MissionPlanner.GCSViews
                     mBorders.InnerMarker = m;
                     try
                     {
-                        mBorders.wprad =
-                            (int) (Settings.Instance.GetFloat("TXT_WPRad") / CurrentState.multiplierdist);
+                        mBorders.wprad = 
+                            (Settings.Instance.GetFloat("TXT_WPRad") / CurrentState.multiplierdist);
                     }
                     catch
                     {
