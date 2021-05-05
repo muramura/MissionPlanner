@@ -83,6 +83,7 @@ namespace Org.BouncyCastle.Tsp
             return new PkiStatusInfo(new DerSequence(v));
         }
 
+        [Obsolete]
         public TimeStampResponse Generate(
             TimeStampRequest request,
             BigInteger serialNumber,
@@ -106,6 +107,7 @@ namespace Org.BouncyCastle.Tsp
          * @throws TSPException
          * </p>
          */
+        [Obsolete]
         public TimeStampResponse Generate(
             TimeStampRequest request,
             BigInteger serialNumber,
@@ -181,6 +183,7 @@ namespace Org.BouncyCastle.Tsp
          * @return a TimeStampResponse with a failInfoField and optional statusString
          * @throws TSPException in case the response could not be created
          */
+        [Obsolete]
         public TimeStampResponse GenerateFailResponse(PkiStatus status, int failInfoField, string statusString)
         {
             this.status = status;

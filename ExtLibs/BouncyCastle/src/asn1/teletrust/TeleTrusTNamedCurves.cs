@@ -27,6 +27,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP160r1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("E95E4A5F737059DC60DF5991D45029409E60FC09", 16);
@@ -52,6 +53,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP160t1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("E95E4A5F737059DC60DF5991D45029409E60FC09", 16);
@@ -78,6 +80,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP192r1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("C302F41D932A36CDA7A3462F9E9E916B5BE8F1029AC4ACC1", 16);
@@ -103,6 +106,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP192t1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("C302F41D932A36CDA7A3462F9E9E916B5BE8F1029AC4ACC1", 16);
@@ -129,6 +133,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP224r1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("D7C134AA264366862A18302575D0FB98D116BC4B6DDEBCA3A5A7939F", 16);
@@ -154,6 +159,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP224t1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("D7C134AA264366862A18302575D0FB98D116BC4B6DDEBCA3A5A7939F", 16);
@@ -180,6 +186,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP256r1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("A9FB57DBA1EEA9BC3E660A909D838D718C397AA3B561A6F7901E0E82974856A7", 16);
@@ -205,6 +212,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP256t1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("A9FB57DBA1EEA9BC3E660A909D838D718C397AA3B561A6F7901E0E82974856A7", 16);
@@ -231,6 +239,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP320r1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("D35E472036BC4FB7E13C785ED201E065F98FCFA5B68F12A32D482EC7EE8658E98691555B44C59311", 16);
@@ -256,6 +265,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP320t1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("D35E472036BC4FB7E13C785ED201E065F98FCFA5B68F12A32D482EC7EE8658E98691555B44C59311", 16);
@@ -282,6 +292,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP384r1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("8CB91E82A3386D280F5D6F7E50E641DF152F7109ED5456B31F166E6CAC0425A7CF3AB6AF6B7FC3103B883202E9046565", 16);
@@ -307,6 +318,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP384t1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("8CB91E82A3386D280F5D6F7E50E641DF152F7109ED5456B31F166E6CAC0425A7CF3AB6AF6B7FC3103B883202E9046565", 16);
@@ -333,6 +345,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP512r1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("AADD9DB8DBE9C48B3FD4E6AE33C9FC07CB308DB3B3C9D20ED6639CCA70330870553E5C414CA92619418661197FAC10471DB1D381085DDADDB58796829CA90069", 16);
@@ -358,6 +371,7 @@ namespace Org.BouncyCastle.Asn1.TeleTrust
 
             internal static readonly X9ECParametersHolder Instance = new BrainpoolP512t1Holder();
 
+            [System.Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("AADD9DB8DBE9C48B3FD4E6AE33C9FC07CB308DB3B3C9D20ED6639CCA70330870553E5C414CA92619418661197FAC10471DB1D381085DDADDB58796829CA90069", 16);

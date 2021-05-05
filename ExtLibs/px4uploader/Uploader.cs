@@ -225,6 +225,7 @@ namespace px4uploader
             return true;
         }
 
+        [Obsolete]
         public bool verifyotp()
         {
             if (skipotp)

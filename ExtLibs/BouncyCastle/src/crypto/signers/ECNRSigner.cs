@@ -68,6 +68,7 @@ namespace Org.BouncyCastle.Crypto.Signers
          * @param digest  the digest to be signed.
          * @exception DataLengthException if the digest is longer than the key allows
          */
+        [Obsolete]
         public virtual BigInteger[] GenerateSignature(
             byte[] message)
         {
@@ -134,6 +135,7 @@ namespace Org.BouncyCastle.Crypto.Signers
          * @param s       the s value of the signature.
          * @exception DataLengthException if the digest is longer than the key allows
          */
+        [Obsolete]
         public virtual bool VerifySignature(
             byte[]		message,
             BigInteger	r,

@@ -25,7 +25,8 @@ namespace Xamarin.Forms.Platform.WinForms
 			base.OnLoad(e);
 		}
 
-		public void LoadApplication(Application application)
+        [Obsolete]
+        public void LoadApplication(Application application)
 		{
 			if (application == null)
 				throw new ArgumentNullException("application");
@@ -37,7 +38,8 @@ namespace Xamarin.Forms.Platform.WinForms
 			Application.Current.SendStart();
 		}
 
-		void OnApplicationPropertyChanged(object sender, PropertyChangedEventArgs e)
+        [Obsolete]
+        void OnApplicationPropertyChanged(object sender, PropertyChangedEventArgs e)
 		{
 			if (e.PropertyName == "MainPage")
 				Platform.SetPage(Application.Current.MainPage);

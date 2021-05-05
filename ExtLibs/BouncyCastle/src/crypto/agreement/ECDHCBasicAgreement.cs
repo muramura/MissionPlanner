@@ -47,6 +47,7 @@ namespace Org.BouncyCastle.Crypto.Agreement
             return (privKey.Parameters.Curve.FieldSize + 7) / 8;
         }
 
+        [Obsolete]
         public virtual BigInteger CalculateAgreement(
             ICipherParameters pubKey)
         {

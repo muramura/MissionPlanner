@@ -15,6 +15,7 @@ namespace Org.BouncyCastle.Asn1.Crmf
         private readonly int tagNo;
         private readonly Asn1Encodable obj;
 
+        [Obsolete]
         private ProofOfPossession(Asn1TaggedObject tagged)
         {
             tagNo = tagged.TagNo;
@@ -35,6 +36,7 @@ namespace Org.BouncyCastle.Asn1.Crmf
             }
         }
 
+        [Obsolete]
         public static ProofOfPossession GetInstance(object obj)
         {
             if (obj is ProofOfPossession)

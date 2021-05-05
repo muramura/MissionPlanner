@@ -57,7 +57,8 @@ namespace Org.BouncyCastle.Asn1.Cms
 			get { return (id is Asn1TaggedObject); }
 		}
 
-		public Asn1Encodable ID
+        [Obsolete]
+        public Asn1Encodable ID
         {
             get
             {

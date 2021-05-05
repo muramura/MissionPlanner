@@ -51,23 +51,26 @@ namespace Org.BouncyCastle.X509
 			tbsGen.SetIssuer(issuer);
 		}
 
-		public void SetThisUpdate(
+        [Obsolete]
+        public void SetThisUpdate(
 			DateTime date)
 		{
 			tbsGen.SetThisUpdate(new Time(date));
 		}
 
-		public void SetNextUpdate(
+        [Obsolete]
+        public void SetNextUpdate(
 			DateTime date)
 		{
 			tbsGen.SetNextUpdate(new Time(date));
 		}
 
-		/**
+        /**
 		* Reason being as indicated by CrlReason, i.e. CrlReason.KeyCompromise
 		* or 0 if CrlReason is not to be used
 		**/
-		public void AddCrlEntry(
+        [Obsolete]
+        public void AddCrlEntry(
 			BigInteger	userCertificate,
 			DateTime	revocationDate,
 			int			reason)
@@ -75,12 +78,13 @@ namespace Org.BouncyCastle.X509
 			tbsGen.AddCrlEntry(new DerInteger(userCertificate), new Time(revocationDate), reason);
 		}
 
-		/**
+        /**
 		* Add a CRL entry with an Invalidity Date extension as well as a CrlReason extension.
 		* Reason being as indicated by CrlReason, i.e. CrlReason.KeyCompromise
 		* or 0 if CrlReason is not to be used
 		**/
-		public void AddCrlEntry(
+        [Obsolete]
+        public void AddCrlEntry(
 			BigInteger	userCertificate,
 			DateTime	revocationDate,
 			int			reason,
@@ -89,10 +93,11 @@ namespace Org.BouncyCastle.X509
 			tbsGen.AddCrlEntry(new DerInteger(userCertificate), new Time(revocationDate), reason, new DerGeneralizedTime(invalidityDate));
 		}
 
-		/**
+        /**
 		* Add a CRL entry with extensions.
 		**/
-		public void AddCrlEntry(
+        [Obsolete]
+        public void AddCrlEntry(
 			BigInteger		userCertificate,
 			DateTime		revocationDate,
 			X509Extensions	extensions)

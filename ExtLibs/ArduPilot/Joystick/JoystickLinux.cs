@@ -374,6 +374,7 @@ namespace MissionPlanner.Joystick
                 .ToList();
         }
 
+        [Obsolete]
         public static new JoystickBase getJoyStickByName(string name)
         {
             var joysticklist = getDevices();

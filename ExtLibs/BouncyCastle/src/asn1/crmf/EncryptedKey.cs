@@ -10,6 +10,7 @@ namespace Org.BouncyCastle.Asn1.Crmf
         private readonly EnvelopedData envelopedData;
         private readonly EncryptedValue encryptedValue;
 
+        [Obsolete]
         public static EncryptedKey GetInstance(object o)
         {
             if (o is EncryptedKey)

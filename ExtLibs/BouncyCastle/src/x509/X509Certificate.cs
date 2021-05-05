@@ -122,40 +122,44 @@ namespace Org.BouncyCastle.X509
 			get { return c; }
 		}
 
-		/// <summary>
+        /// <summary>
         /// Return true if the current time is within the start and end times nominated on the certificate.
         /// </summary>
         /// <returns>true id certificate is valid for the current time.</returns>
+        [Obsolete]
         public virtual bool IsValidNow
         {
 			get { return IsValid(DateTime.UtcNow); }
         }
 
-		/// <summary>
+        /// <summary>
         /// Return true if the nominated time is within the start and end times nominated on the certificate.
         /// </summary>
         /// <param name="time">The time to test validity against.</param>
         /// <returns>True if certificate is valid for nominated time.</returns>
+        [Obsolete]
         public virtual bool IsValid(
 			DateTime time)
         {
             return time.CompareTo(NotBefore) >= 0 && time.CompareTo(NotAfter) <= 0;
         }
 
-		/// <summary>
-		/// Checks if the current date is within certificate's validity period.
-		/// </summary>
-		public virtual void CheckValidity()
+        /// <summary>
+        /// Checks if the current date is within certificate's validity period.
+        /// </summary>
+        [Obsolete]
+        public virtual void CheckValidity()
 		{
 			this.CheckValidity(DateTime.UtcNow);
 		}
 
-		/// <summary>
-		/// Checks if the given date is within certificate's validity period.
-		/// </summary>
-		/// <exception cref="CertificateExpiredException">if the certificate is expired by given date</exception>
-		/// <exception cref="CertificateNotYetValidException">if the certificate is not yet valid on given date</exception>
-		public virtual void CheckValidity(
+        /// <summary>
+        /// Checks if the given date is within certificate's validity period.
+        /// </summary>
+        /// <exception cref="CertificateExpiredException">if the certificate is expired by given date</exception>
+        /// <exception cref="CertificateNotYetValidException">if the certificate is not yet valid on given date</exception>
+        [Obsolete]
+        public virtual void CheckValidity(
 			DateTime time)
 		{
 			if (time.CompareTo(NotAfter) > 0)
@@ -202,19 +206,21 @@ namespace Org.BouncyCastle.X509
             get { return c.Subject; }
         }
 
-		/// <summary>
-		/// The time that this certificate is valid from.
-		/// </summary>
-		/// <returns>A DateTime object representing that time in the local time zone.</returns>
-		public virtual DateTime NotBefore
+        /// <summary>
+        /// The time that this certificate is valid from.
+        /// </summary>
+        /// <returns>A DateTime object representing that time in the local time zone.</returns>
+        [Obsolete]
+        public virtual DateTime NotBefore
 		{
 			get { return c.StartDate.ToDateTime(); }
 		}
 
-		/// <summary>
+        /// <summary>
         /// The time that this certificate is valid up to.
         /// </summary>
         /// <returns>A DateTime object representing that time in the local time zone.</returns>
+        [Obsolete]
         public virtual DateTime NotAfter
         {
 			get { return c.EndDate.ToDateTime(); }
@@ -381,11 +387,12 @@ namespace Org.BouncyCastle.X509
 				:	null;
 		}
 
-		/// <summary>
-		/// Get the public key of the subject of the certificate.
-		/// </summary>
-		/// <returns>The public key parameters.</returns>
-		public virtual AsymmetricKeyParameter GetPublicKey()
+        /// <summary>
+        /// Get the public key of the subject of the certificate.
+        /// </summary>
+        /// <returns>The public key parameters.</returns>
+        [Obsolete]
+        public virtual AsymmetricKeyParameter GetPublicKey()
 		{
 			return PublicKeyFactory.CreateKey(c.SubjectPublicKeyInfo);
 		}
@@ -430,26 +437,27 @@ namespace Org.BouncyCastle.X509
 			return hashValue;
 		}
 
-//		public void setBagAttribute(
-//			DERObjectIdentifier oid,
-//			DEREncodable        attribute)
-//		{
-//			pkcs12Attributes.put(oid, attribute);
-//			pkcs12Ordering.addElement(oid);
-//		}
-//
-//		public DEREncodable getBagAttribute(
-//			DERObjectIdentifier oid)
-//		{
-//			return (DEREncodable)pkcs12Attributes.get(oid);
-//		}
-//
-//		public Enumeration getBagAttributeKeys()
-//		{
-//			return pkcs12Ordering.elements();
-//		}
+        //		public void setBagAttribute(
+        //			DERObjectIdentifier oid,
+        //			DEREncodable        attribute)
+        //		{
+        //			pkcs12Attributes.put(oid, attribute);
+        //			pkcs12Ordering.addElement(oid);
+        //		}
+        //
+        //		public DEREncodable getBagAttribute(
+        //			DERObjectIdentifier oid)
+        //		{
+        //			return (DEREncodable)pkcs12Attributes.get(oid);
+        //		}
+        //
+        //		public Enumeration getBagAttributeKeys()
+        //		{
+        //			return pkcs12Ordering.elements();
+        //		}
 
-		public override string ToString()
+        [Obsolete]
+        public override string ToString()
 		{
 			StringBuilder buf = new StringBuilder();
 			string nl = Platform.NewLine;

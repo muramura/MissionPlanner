@@ -74,6 +74,7 @@ namespace Org.BouncyCastle.Asn1.Cms
          * @exception ArgumentException if the object held by the
          *          tagged object cannot be converted.
          */
+        [Obsolete]
         public static EnvelopedData GetInstance(
             Asn1TaggedObject	obj,
             bool				explicitly)

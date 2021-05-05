@@ -89,6 +89,7 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
                 this.pubKey = pubKey;
             }
 
+            [Obsolete]
             public override void AddSessionInfo(
                 byte[]			sessionInfo,
 				SecureRandom	random)
@@ -98,6 +99,7 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
                 this.data = ProcessSessionInfo(encryptedSessionInfo);
             }
 
+            [Obsolete]
             private byte[] EncryptSessionInfo(byte[] sessionInfo, SecureRandom random)
             {
                 if (pubKey.Algorithm != PublicKeyAlgorithmTag.ECDH)

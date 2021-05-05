@@ -12,6 +12,7 @@ namespace Org.BouncyCastle.Asn1.Utilities
         {
         }
 
+        [Obsolete]
         public static void Main(string[] args)
         {
             FileStream fIn = File.OpenRead(args[0]);

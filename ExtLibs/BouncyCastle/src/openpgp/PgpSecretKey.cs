@@ -611,6 +611,7 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
         /// Conversion of the passphrase characters to bytes is performed using Convert.ToByte(), which is
         /// the historical behaviour of the library (1.7 and earlier).
         /// </remarks>
+        [Obsolete]
         public PgpPrivateKey ExtractPrivateKey(char[] passPhrase)
         {
             return DoExtractPrivateKey(PgpUtilities.EncodePassPhrase(passPhrase, false), true);
@@ -620,6 +621,7 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
         /// <remarks>
         /// The passphrase is encoded to bytes using UTF8 (Encoding.UTF8.GetBytes).
         /// </remarks>
+        [Obsolete]
         public PgpPrivateKey ExtractPrivateKeyUtf8(char[] passPhrase)
         {
             return DoExtractPrivateKey(PgpUtilities.EncodePassPhrase(passPhrase, true), true);
@@ -629,11 +631,13 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
         /// <remarks>
         /// Allows the caller to handle the encoding of the passphrase to bytes.
         /// </remarks>
+        [Obsolete]
         public PgpPrivateKey ExtractPrivateKeyRaw(byte[] rawPassPhrase)
         {
             return DoExtractPrivateKey(rawPassPhrase, false);
         }
 
+        [Obsolete]
         internal PgpPrivateKey DoExtractPrivateKey(byte[] rawPassPhrase, bool clearPassPhrase)
         {
             if (IsPrivateKeyEmpty)
@@ -698,6 +702,7 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
             }
         }
 
+        [Obsolete]
         private ECPrivateKeyParameters GetECKey(string algorithm, BcpgInputStream bcpgIn)
         {
             ECPublicBcpgKey ecdsaPub = (ECPublicBcpgKey)secret.PublicKeyPacket.Key;

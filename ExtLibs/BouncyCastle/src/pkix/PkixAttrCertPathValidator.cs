@@ -13,7 +13,7 @@ namespace Org.BouncyCastle.Pkix
 	public class PkixAttrCertPathValidator
 	//    extends CertPathValidatorSpi
 	{
-		/**
+        /**
 		* Validates an attribute certificate with the given certificate path.
 		* 
 		* <p>
@@ -37,7 +37,8 @@ namespace Org.BouncyCastle.Pkix
 		*             inappropriate for this validator.
 		* @throws CertPathValidatorException if the verification fails.
 		*/
-		public virtual PkixCertPathValidatorResult Validate(
+        [Obsolete]
+        public virtual PkixCertPathValidatorResult Validate(
 			PkixCertPath	certPath,
 			PkixParameters	pkixParams)
 		{

@@ -77,6 +77,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             this.mServerCredentials = (TlsEncryptionCredentials)serverCredentials;
         }
 
+        [Obsolete]
         public override byte[] GenerateServerKeyExchange()
         {
             this.mPskIdentityHint = mPskIdentityManager.GetHint();
@@ -112,6 +113,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return buf.ToArray();
         }
 
+        [Obsolete]
         public override void ProcessServerCertificate(Certificate serverCertificate)
         {
             if (mKeyExchange != KeyExchangeAlgorithm.RSA_PSK)
@@ -157,6 +159,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             }
         }
 
+        [Obsolete]
         public override void ProcessServerKeyExchange(Stream input)
         {
             this.mPskIdentityHint = TlsUtilities.ReadOpaque16(input);
@@ -187,6 +190,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             throw new TlsFatalAlert(AlertDescription.internal_error);
         }
 
+        [Obsolete]
         public override void GenerateClientKeyExchange(Stream output)
         {
             if (mPskIdentityHint == null)
@@ -227,6 +231,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             }
         }
 
+        [Obsolete]
         public override void ProcessClientKeyExchange(Stream input)
         {
             byte[] psk_identity = TlsUtilities.ReadOpaque16(input);
@@ -267,6 +272,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             }
         }
 
+        [Obsolete]
         public override byte[] GeneratePremasterSecret()
         {
             byte[] other_secret = GenerateOtherSecret(mPsk.Length);
@@ -281,6 +287,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return buf.ToArray();
         }
 
+        [Obsolete]
         protected virtual byte[] GenerateOtherSecret(int pskLength)
         {
             if (this.mKeyExchange == KeyExchangeAlgorithm.DHE_PSK)

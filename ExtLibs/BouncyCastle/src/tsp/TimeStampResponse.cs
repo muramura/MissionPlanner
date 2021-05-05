@@ -18,7 +18,8 @@ namespace Org.BouncyCastle.Tsp
 		private TimeStampResp	resp;
 		private TimeStampToken	timeStampToken;
 
-		public TimeStampResponse(
+        [Obsolete]
+        public TimeStampResponse(
 			TimeStampResp resp)
 		{
 			this.resp = resp;
@@ -29,27 +30,29 @@ namespace Org.BouncyCastle.Tsp
 			}
 		}
 
-		/**
+        /**
 		* Create a TimeStampResponse from a byte array containing an ASN.1 encoding.
 		*
 		* @param resp the byte array containing the encoded response.
 		* @throws TspException if the response is malformed.
 		* @throws IOException if the byte array doesn't represent an ASN.1 encoding.
 		*/
-		public TimeStampResponse(
+        [Obsolete]
+        public TimeStampResponse(
 			byte[] resp)
 			: this(readTimeStampResp(new Asn1InputStream(resp)))
 		{
 		}
 
-		/**
+        /**
 		 * Create a TimeStampResponse from an input stream containing an ASN.1 encoding.
 		 *
 		 * @param input the input stream containing the encoded response.
 		 * @throws TspException if the response is malformed.
 		 * @throws IOException if the stream doesn't represent an ASN.1 encoding.
 		 */
-		public TimeStampResponse(
+        [Obsolete]
+        public TimeStampResponse(
 			Stream input)
 			: this(readTimeStampResp(new Asn1InputStream(input)))
 		{

@@ -33,6 +33,7 @@ namespace Org.BouncyCastle.Asn1.X509
          * and 2049 a UTCTime object is Generated, otherwise a GeneralizedTime
          * is used.
          */
+        [Obsolete]
         public Time(
             DateTime date)
         {
@@ -67,6 +68,7 @@ namespace Org.BouncyCastle.Asn1.X509
             throw new ArgumentException("unknown object in factory: " + Platform.GetTypeName(obj), "obj");
         }
 
+        [Obsolete]
         public string GetTime()
         {
             if (time is DerUtcTime)
@@ -81,6 +83,7 @@ namespace Org.BouncyCastle.Asn1.X509
         /// Return our time as DateTime.
         /// </summary>
         /// <returns>A date time.</returns>
+        [Obsolete]
         public DateTime ToDateTime()
         {
             try
@@ -114,6 +117,7 @@ namespace Org.BouncyCastle.Asn1.X509
             return time;
         }
 
+        [Obsolete]
         public override string ToString()
         {
             return GetTime();

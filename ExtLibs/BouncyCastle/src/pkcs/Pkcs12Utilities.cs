@@ -27,7 +27,7 @@ namespace Org.BouncyCastle.Pkcs
 			return pfx.GetEncoded(Asn1Encodable.Der);
 		}
 
-		/**
+        /**
 		* Re-encode the PKCS#12 structure to definite length encoding at the inner layer
 		* as well, recomputing the MAC accordingly.
 		*
@@ -36,7 +36,8 @@ namespace Org.BouncyCastle.Pkcs
 		* @return a byte array representing the DER encoding of the PFX structure.
 		* @throws IOException on parsing, encoding errors.
 		*/
-		public static byte[] ConvertToDefiniteLength(
+        [Obsolete]
+        public static byte[] ConvertToDefiniteLength(
 			byte[]	berPkcs12File,
 			char[]	passwd)
 		{

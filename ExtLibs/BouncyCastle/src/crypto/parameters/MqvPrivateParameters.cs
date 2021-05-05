@@ -8,15 +8,17 @@ namespace Org.BouncyCastle.Crypto.Parameters
 		private readonly ECPrivateKeyParameters staticPrivateKey;
 		private readonly ECPrivateKeyParameters ephemeralPrivateKey;
 		private readonly ECPublicKeyParameters ephemeralPublicKey;
-		
-		public MqvPrivateParameters(
+
+        [Obsolete]
+        public MqvPrivateParameters(
 			ECPrivateKeyParameters	staticPrivateKey,
 			ECPrivateKeyParameters	ephemeralPrivateKey)
 			: this(staticPrivateKey, ephemeralPrivateKey, null)
 		{
 		}
 
-		public MqvPrivateParameters(
+        [Obsolete]
+        public MqvPrivateParameters(
 			ECPrivateKeyParameters	staticPrivateKey,
 			ECPrivateKeyParameters	ephemeralPrivateKey,
 			ECPublicKeyParameters	ephemeralPublicKey)

@@ -21,18 +21,21 @@ namespace Org.BouncyCastle.Cms
 		private AlgorithmIdentifier	encAlg;
         private Asn1Set				unprotectedAttributes;
 
-		public CmsEnvelopedData(
+        [Obsolete]
+        public CmsEnvelopedData(
             byte[] envelopedData)
             : this(CmsUtilities.ReadContentInfo(envelopedData))
         {
         }
 
+        [Obsolete]
         public CmsEnvelopedData(
             Stream envelopedData)
             : this(CmsUtilities.ReadContentInfo(envelopedData))
         {
         }
 
+        [Obsolete]
         public CmsEnvelopedData(
             ContentInfo contentInfo)
         {

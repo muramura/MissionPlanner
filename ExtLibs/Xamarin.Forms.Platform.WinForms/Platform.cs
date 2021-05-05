@@ -139,8 +139,8 @@ namespace Xamarin.Forms.Platform.WinForms
 			return System.Drawing.ContentAlignment.MiddleCenter;
 		}
 
-
-		internal void SetPage(Page newRoot)
+        [Obsolete]
+        internal void SetPage(Page newRoot)
 		{
 			if (newRoot == null)
 				throw new ArgumentNullException(nameof(newRoot));

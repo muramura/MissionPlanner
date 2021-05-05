@@ -52,13 +52,15 @@ namespace Org.BouncyCastle.Cms
 		private Asn1.Cms.AttributeTable		_unprotectedAttributes;
 		private bool						_attrNotRead;
 
-		public CmsEnvelopedDataParser(
+        [Obsolete]
+        public CmsEnvelopedDataParser(
 			byte[] envelopedData)
 			: this(new MemoryStream(envelopedData, false))
 		{
 		}
 
-		public CmsEnvelopedDataParser(
+        [Obsolete]
+        public CmsEnvelopedDataParser(
 			Stream envelopedData)
 			: base(envelopedData)
 		{

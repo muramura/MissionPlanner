@@ -313,11 +313,13 @@ namespace Org.BouncyCastle.Math.EC
                 : Curve.CreateRawPoint(RawXCoord, RawYCoord.Multiply(scale), RawZCoords, IsCompressed);
         }
 
+        [Obsolete]
         public override bool Equals(object obj)
         {
             return Equals(obj as ECPoint);
         }
 
+        [Obsolete]
         public virtual bool Equals(ECPoint other)
         {
             if (this == other)

@@ -44,6 +44,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             this.mServerCredentials = (TlsEncryptionCredentials)serverCredentials;
         }
 
+        [Obsolete]
         public override void ProcessServerCertificate(Certificate serverCertificate)
         {
             if (serverCertificate.IsEmpty)

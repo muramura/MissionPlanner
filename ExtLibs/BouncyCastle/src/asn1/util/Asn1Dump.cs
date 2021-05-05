@@ -24,6 +24,7 @@ namespace Org.BouncyCastle.Asn1.Utilities
          *
          * @param obj the Asn1Object to be dumped out.
          */
+        [Obsolete]
         private static void AsString(
             string			indent,
             bool			verbose,
@@ -254,6 +255,7 @@ namespace Org.BouncyCastle.Asn1.Utilities
             }
         }
 
+        [Obsolete]
         private static string outputApplicationSpecific(
             string					type,
             string					indent,
@@ -304,6 +306,7 @@ namespace Org.BouncyCastle.Asn1.Utilities
          * @param obj the Asn1Encodable to be dumped out.
          * @return  the resulting string.
          */
+        [Obsolete]
         public static string DumpAsString(
             Asn1Encodable obj)
         {
@@ -317,6 +320,7 @@ namespace Org.BouncyCastle.Asn1.Utilities
          * @param verbose  if true, dump out the contents of octet and bit strings.
          * @return  the resulting string.
          */
+        [Obsolete]
         public static string DumpAsString(
             Asn1Encodable	obj,
             bool			verbose)

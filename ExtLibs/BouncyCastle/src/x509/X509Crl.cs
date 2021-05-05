@@ -133,12 +133,14 @@ namespace Org.BouncyCastle.X509
 			get { return c.Issuer; }
 		}
 
-		public virtual DateTime ThisUpdate
+        [Obsolete]
+        public virtual DateTime ThisUpdate
 		{
 			get { return c.ThisUpdate.ToDateTime(); }
 		}
 
-		public virtual DateTimeObject NextUpdate
+        [Obsolete]
+        public virtual DateTimeObject NextUpdate
 		{
 			get
 			{
@@ -251,12 +253,13 @@ namespace Org.BouncyCastle.X509
 			return c.GetHashCode();
 		}
 
-		/**
+        /**
 		 * Returns a string representation of this CRL.
 		 *
 		 * @return a string representation of this CRL.
 		 */
-		public override string ToString()
+        [Obsolete]
+        public override string ToString()
 		{
 			StringBuilder buf = new StringBuilder();
 			string nl = Platform.NewLine;

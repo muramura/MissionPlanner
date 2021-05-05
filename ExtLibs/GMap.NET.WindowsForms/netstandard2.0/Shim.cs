@@ -15,6 +15,7 @@ public class GdiGraphics : Graphics
     {
     }
 
+    [Obsolete]
     public GdiGraphics(IntPtr handle, int width, int height) : base(handle, width, height)
     {
     }
@@ -30,6 +31,7 @@ public class SkiaGraphics : Graphics
     {
     }
 
+    [Obsolete]
     public SkiaGraphics(IntPtr handle, int width, int height) : base(handle, width, height)
     {
     }

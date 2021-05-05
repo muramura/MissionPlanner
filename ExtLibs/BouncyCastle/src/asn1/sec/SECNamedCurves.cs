@@ -43,6 +43,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp112r1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = (2^128 - 3) / 76439
@@ -72,6 +73,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp112r2Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = (2^128 - 3) / 76439
@@ -101,6 +103,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp128r1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^128 - 2^97 - 1
@@ -130,6 +133,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp128r2Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^128 - 2^97 - 1
@@ -159,6 +163,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp160k1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^160 - 2^32 - 2^14 - 2^12 - 2^9 - 2^8 - 2^7 - 2^3 - 2^2 - 1
@@ -201,6 +206,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp160r1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^160 - 2^31 - 1
@@ -230,6 +236,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp160r2Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^160 - 2^32 - 2^14 - 2^12 - 2^9 - 2^8 - 2^7 - 2^3 - 2^2 - 1
@@ -259,6 +266,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp192k1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^192 - 2^32 - 2^12 - 2^8 - 2^7 - 2^6 - 2^3 - 1
@@ -301,6 +309,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp192r1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^192 - 2^64 - 1
@@ -330,6 +339,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp224k1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^224 - 2^32 - 2^12 - 2^11 - 2^9 - 2^7 - 2^4 - 2 - 1
@@ -372,6 +382,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp224r1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^224 - 2^96 + 1
@@ -401,6 +412,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp256k1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^256 - 2^32 - 2^9 - 2^8 - 2^7 - 2^6 - 2^4 - 1
@@ -443,6 +455,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp256r1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^224 (2^32 - 1) + 2^192 + 2^96 - 1
@@ -472,6 +485,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp384r1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^384 - 2^128 - 2^96 + 2^32 - 1
@@ -501,6 +515,7 @@ namespace Org.BouncyCastle.Asn1.Sec
 
             internal static readonly X9ECParametersHolder Instance = new Secp521r1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 // p = 2^521 - 1
@@ -533,6 +548,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int m = 113;
             private const int k = 9;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = FromHex("003088250CA6E7C7FE649CE85820F7");
@@ -563,6 +579,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int m = 113;
             private const int k = 9;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = FromHex("00689918DBEC7E5A0DD6DFC0AA55C7");
@@ -595,6 +612,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int k2 = 3;
             private const int k3 = 8;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = FromHex("07A11B09A76B562144418FF3FF8C2570B8");
@@ -627,6 +645,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int k2 = 3;
             private const int k3 = 8;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = FromHex("03E5A88919D7CAFCBF415F07C2176573B2");
@@ -659,6 +678,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int k2 = 6;
             private const int k3 = 7;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = BigInteger.One;
@@ -691,6 +711,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int k2 = 6;
             private const int k3 = 7;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = FromHex("07B6882CAAEFA84F9554FF8428BD88E246D2782AE2");
@@ -723,6 +744,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int k2 = 6;
             private const int k3 = 7;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = BigInteger.One;
@@ -753,6 +775,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int m = 193;
             private const int k = 15;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = FromHex("0017858FEB7A98975169E171F77B4087DE098AC8A911DF7B01");
@@ -783,6 +806,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int m = 193;
             private const int k = 15;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = FromHex("0163F35A5137C2CE3EA6ED8667190B0BC43ECD69977702709B");
@@ -813,6 +837,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int m = 233;
             private const int k = 74;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = BigInteger.Zero;
@@ -843,6 +868,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int m = 233;
             private const int k = 74;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = BigInteger.One;
@@ -873,6 +899,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int m = 239;
             private const int k = 158;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = BigInteger.Zero;
@@ -905,6 +932,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int k2 = 7;
             private const int k3 = 12;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = BigInteger.Zero;
@@ -937,6 +965,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int k2 = 7;
             private const int k3 = 12;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = BigInteger.One;
@@ -967,6 +996,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int m = 409;
             private const int k = 87;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = BigInteger.Zero;
@@ -997,6 +1027,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int m = 409;
             private const int k = 87;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = BigInteger.One;
@@ -1029,6 +1060,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int k2 = 5;
             private const int k3 = 10;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = BigInteger.Zero;
@@ -1061,6 +1093,7 @@ namespace Org.BouncyCastle.Asn1.Sec
             private const int k2 = 5;
             private const int k3 = 10;
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger a = BigInteger.One;

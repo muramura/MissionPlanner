@@ -27,7 +27,7 @@ namespace Org.BouncyCastle.Asn1.Cms
             this.mPublicKey = DerBitString.GetInstance(seq[1]);
         }
 
-		/**
+        /**
          * return an OriginatorPublicKey object from a tagged object.
          *
          * @param obj the tagged object holding the object we want.
@@ -36,6 +36,7 @@ namespace Org.BouncyCastle.Asn1.Cms
          * @exception ArgumentException if the object held by the
          *          tagged object cannot be converted.
          */
+        [Obsolete]
         public static OriginatorPublicKey GetInstance(
             Asn1TaggedObject	obj,
             bool				explicitly)

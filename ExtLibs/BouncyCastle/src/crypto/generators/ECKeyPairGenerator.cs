@@ -39,6 +39,7 @@ namespace Org.BouncyCastle.Crypto.Generators
             this.algorithm = ECKeyParameters.VerifyAlgorithmName(algorithm);
         }
 
+        [Obsolete]
         public void Init(
             KeyGenerationParameters parameters)
         {
@@ -95,6 +96,7 @@ namespace Org.BouncyCastle.Crypto.Generators
          * Given the domain parameters this routine generates an EC key
          * pair in accordance with X9.62 section 5.2.1 pages 26, 27.
          */
+        [Obsolete]
         public AsymmetricCipherKeyPair GenerateKeyPair()
         {
             BigInteger n = parameters.N;
@@ -145,6 +147,7 @@ namespace Org.BouncyCastle.Crypto.Generators
             return ecP;
         }
 
+        [Obsolete]
         internal static ECPublicKeyParameters GetCorrespondingPublicKey(
             ECPrivateKeyParameters privKey)
         {

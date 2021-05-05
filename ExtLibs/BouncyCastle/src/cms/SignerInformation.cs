@@ -39,7 +39,8 @@ namespace Org.BouncyCastle.Cms
 		private Asn1.Cms.AttributeTable	unsignedAttributeTable;
 		private readonly bool isCounterSignature;
 
-		internal SignerInformation(
+        [Obsolete]
+        internal SignerInformation(
 			SignerInfo			info,
 			DerObjectIdentifier	contentType,
 			CmsProcessable		content,
@@ -213,11 +214,12 @@ namespace Org.BouncyCastle.Cms
 			return (byte[]) signature.Clone();
 		}
 
-		/**
+        /**
 		* Return a SignerInformationStore containing the counter signatures attached to this
 		* signer. If no counter signatures are present an empty store is returned.
 		*/
-		public SignerInformationStore GetCounterSignatures()
+        [Obsolete]
+        public SignerInformationStore GetCounterSignatures()
 		{
 			// TODO There are several checks implied by the RFC3852 comments that are missing
 
@@ -591,13 +593,14 @@ namespace Org.BouncyCastle.Cms
 			return DoVerify(pubKey);
 		}
 
-		/**
+        /**
 		* verify that the given certificate successfully handles and confirms
 		* the signature associated with this signer and, if a signingTime
 		* attribute is available, that the certificate was valid at the time the
 		* signature was generated.
 		*/
-		public bool Verify(
+        [Obsolete]
+        public bool Verify(
 			X509Certificate cert)
 		{
 			Asn1.Cms.Time signingTime = GetSigningTime();
@@ -675,7 +678,7 @@ namespace Org.BouncyCastle.Cms
 			}
 		}
 
-		/**
+        /**
 		* Return a signer information object with the passed in unsigned
 		* attributes replacing the ones that are current associated with
 		* the object passed in.
@@ -684,7 +687,8 @@ namespace Org.BouncyCastle.Cms
 		* @param unsignedAttributes the unsigned attributes to add.
 		* @return a copy of the original SignerInformationObject with the changed attributes.
 		*/
-		public static SignerInformation ReplaceUnsignedAttributes(
+        [Obsolete]
+        public static SignerInformation ReplaceUnsignedAttributes(
 			SignerInformation		signerInformation,
 			Asn1.Cms.AttributeTable	unsignedAttributes)
 		{
@@ -709,7 +713,7 @@ namespace Org.BouncyCastle.Cms
 				null);
 		}
 
-		/**
+        /**
 		 * Return a signer information object with passed in SignerInformationStore representing counter
 		 * signatures attached as an unsigned attribute.
 		 *
@@ -717,7 +721,8 @@ namespace Org.BouncyCastle.Cms
 		 * @param counterSigners signer info objects carrying counter signature.
 		 * @return a copy of the original SignerInformationObject with the changed attributes.
 		 */
-		public static SignerInformation AddCounterSigners(
+        [Obsolete]
+        public static SignerInformation AddCounterSigners(
 			SignerInformation		signerInformation,
 			SignerInformationStore	counterSigners)
 		{

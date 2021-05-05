@@ -61,13 +61,15 @@ namespace Org.BouncyCastle.Cms
 		private bool authAttrNotRead;
 		private bool unauthAttrNotRead;
 
-		public CmsAuthenticatedDataParser(
+        [Obsolete]
+        public CmsAuthenticatedDataParser(
 			byte[] envelopedData)
 			: this(new MemoryStream(envelopedData, false))
 		{
 		}
 
-		public CmsAuthenticatedDataParser(
+        [Obsolete]
+        public CmsAuthenticatedDataParser(
 			Stream envelopedData)
 			: base(envelopedData)
 		{

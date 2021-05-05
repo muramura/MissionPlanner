@@ -22,19 +22,22 @@ namespace Org.BouncyCastle.Cms
 		private Asn1Set unauthAttrs;
 		private byte[] mac;
 
-		public CmsAuthenticatedData(
+        [Obsolete]
+        public CmsAuthenticatedData(
 			byte[] authData)
 			: this(CmsUtilities.ReadContentInfo(authData))
 		{
 		}
 
-		public CmsAuthenticatedData(
+        [Obsolete]
+        public CmsAuthenticatedData(
 			Stream authData)
 			: this(CmsUtilities.ReadContentInfo(authData))
 		{
 		}
 
-		public CmsAuthenticatedData(
+        [Obsolete]
+        public CmsAuthenticatedData(
 			ContentInfo contentInfo)
 		{
 			this.contentInfo = contentInfo;

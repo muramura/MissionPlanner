@@ -505,6 +505,7 @@ namespace MissionPlanner.Utilities
                 .GetJsonAsync<JArray>().Result;
         }
 
+        [Obsolete]
         public async void StartMQTT(string clientid, string cafile, string clientcertfile, string clientprivate, string clientprivatepassword = "")
         {
             var ca = new X509Certificate(cafile, "");

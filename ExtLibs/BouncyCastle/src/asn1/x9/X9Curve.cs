@@ -55,6 +55,7 @@ namespace Org.BouncyCastle.Asn1.X9
         {
         }
 
+        [Obsolete]
         public X9Curve(
             X9FieldID		fieldID,
             BigInteger      order,

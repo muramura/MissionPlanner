@@ -40,6 +40,7 @@ namespace Org.BouncyCastle.Asn1.Cmp
         private int tagNo;
         private Asn1Encodable body;
 
+        [Obsolete]
         public static PkiBody GetInstance(object obj)
         {
             if (obj is PkiBody)
@@ -51,6 +52,7 @@ namespace Org.BouncyCastle.Asn1.Cmp
             throw new ArgumentException("Invalid object: " + Platform.GetTypeName(obj), "obj");
         }
 
+        [Obsolete]
         private PkiBody(Asn1TaggedObject tagged)
         {
             tagNo = tagged.TagNo;
@@ -62,6 +64,7 @@ namespace Org.BouncyCastle.Asn1.Cmp
          * @param type one of the TYPE_* constants
          * @param content message content
          */
+        [Obsolete]
         public PkiBody(
             int type,
             Asn1Encodable content)
@@ -70,6 +73,7 @@ namespace Org.BouncyCastle.Asn1.Cmp
             body = GetBodyForType(type, content);
         }
 
+        [Obsolete]
         private static Asn1Encodable GetBodyForType(
             int type,
             Asn1Encodable o)

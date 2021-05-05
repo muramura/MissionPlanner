@@ -172,7 +172,8 @@ namespace Org.BouncyCastle.X509.Store
 			set { subjectPublicKeyAlgID = value; }
 		}
 
-		public virtual bool Match(
+        [Obsolete]
+        public virtual bool Match(
 			object obj)
 		{
 			X509Certificate c = obj as X509Certificate;
@@ -321,7 +322,8 @@ namespace Org.BouncyCastle.X509.Store
 			return s == null ? null : new HashSet(s);
 		}
 
-		private static SubjectPublicKeyInfo GetSubjectPublicKey(
+        [Obsolete]
+        private static SubjectPublicKeyInfo GetSubjectPublicKey(
 			X509Certificate c)
 		{
 			return SubjectPublicKeyInfoFactory.CreateSubjectPublicKeyInfo(c.GetPublicKey());

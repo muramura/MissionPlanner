@@ -150,11 +150,12 @@ namespace Org.BouncyCastle.Cms
 			get { return signedData.Version.Value.IntValue; }
 		}
 
-		/**
+        /**
 		* return the collection of signers that are associated with the
 		* signatures for the message.
 		*/
-		public SignerInformationStore GetSignerInfos()
+        [Obsolete]
+        public SignerInformationStore GetSignerInfos()
 		{
 			if (signerInfoStore == null)
 			{
@@ -184,7 +185,7 @@ namespace Org.BouncyCastle.Cms
 			return signerInfoStore;
 		}
 
-		/**
+        /**
 		 * return a X509Store containing the attribute certificates, if any, contained
 		 * in this message.
 		 *
@@ -193,7 +194,8 @@ namespace Org.BouncyCastle.Cms
 		 * @exception NoSuchStoreException if the store type isn't available.
 		 * @exception CmsException if a general exception prevents creation of the X509Store
 		 */
-		public IX509Store GetAttributeCertificates(
+        [Obsolete]
+        public IX509Store GetAttributeCertificates(
 			string type)
 		{
 			if (attrCertStore == null)
@@ -344,7 +346,7 @@ namespace Org.BouncyCastle.Cms
 			return cms;
 		}
 
-		/**
+        /**
 		* Replace the certificate and CRL information associated with this
 		* CmsSignedData object with the new one passed in.
 		*
@@ -354,7 +356,8 @@ namespace Org.BouncyCastle.Cms
 		* @return a new signed data object.
 		* @exception CmsException if there is an error processing the stores
 		*/
-		public static CmsSignedData ReplaceCertificatesAndCrls(
+        [Obsolete]
+        public static CmsSignedData ReplaceCertificatesAndCrls(
 			CmsSignedData	signedData,
 			IX509Store		x509Certs,
 			IX509Store		x509Crls,

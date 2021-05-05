@@ -110,6 +110,7 @@ namespace Org.BouncyCastle.Crypto.Signers
          * the passed in message (for standard GOST3410 the message should be
          * a GOST3411 hash of the real message to be verified).
          */
+        [Obsolete]
         public virtual bool VerifySignature(
             byte[]		message,
             BigInteger	r,

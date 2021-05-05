@@ -32,6 +32,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             this.mServerCredentials = (TlsSignerCredentials)serverCredentials;
         }
 
+        [Obsolete]
         public override byte[] GenerateServerKeyExchange()
         {
             DigestInputBuffer buf = new DigestInputBuffer();
@@ -62,6 +63,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return buf.ToArray();
         }
 
+        [Obsolete]
         public override void ProcessServerKeyExchange(Stream input)
         {
             SecurityParameters securityParameters = mContext.SecurityParameters;

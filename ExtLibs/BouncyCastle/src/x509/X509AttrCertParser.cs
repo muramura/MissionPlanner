@@ -19,7 +19,8 @@ namespace Org.BouncyCastle.X509
 		private int		sDataObjectCount;
 		private Stream	currentStream;
 
-		private IX509AttributeCertificate ReadDerCertificate(
+        [Obsolete]
+        private IX509AttributeCertificate ReadDerCertificate(
 			Asn1InputStream dIn)
 		{
 			Asn1Sequence seq = (Asn1Sequence)dIn.ReadObject();
@@ -39,7 +40,8 @@ namespace Org.BouncyCastle.X509
 			return new X509V2AttributeCertificate(AttributeCertificate.GetInstance(seq));
 		}
 
-		private IX509AttributeCertificate GetCertificate()
+        [Obsolete]
+        private IX509AttributeCertificate GetCertificate()
 		{
 			if (sData != null)
 			{
@@ -61,7 +63,8 @@ namespace Org.BouncyCastle.X509
 			return null;
 		}
 
-		private IX509AttributeCertificate ReadPemCertificate(
+        [Obsolete]
+        private IX509AttributeCertificate ReadPemCertificate(
 			Stream inStream)
 		{
 			Asn1Sequence seq = PemAttrCertParser.ReadPemObject(inStream);
@@ -72,31 +75,34 @@ namespace Org.BouncyCastle.X509
 				:	new X509V2AttributeCertificate(AttributeCertificate.GetInstance(seq));
 		}
 
-		/// <summary>
-		/// Create loading data from byte array.
-		/// </summary>
-		/// <param name="input"></param>
-		public IX509AttributeCertificate ReadAttrCert(
+        /// <summary>
+        /// Create loading data from byte array.
+        /// </summary>
+        /// <param name="input"></param>
+        [Obsolete]
+        public IX509AttributeCertificate ReadAttrCert(
 			byte[] input)
 		{
 			return ReadAttrCert(new MemoryStream(input, false));
 		}
 
-		/// <summary>
-		/// Create loading data from byte array.
-		/// </summary>
-		/// <param name="input"></param>
-		public ICollection ReadAttrCerts(
+        /// <summary>
+        /// Create loading data from byte array.
+        /// </summary>
+        /// <param name="input"></param>
+        [Obsolete]
+        public ICollection ReadAttrCerts(
 			byte[] input)
 		{
 			return ReadAttrCerts(new MemoryStream(input, false));
 		}
 
-		/**
+        /**
 		 * Generates a certificate object and initializes it with the data
 		 * read from the input stream inStream.
 		 */
-		public IX509AttributeCertificate ReadAttrCert(
+        [Obsolete]
+        public IX509AttributeCertificate ReadAttrCert(
 			Stream inStream)
 		{
 			if (inStream == null)
@@ -152,11 +158,12 @@ namespace Org.BouncyCastle.X509
 			}
 		}
 
-		/**
+        /**
 		 * Returns a (possibly empty) collection view of the certificates
 		 * read from the given input stream inStream.
 		 */
-		public ICollection ReadAttrCerts(
+        [Obsolete]
+        public ICollection ReadAttrCerts(
 			Stream inStream)
 		{
 			IX509AttributeCertificate attrCert;

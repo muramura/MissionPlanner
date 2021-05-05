@@ -29,7 +29,8 @@ namespace Org.BouncyCastle.Ocsp
 			return new RespID(data.ResponderID);
 		}
 
-		public DateTime ProducedAt
+        [Obsolete]
+        public DateTime ProducedAt
 		{
 			get { return data.ProducedAt.ToDateTime(); }
 		}

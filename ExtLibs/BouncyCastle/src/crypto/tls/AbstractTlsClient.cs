@@ -58,6 +58,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             }
         }
 
+        [Obsolete]
         protected virtual void CheckForUnexpectedServerExtension(IDictionary serverExtensions, int extensionType)
         {
             byte[] extensionData = TlsUtilities.GetExtensionData(serverExtensions, extensionType);
@@ -107,6 +108,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             get { return false; }
         }
 
+        [Obsolete]
         public virtual IDictionary GetClientExtensions()
         {
             IDictionary clientExtensions = null;

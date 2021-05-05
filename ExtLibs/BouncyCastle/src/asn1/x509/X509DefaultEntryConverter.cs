@@ -18,6 +18,7 @@ namespace Org.BouncyCastle.Asn1.X509
          * @param value the value associated with it
          * @return the ASN.1 equivalent for the string value.
          */
+        [Obsolete]
         public override Asn1Object GetConvertedValue(
             DerObjectIdentifier	oid,
             string				value)

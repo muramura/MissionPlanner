@@ -68,21 +68,23 @@ namespace Org.BouncyCastle.X509
 			tbsGen.SetIssuer(issuer);
 		}
 
-		/// <summary>
-		/// Set the date that this certificate is to be valid from.
-		/// </summary>
-		/// <param name="date"/>
-		public void SetNotBefore(
+        /// <summary>
+        /// Set the date that this certificate is to be valid from.
+        /// </summary>
+        /// <param name="date"/>
+        [Obsolete]
+        public void SetNotBefore(
 			DateTime date)
 		{
 			tbsGen.SetStartDate(new Time(date));
 		}
 
-		/// <summary>
-		/// Set the date after which this certificate will no longer be valid.
-		/// </summary>
-		/// <param name="date"/>
-		public void SetNotAfter(
+        /// <summary>
+        /// Set the date after which this certificate will no longer be valid.
+        /// </summary>
+        /// <param name="date"/>
+        [Obsolete]
+        public void SetNotAfter(
 			DateTime date)
 		{
 			tbsGen.SetEndDate(new Time(date));

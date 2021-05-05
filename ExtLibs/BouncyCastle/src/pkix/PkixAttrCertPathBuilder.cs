@@ -12,13 +12,14 @@ namespace Org.BouncyCastle.Pkix
 {
 	public class PkixAttrCertPathBuilder
 	{
-		/**
+        /**
 		* Build and validate a CertPath using the given parameter.
 		*
 		* @param params PKIXBuilderParameters object containing all information to
 		*            build the CertPath
 		*/
-		public virtual PkixCertPathBuilderResult Build(
+        [Obsolete]
+        public virtual PkixCertPathBuilderResult Build(
 			PkixBuilderParameters pkixParams)
 		{
 			// search target certificates
@@ -109,7 +110,8 @@ namespace Org.BouncyCastle.Pkix
 
 		private Exception certPathException;
 
-		private PkixCertPathBuilderResult Build(
+        [Obsolete]
+        private PkixCertPathBuilderResult Build(
 			IX509AttributeCertificate	attrCert,
 			X509Certificate				tbvCert,
 			PkixBuilderParameters		pkixParams,

@@ -37,19 +37,22 @@ namespace Org.BouncyCastle.X509
 			}
 		}
 
-		public X509V2AttributeCertificate(
+        [Obsolete]
+        public X509V2AttributeCertificate(
 			Stream encIn)
 			: this(GetObject(encIn))
 		{
 		}
 
-		public X509V2AttributeCertificate(
+        [Obsolete]
+        public X509V2AttributeCertificate(
 			byte[] encoded)
 			: this(new MemoryStream(encoded, false))
 		{
 		}
 
-		internal X509V2AttributeCertificate(
+        [Obsolete]
+        internal X509V2AttributeCertificate(
 			AttributeCertificate cert)
 		{
 			this.cert = cert;

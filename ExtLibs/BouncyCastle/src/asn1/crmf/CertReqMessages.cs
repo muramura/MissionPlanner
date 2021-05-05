@@ -30,6 +30,7 @@ namespace Org.BouncyCastle.Asn1.Crmf
             content = new DerSequence(msgs);
         }
 
+        [Obsolete]
         public virtual CertReqMsg[] ToCertReqMsgArray()
         {
             CertReqMsg[] result = new CertReqMsg[content.Count];

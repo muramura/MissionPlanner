@@ -42,6 +42,7 @@ namespace Org.BouncyCastle.Asn1.X9
             return Arrays.Clone(encoding.GetOctets());
         }
 
+        [System.Obsolete]
         public ECPoint Point
         {
             get

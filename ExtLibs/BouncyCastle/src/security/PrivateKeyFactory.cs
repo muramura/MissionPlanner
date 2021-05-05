@@ -25,6 +25,7 @@ namespace Org.BouncyCastle.Security
         {
         }
 
+        [Obsolete]
         public static AsymmetricKeyParameter CreateKey(
             byte[] privateKeyInfoData)
         {
@@ -33,6 +34,7 @@ namespace Org.BouncyCastle.Security
                     Asn1Object.FromByteArray(privateKeyInfoData)));
         }
 
+        [Obsolete]
         public static AsymmetricKeyParameter CreateKey(
             Stream inStr)
         {
@@ -41,6 +43,7 @@ namespace Org.BouncyCastle.Security
                     Asn1Object.FromStream(inStr)));
         }
 
+        [Obsolete]
         public static AsymmetricKeyParameter CreateKey(
             PrivateKeyInfo keyInfo)
         {
@@ -176,6 +179,7 @@ namespace Org.BouncyCastle.Security
             }
         }
 
+        [Obsolete]
         public static AsymmetricKeyParameter DecryptKey(
             char[]					passPhrase,
             EncryptedPrivateKeyInfo	encInfo)
@@ -183,6 +187,7 @@ namespace Org.BouncyCastle.Security
             return CreateKey(PrivateKeyInfoFactory.CreatePrivateKeyInfo(passPhrase, encInfo));
         }
 
+        [Obsolete]
         public static AsymmetricKeyParameter DecryptKey(
             char[]	passPhrase,
             byte[]	encryptedPrivateKeyInfoData)
@@ -190,6 +195,7 @@ namespace Org.BouncyCastle.Security
             return DecryptKey(passPhrase, Asn1Object.FromByteArray(encryptedPrivateKeyInfoData));
         }
 
+        [Obsolete]
         public static AsymmetricKeyParameter DecryptKey(
             char[]	passPhrase,
             Stream	encryptedPrivateKeyInfoStream)
@@ -197,6 +203,7 @@ namespace Org.BouncyCastle.Security
             return DecryptKey(passPhrase, Asn1Object.FromStream(encryptedPrivateKeyInfoStream));
         }
 
+        [Obsolete]
         private static AsymmetricKeyParameter DecryptKey(
             char[]		passPhrase,
             Asn1Object	asn1Object)
@@ -204,6 +211,7 @@ namespace Org.BouncyCastle.Security
             return DecryptKey(passPhrase, EncryptedPrivateKeyInfo.GetInstance(asn1Object));
         }
 
+        [Obsolete]
         public static byte[] EncryptKey(
             DerObjectIdentifier		algorithm,
             char[]					passPhrase,
@@ -215,6 +223,7 @@ namespace Org.BouncyCastle.Security
                 algorithm, passPhrase, salt, iterationCount, key).GetEncoded();
         }
 
+        [Obsolete]
         public static byte[] EncryptKey(
             string					algorithm,
             char[]					passPhrase,

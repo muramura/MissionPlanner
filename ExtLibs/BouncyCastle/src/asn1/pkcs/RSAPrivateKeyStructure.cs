@@ -18,6 +18,7 @@ namespace Org.BouncyCastle.Asn1.Pkcs
         private readonly BigInteger	exponent2;
         private readonly BigInteger	coefficient;
 
+        [Obsolete]
         public static RsaPrivateKeyStructure GetInstance(Asn1TaggedObject obj, bool isExplicit)
         {
             return GetInstance(Asn1Sequence.GetInstance(obj, isExplicit));

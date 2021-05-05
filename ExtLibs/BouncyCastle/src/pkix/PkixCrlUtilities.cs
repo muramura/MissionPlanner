@@ -9,7 +9,8 @@ namespace Org.BouncyCastle.Pkix
 {
 	public class PkixCrlUtilities
 	{
-		public virtual ISet FindCrls(X509CrlStoreSelector crlselect, PkixParameters paramsPkix, DateTime currentDate)
+        [Obsolete]
+        public virtual ISet FindCrls(X509CrlStoreSelector crlselect, PkixParameters paramsPkix, DateTime currentDate)
 		{
 			ISet initialSet = new HashSet();
 

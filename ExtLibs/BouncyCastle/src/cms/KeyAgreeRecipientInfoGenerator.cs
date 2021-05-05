@@ -49,7 +49,8 @@ namespace Org.BouncyCastle.Cms
 			set { this.senderKeyPair = value; }
 		}
 
-		public RecipientInfo Generate(KeyParameter contentEncryptionKey, SecureRandom random)
+        [Obsolete]
+        public RecipientInfo Generate(KeyParameter contentEncryptionKey, SecureRandom random)
 		{
 			byte[] keyBytes = contentEncryptionKey.GetKey();
 

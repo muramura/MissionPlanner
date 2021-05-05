@@ -468,6 +468,7 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
         /// <summary>The public key contained in the object.</summary>
         /// <returns>A lightweight public key.</returns>
         /// <exception cref="PgpException">If the key algorithm is not recognised.</exception>
+        [Obsolete]
         public AsymmetricKeyParameter GetKey()
         {
             try
@@ -504,6 +505,7 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
             }
         }
 
+        [Obsolete]
         private ECPublicKeyParameters GetECKey(string algorithm)
         {
             ECPublicBcpgKey ecK = (ECPublicBcpgKey)publicPk.Key;

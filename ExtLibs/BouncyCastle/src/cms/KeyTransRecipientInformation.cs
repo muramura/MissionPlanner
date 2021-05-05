@@ -22,7 +22,8 @@ namespace Org.BouncyCastle.Cms
     {
         private KeyTransRecipientInfo info;
 
-		internal KeyTransRecipientInformation(
+        [Obsolete]
+        internal KeyTransRecipientInformation(
 			KeyTransRecipientInfo	info,
 			CmsSecureReadable		secureReadable)
 			: base(info.KeyEncryptionAlgorithm, secureReadable)

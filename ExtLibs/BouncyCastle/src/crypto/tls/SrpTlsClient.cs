@@ -47,6 +47,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             };
         }
 
+        [Obsolete]
         public override IDictionary GetClientExtensions()
         {
             IDictionary clientExtensions = TlsExtensionsUtilities.EnsureExtensionsInitialised(base.GetClientExtensions());
@@ -54,6 +55,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return clientExtensions;
         }
 
+        [Obsolete]
         public override void ProcessServerExtensions(IDictionary serverExtensions)
         {
             if (!TlsUtilities.HasExpectedEmptyExtensionData(serverExtensions, ExtensionType.srp,

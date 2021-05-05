@@ -20,7 +20,8 @@ namespace Org.BouncyCastle.Asn1.Cms.Ecc
 			this.addedukm = addedukm;
 		}
 
-		private MQVuserKeyingMaterial(
+        [Obsolete]
+        private MQVuserKeyingMaterial(
 			Asn1Sequence seq)
 		{
 			// TODO Check seq has either 1 or 2 elements
@@ -34,7 +35,7 @@ namespace Org.BouncyCastle.Asn1.Cms.Ecc
 			}
 		}
 
-		/**
+        /**
 		 * return an AuthEnvelopedData object from a tagged object.
 		 *
 		 * @param obj      the tagged object holding the object we want.
@@ -43,20 +44,22 @@ namespace Org.BouncyCastle.Asn1.Cms.Ecc
 		 * @throws ArgumentException if the object held by the
 		 *                                  tagged object cannot be converted.
 		 */
-		public static MQVuserKeyingMaterial GetInstance(
+        [Obsolete]
+        public static MQVuserKeyingMaterial GetInstance(
 			Asn1TaggedObject	obj,
 			bool				isExplicit)
 		{
 			return GetInstance(Asn1Sequence.GetInstance(obj, isExplicit));
 		}
 
-		/**
+        /**
 		 * return an AuthEnvelopedData object from the given object.
 		 *
 		 * @param obj the object we want converted.
 		 * @throws ArgumentException if the object cannot be converted.
 		 */
-		public static MQVuserKeyingMaterial GetInstance(
+        [Obsolete]
+        public static MQVuserKeyingMaterial GetInstance(
 			object	obj)
 		{
 			if (obj == null || obj is MQVuserKeyingMaterial)

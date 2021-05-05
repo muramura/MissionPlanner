@@ -9,6 +9,7 @@ namespace Org.BouncyCastle.Asn1.Crmf
         private readonly ProofOfPossession popo;
         private readonly Asn1Sequence regInfo;
 
+        [Obsolete]
         private CertReqMsg(Asn1Sequence seq)
         {
             certReq = CertRequest.GetInstance(seq[0]);
@@ -28,6 +29,7 @@ namespace Org.BouncyCastle.Asn1.Crmf
             }
         }
 
+        [Obsolete]
         public static CertReqMsg GetInstance(object obj)
         {
             if (obj is CertReqMsg)
@@ -39,6 +41,7 @@ namespace Org.BouncyCastle.Asn1.Crmf
             return null;
         }
 
+        [Obsolete]
         public static CertReqMsg GetInstance(
             Asn1TaggedObject obj,
             bool isExplicit)

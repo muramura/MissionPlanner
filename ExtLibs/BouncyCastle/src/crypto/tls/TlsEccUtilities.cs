@@ -109,6 +109,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return IsSupportedNamedCurve(namedCurve) ? CurveNames[namedCurve - 1] : null;
         }
 
+        [Obsolete]
         public static ECDomainParameters GetParametersForNamedCurve(int namedCurve)
         {
             string curveName = GetNameOfNamedCurve(namedCurve);
@@ -332,6 +333,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return new BigInteger(1, encoding);
         }
 
+        [Obsolete]
         public static ECPoint DeserializeECPoint(byte[] ecPointFormats, ECCurve curve, byte[] encoding)
         {
             if (encoding == null || encoding.Length < 1)
@@ -378,6 +380,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return curve.DecodePoint(encoding);
         }
 
+        [Obsolete]
         public static ECPublicKeyParameters DeserializeECPublicKey(byte[] ecPointFormats, ECDomainParameters curve_params,
             byte[] encoding)
         {
@@ -392,6 +395,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             }
         }
 
+        [Obsolete]
         public static byte[] CalculateECDHBasicAgreement(ECPublicKeyParameters publicKey, ECPrivateKeyParameters privateKey)
         {
             ECDHBasicAgreement basicAgreement = new ECDHBasicAgreement();
@@ -406,6 +410,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return BigIntegers.AsUnsignedByteArray(basicAgreement.GetFieldSize(), agreementValue);
         }
 
+        [Obsolete]
         public static AsymmetricCipherKeyPair GenerateECKeyPair(SecureRandom random, ECDomainParameters ecParams)
         {
             ECKeyPairGenerator keyPairGenerator = new ECKeyPairGenerator();
@@ -413,6 +418,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return keyPairGenerator.GenerateKeyPair();
         }
 
+        [Obsolete]
         public static ECPrivateKeyParameters GenerateEphemeralClientKeyExchange(SecureRandom random, byte[] ecPointFormats,
             ECDomainParameters ecParams, Stream output)
         {
@@ -425,6 +431,7 @@ namespace Org.BouncyCastle.Crypto.Tls
         }
 
         // TODO Refactor around ServerECDHParams before making this public
+        [Obsolete]
         internal static ECPrivateKeyParameters GenerateEphemeralServerKeyExchange(SecureRandom random, int[] namedCurves,
             byte[] ecPointFormats, Stream output)
         {
@@ -518,6 +525,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return new BigInteger(1, TlsUtilities.ReadOpaque8(input));
         }
 
+        [Obsolete]
         public static ECDomainParameters ReadECParameters(int[] namedCurves, byte[] ecPointFormats, Stream input)
         {
             try

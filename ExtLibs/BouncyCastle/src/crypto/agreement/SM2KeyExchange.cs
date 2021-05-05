@@ -60,6 +60,7 @@ namespace Org.BouncyCastle.Crypto.Agreement
             mW = mECParams.Curve.FieldSize / 2 - 1;
         }
 
+        [Obsolete]
         public virtual byte[] CalculateKey(int kLen, ICipherParameters pubParam)
         {
             SM2KeyExchangePublicParameters otherPub;
@@ -94,6 +95,7 @@ namespace Org.BouncyCastle.Crypto.Agreement
             return rv;
         }
 
+        [Obsolete]
         public virtual byte[][] CalculateKeyWithConfirmation(int kLen, byte[] confirmationTag, ICipherParameters pubParam)
         {
             SM2KeyExchangePublicParameters otherPub;
@@ -142,6 +144,7 @@ namespace Org.BouncyCastle.Crypto.Agreement
             }
         }
 
+        [Obsolete]
         protected virtual ECPoint CalculateU(SM2KeyExchangePublicParameters otherPub)
         {
             ECDomainParameters dp = mStaticKey.Parameters;

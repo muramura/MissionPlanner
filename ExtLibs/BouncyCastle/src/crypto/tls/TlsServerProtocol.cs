@@ -124,6 +124,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             get { return mTlsServer; }
         }
 
+        [Obsolete]
         protected override void HandleHandshakeMessage(byte type, MemoryStream buf)
         {
             switch (type)
@@ -386,6 +387,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             }
         }
 
+        [Obsolete]
         protected override void HandleAlertWarningMessage(byte alertDescription)
         {
             base.HandleAlertWarningMessage(alertDescription);
@@ -421,6 +423,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             } 
         }
 
+        [Obsolete]
         protected virtual void NotifyClientCertificate(Certificate clientCertificate)
         {
             if (mCertificateRequest == null)
@@ -460,6 +463,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             this.mTlsServer.NotifyClientCertificate(clientCertificate);
         }
 
+        [Obsolete]
         protected virtual void ReceiveCertificateMessage(MemoryStream buf)
         {
             Certificate clientCertificate = Certificate.Parse(buf);
@@ -469,6 +473,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             NotifyClientCertificate(clientCertificate);
         }
 
+        [Obsolete]
         protected virtual void ReceiveCertificateVerifyMessage(MemoryStream buf)
         {
             if (mCertificateRequest == null)

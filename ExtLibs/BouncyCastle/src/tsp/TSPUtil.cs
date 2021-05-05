@@ -69,7 +69,7 @@ namespace Org.BouncyCastle.Tsp
         }
 
 
-	    /**
+        /**
 	     * Fetches the signature time-stamp attributes from a SignerInformation object.
 	     * Checks that the MessageImprint for each time-stamp matches the signature field.
 	     * (see RFC 3161 Appendix A).
@@ -78,7 +78,8 @@ namespace Org.BouncyCastle.Tsp
 	     * @return a collection of TimeStampToken objects
 	     * @throws TSPValidationException
 	     */
-		public static ICollection GetSignatureTimestamps(
+        [Obsolete]
+        public static ICollection GetSignatureTimestamps(
 			SignerInformation signerInfo)
 		{
 			IList timestamps = Platform.CreateArrayList();

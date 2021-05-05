@@ -28,6 +28,7 @@ namespace Org.BouncyCastle.Cms
         private KeyAgreeRecipientInfo info;
         private Asn1OctetString       encryptedKey;
 
+        [Obsolete]
         internal static void ReadRecipientInfo(IList infos, KeyAgreeRecipientInfo info,
             CmsSecureReadable secureReadable)
         {
@@ -78,6 +79,7 @@ namespace Org.BouncyCastle.Cms
             this.encryptedKey = encryptedKey;
         }
 
+        [Obsolete]
         private AsymmetricKeyParameter GetSenderPublicKey(
             AsymmetricKeyParameter		receiverPrivateKey,
             OriginatorIdentifierOrKey	originator)
@@ -106,6 +108,7 @@ namespace Org.BouncyCastle.Cms
             return GetPublicKeyFromOriginatorID(origID);
         }
 
+        [Obsolete]
         private AsymmetricKeyParameter GetPublicKeyFromOriginatorPublicKey(
             AsymmetricKeyParameter	receiverPrivateKey,
             OriginatorPublicKey		originatorPublicKey)
@@ -125,6 +128,7 @@ namespace Org.BouncyCastle.Cms
             throw new CmsException("No support for 'originator' as IssuerAndSerialNumber or SubjectKeyIdentifier");
         }
 
+        [Obsolete]
         private KeyParameter CalculateAgreedWrapKey(
             string					wrapAlg,
             AsymmetricKeyParameter	senderPublicKey,
@@ -174,6 +178,7 @@ namespace Org.BouncyCastle.Cms
             return ParameterUtilities.CreateKeyParameter(GetContentAlgorithmName(), sKeyBytes);
         }
 
+        [Obsolete]
         internal KeyParameter GetSessionKey(
             AsymmetricKeyParameter receiverPrivateKey)
         {
@@ -207,6 +212,7 @@ namespace Org.BouncyCastle.Cms
         /**
         * decrypt the content and return an input stream.
         */
+        [Obsolete]
         public override CmsTypedStream GetContentStream(
             ICipherParameters key)
         {

@@ -26,7 +26,8 @@ namespace Org.BouncyCastle.Cms
 		{
 		}
 
-		internal X509Certificate RecipientCert
+        [Obsolete]
+        internal X509Certificate RecipientCert
 		{
 			set
 			{

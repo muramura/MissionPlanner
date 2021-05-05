@@ -23,6 +23,7 @@ namespace Org.BouncyCastle.Asn1.CryptoPro
         internal static readonly IDictionary parameters = Platform.CreateHashtable();
         internal static readonly IDictionary names = Platform.CreateHashtable();
 
+        [Obsolete]
         static ECGost3410NamedCurves()
         {
             BigInteger mod_p = new BigInteger("115792089237316195423570985008687907853269984665640564039457584007913129639319");

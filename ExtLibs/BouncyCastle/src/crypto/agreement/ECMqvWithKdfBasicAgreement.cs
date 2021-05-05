@@ -31,7 +31,8 @@ namespace Org.BouncyCastle.Crypto.Agreement
 			this.kdf = kdf;
 		}
 
-		public override BigInteger CalculateAgreement(
+        [Obsolete]
+        public override BigInteger CalculateAgreement(
 			ICipherParameters pubKey)
 		{
 			// Note that the ec.KeyAgreement class in JCE only uses kdf in one

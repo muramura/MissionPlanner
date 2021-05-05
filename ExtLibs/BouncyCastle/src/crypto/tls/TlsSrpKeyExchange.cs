@@ -92,6 +92,7 @@ namespace Org.BouncyCastle.Crypto.Tls
                 throw new TlsFatalAlert(AlertDescription.unexpected_message);
         }
 
+        [Obsolete]
         public override void ProcessServerCertificate(Certificate serverCertificate)
         {
             if (mTlsSigner == null)

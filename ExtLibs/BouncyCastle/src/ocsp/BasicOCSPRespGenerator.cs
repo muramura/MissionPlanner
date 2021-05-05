@@ -32,7 +32,8 @@ namespace Org.BouncyCastle.Ocsp
 			internal DerGeneralizedTime    nextUpdate;
 			internal X509Extensions        extensions;
 
-			public ResponseObject(
+            [Obsolete]
+            public ResponseObject(
 				CertificateID		certId,
 				CertificateStatus	certStatus,
 				DateTime			thisUpdate,
@@ -41,7 +42,8 @@ namespace Org.BouncyCastle.Ocsp
 			{
 			}
 
-			public ResponseObject(
+            [Obsolete]
+            public ResponseObject(
 				CertificateID		certId,
 				CertificateStatus	certStatus,
 				DateTime			thisUpdate,
@@ -51,7 +53,8 @@ namespace Org.BouncyCastle.Ocsp
 			{
 			}
 
-			private ResponseObject(
+            [Obsolete]
+            private ResponseObject(
 				CertificateID		certId,
 				CertificateStatus	certStatus,
 				DerGeneralizedTime	thisUpdate,
@@ -109,27 +112,29 @@ namespace Org.BouncyCastle.Ocsp
 			this.responderID = new RespID(publicKey);
 		}
 
-		/**
+        /**
 		 * Add a response for a particular Certificate ID.
 		 *
 		 * @param certID certificate ID details
 		 * @param certStatus status of the certificate - null if okay
 		 */
-		public void AddResponse(
+        [Obsolete]
+        public void AddResponse(
 			CertificateID		certID,
 			CertificateStatus	certStatus)
 		{
 			list.Add(new ResponseObject(certID, certStatus, DateTime.UtcNow, null));
 		}
 
-		/**
+        /**
 		 * Add a response for a particular Certificate ID.
 		 *
 		 * @param certID certificate ID details
 		 * @param certStatus status of the certificate - null if okay
 		 * @param singleExtensions optional extensions
 		 */
-		public void AddResponse(
+        [Obsolete]
+        public void AddResponse(
 			CertificateID		certID,
 			CertificateStatus	certStatus,
 			X509Extensions		singleExtensions)
@@ -137,7 +142,7 @@ namespace Org.BouncyCastle.Ocsp
 			list.Add(new ResponseObject(certID, certStatus, DateTime.UtcNow, singleExtensions));
 		}
 
-		/**
+        /**
 		 * Add a response for a particular Certificate ID.
 		 *
 		 * @param certID certificate ID details
@@ -145,7 +150,8 @@ namespace Org.BouncyCastle.Ocsp
 		 * @param certStatus status of the certificate - null if okay
 		 * @param singleExtensions optional extensions
 		 */
-		public void AddResponse(
+        [Obsolete]
+        public void AddResponse(
 			CertificateID		certID,
 			CertificateStatus	certStatus,
 			DateTime			nextUpdate,
@@ -154,7 +160,7 @@ namespace Org.BouncyCastle.Ocsp
 			list.Add(new ResponseObject(certID, certStatus, DateTime.UtcNow, nextUpdate, singleExtensions));
 		}
 
-		/**
+        /**
 		 * Add a response for a particular Certificate ID.
 		 *
 		 * @param certID certificate ID details
@@ -163,7 +169,8 @@ namespace Org.BouncyCastle.Ocsp
 		 * @param certStatus status of the certificate - null if okay
 		 * @param singleExtensions optional extensions
 		 */
-		public void AddResponse(
+        [Obsolete]
+        public void AddResponse(
 			CertificateID		certID,
 			CertificateStatus	certStatus,
 			DateTime			thisUpdate,

@@ -32,6 +32,7 @@ namespace Org.BouncyCastle.Asn1.Anssi
 
             internal static readonly X9ECParametersHolder Instance = new Frp256v1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger p = FromHex("F1FD178C0B3AD58F10126DE8CE42435B3961ADBCABC8CA6DE8FCF353D86E9C03");

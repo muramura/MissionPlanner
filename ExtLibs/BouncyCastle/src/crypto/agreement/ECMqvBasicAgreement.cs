@@ -28,6 +28,7 @@ namespace Org.BouncyCastle.Crypto.Agreement
             return (privParams.StaticPrivateKey.Parameters.Curve.FieldSize + 7) / 8;
         }
 
+        [Obsolete]
         public virtual BigInteger CalculateAgreement(
             ICipherParameters pubKey)
         {
@@ -50,6 +51,7 @@ namespace Org.BouncyCastle.Crypto.Agreement
         }
 
         // The ECMQV Primitive as described in SEC-1, 3.4
+        [Obsolete]
         private static ECPoint CalculateMqvAgreement(
             ECDomainParameters		parameters,
             ECPrivateKeyParameters	d1U,

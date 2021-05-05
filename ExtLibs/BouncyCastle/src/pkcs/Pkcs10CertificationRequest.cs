@@ -311,16 +311,18 @@ namespace Org.BouncyCastle.Pkcs
         /// Get the public key.
         /// </summary>
         /// <returns>The public key.</returns>
+        [Obsolete]
         public AsymmetricKeyParameter GetPublicKey()
 		{
 			return PublicKeyFactory.CreateKey(reqInfo.SubjectPublicKeyInfo);
 		}
 
-		/// <summary>
-		/// Verify Pkcs10 Cert Request is valid.
-		/// </summary>
-		/// <returns>true = valid.</returns>
-		public bool Verify()
+        /// <summary>
+        /// Verify Pkcs10 Cert Request is valid.
+        /// </summary>
+        /// <returns>true = valid.</returns>
+        [Obsolete]
+        public bool Verify()
 		{
 			return Verify(this.GetPublicKey());
 		}

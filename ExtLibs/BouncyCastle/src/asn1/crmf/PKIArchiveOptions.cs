@@ -13,6 +13,7 @@ namespace Org.BouncyCastle.Asn1.Crmf
 
         private readonly Asn1Encodable value;
 
+        [Obsolete]
         public static PkiArchiveOptions GetInstance(object obj)
         {
             if (obj is PkiArchiveOptions)
@@ -24,6 +25,7 @@ namespace Org.BouncyCastle.Asn1.Crmf
             throw new ArgumentException("Invalid object: " + Platform.GetTypeName(obj), "obj");
         }
 
+        [Obsolete]
         private PkiArchiveOptions(Asn1TaggedObject tagged)
         {
             switch (tagged.TagNo)

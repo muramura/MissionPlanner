@@ -47,18 +47,20 @@ namespace Org.BouncyCastle.Ocsp
 			return new UnknownStatus();
 		}
 
-		public DateTime ThisUpdate
+        [Obsolete]
+        public DateTime ThisUpdate
 		{
 			get { return resp.ThisUpdate.ToDateTime(); }
 		}
 
-		/**
+        /**
 		* return the NextUpdate value - note: this is an optional field so may
 		* be returned as null.
 		*
 		* @return nextUpdate, or null if not present.
 		*/
-		public DateTimeObject NextUpdate
+        [Obsolete]
+        public DateTimeObject NextUpdate
 		{
 			get
 			{

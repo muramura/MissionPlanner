@@ -74,10 +74,11 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
 			get { return keyData.KeyId; }
         }
 
-		/// <summary>
-		/// Return the algorithm code for the symmetric algorithm used to encrypt the data.
-		/// </summary>
-		public SymmetricKeyAlgorithmTag GetSymmetricAlgorithm(
+        /// <summary>
+        /// Return the algorithm code for the symmetric algorithm used to encrypt the data.
+        /// </summary>
+        [Obsolete]
+        public SymmetricKeyAlgorithmTag GetSymmetricAlgorithm(
 			PgpPrivateKey privKey)
 		{
 			byte[] sessionData = RecoverSessionData(privKey);
@@ -86,6 +87,7 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
 		}
 
         /// <summary>Return the decrypted data stream for the packet.</summary>
+        [Obsolete]
         public Stream GetDataStream(
             PgpPrivateKey privKey)
         {
@@ -185,6 +187,7 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
             }
 		}
 
+        [Obsolete]
         private byte[] RecoverSessionData(PgpPrivateKey privKey)
 		{
             byte[][] secKeyData = keyData.GetEncSessionKey();

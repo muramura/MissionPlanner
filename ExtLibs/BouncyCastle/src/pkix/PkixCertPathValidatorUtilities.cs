@@ -51,17 +51,18 @@ namespace Org.BouncyCastle.Pkix
 			"aACompromise"
 		};
 
-		/// <summary>
-		/// Search the given Set of TrustAnchor's for one that is the
-		/// issuer of the given X509 certificate.
-		/// </summary>
-		/// <param name="cert">the X509 certificate</param>
-		/// <param name="trustAnchors">a Set of TrustAnchor's</param>
-		/// <returns>the <code>TrustAnchor</code> object if found or
-		/// <code>null</code> if not.
-		/// </returns>
-		/// @exception
-		internal static TrustAnchor FindTrustAnchor(
+        /// <summary>
+        /// Search the given Set of TrustAnchor's for one that is the
+        /// issuer of the given X509 certificate.
+        /// </summary>
+        /// <param name="cert">the X509 certificate</param>
+        /// <param name="trustAnchors">a Set of TrustAnchor's</param>
+        /// <returns>the <code>TrustAnchor</code> object if found or
+        /// <code>null</code> if not.
+        /// </returns>
+        /// @exception
+        [Obsolete]
+        internal static TrustAnchor FindTrustAnchor(
 			X509Certificate	cert,
 			ISet			trustAnchors)
 		{
@@ -143,6 +144,7 @@ namespace Org.BouncyCastle.Pkix
 			return trust;
 		}
 
+        [Obsolete]
         internal static bool IsIssuerTrustAnchor(
             X509Certificate cert,
             ISet trustAnchors)
@@ -505,7 +507,8 @@ namespace Org.BouncyCastle.Pkix
 			return validPolicyTree;
 		}
 
-		internal static void GetCertStatus(
+        [Obsolete]
+        internal static void GetCertStatus(
 			DateTime validDate,
 			X509Crl crl,
 			Object cert,
@@ -570,7 +573,7 @@ namespace Org.BouncyCastle.Pkix
 			}
 		}
 
-		/**
+        /**
 		* Return the next working key inheriting DSA parameters if necessary.
 		* <p>
 		* This methods inherits DSA parameters from the indexed certificate or
@@ -591,7 +594,8 @@ namespace Org.BouncyCastle.Pkix
 		*         <code>index</code> extended with DSA parameters if applicable.
 		* @throws Exception if DSA parameters cannot be inherited.
 		*/
-		internal static AsymmetricKeyParameter GetNextWorkingKey(
+        [Obsolete]
+        internal static AsymmetricKeyParameter GetNextWorkingKey(
 			IList	certs,
 			int		index)
 		{
@@ -639,7 +643,8 @@ namespace Org.BouncyCastle.Pkix
 			throw new PkixCertPathValidatorException("DSA parameters cannot be inherited from previous certificate.");
 		}
 
-		internal static DateTime GetValidCertDateFromValidityModel(
+        [Obsolete]
+        internal static DateTime GetValidCertDateFromValidityModel(
 			PkixParameters	paramsPkix,
 			PkixCertPath	certPath,
 			int				index)
@@ -841,7 +846,7 @@ namespace Org.BouncyCastle.Pkix
 			selector.Issuers = issuers;
 		}
 
-		/**
+        /**
 		 * Fetches complete CRLs according to RFC 3280.
 		 *
 		 * @param dp The distribution point for which the complete CRL
@@ -855,7 +860,8 @@ namespace Org.BouncyCastle.Pkix
 		 * @throws Exception if an exception occurs while picking the CRLs
 		 *             or no CRLs are found.
 		 */
-		internal static ISet GetCompleteCrls(
+        [Obsolete]
+        internal static ISet GetCompleteCrls(
 			DistributionPoint	dp,
 			object				cert,
 			DateTime			currentDate,
@@ -912,7 +918,7 @@ namespace Org.BouncyCastle.Pkix
 			return crls;
 		}
 
-		/**
+        /**
 		 * Fetches delta CRLs according to RFC 3280 section 5.2.4.
 		 *
 		 * @param currentDate The date for which the delta CRLs must be valid.
@@ -922,7 +928,8 @@ namespace Org.BouncyCastle.Pkix
 		 * @throws Exception if an exception occurs while picking the delta
 		 *             CRLs.
 		 */
-		internal static ISet GetDeltaCrls(
+        [Obsolete]
+        internal static ISet GetDeltaCrls(
 			DateTime		currentDate,
 			PkixParameters	paramsPKIX,
 			X509Crl			completeCRL)

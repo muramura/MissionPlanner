@@ -48,10 +48,11 @@ namespace Org.BouncyCastle.Cms
 		{
 		}
 
-		/// <summary>
-		/// Generate an enveloped object that contains a CMS Enveloped Data
-		/// object using the passed in key generator.
-		/// </summary>
+        /// <summary>
+        /// Generate an enveloped object that contains a CMS Enveloped Data
+        /// object using the passed in key generator.
+        /// </summary>
+        [Obsolete]
         private CmsEnvelopedData Generate(
             CmsProcessable		content,
             string				encryptionOid,
@@ -136,7 +137,8 @@ namespace Org.BouncyCastle.Cms
             return new CmsEnvelopedData(contentInfo);
         }
 
-		/// <summary>Generate an enveloped object that contains an CMS Enveloped Data object.</summary>
+        /// <summary>Generate an enveloped object that contains an CMS Enveloped Data object.</summary>
+        [Obsolete]
         public CmsEnvelopedData Generate(
             CmsProcessable	content,
             string			encryptionOid)
@@ -155,7 +157,8 @@ namespace Org.BouncyCastle.Cms
             }
         }
 
-		/// <summary>Generate an enveloped object that contains an CMS Enveloped Data object.</summary>
+        /// <summary>Generate an enveloped object that contains an CMS Enveloped Data object.</summary>
+        [Obsolete]
         public CmsEnvelopedData Generate(
             CmsProcessable  content,
             string          encryptionOid,

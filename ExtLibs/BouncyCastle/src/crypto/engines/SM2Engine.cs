@@ -60,6 +60,7 @@ namespace Org.BouncyCastle.Crypto.Engines
             mCurveLength = (mECParams.Curve.FieldSize + 7) / 8;
         }
 
+        [Obsolete]
         public virtual byte[] ProcessBlock(byte[] input, int inOff, int inLen)
         {
             if (mForEncryption)
@@ -110,6 +111,7 @@ namespace Org.BouncyCastle.Crypto.Engines
             return Arrays.ConcatenateAll(c1, c2, c3);
         }
 
+        [Obsolete]
         private byte[] Decrypt(byte[] input, int inOff, int inLen)
         {
             byte[] c1 = new byte[mCurveLength * 2 + 1];

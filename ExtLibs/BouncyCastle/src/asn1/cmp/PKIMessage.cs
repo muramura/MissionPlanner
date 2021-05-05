@@ -10,6 +10,7 @@ namespace Org.BouncyCastle.Asn1.Cmp
         private readonly DerBitString protection;
         private readonly Asn1Sequence extraCerts;
 
+        [Obsolete]
         private PkiMessage(Asn1Sequence seq)
         {
             header = PkiHeader.GetInstance(seq[0]);
@@ -30,6 +31,7 @@ namespace Org.BouncyCastle.Asn1.Cmp
             }
         }
 
+        [Obsolete]
         public static PkiMessage GetInstance(object obj)
         {
             if (obj is PkiMessage)

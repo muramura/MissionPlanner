@@ -145,9 +145,10 @@ namespace Org.BouncyCastle.Tsp
 			this.tsa = tsa;
 		}
 
-		//------------------------------------------------------------------------------
+        //------------------------------------------------------------------------------
 
-		public TimeStampToken Generate(
+        [Obsolete]
+        public TimeStampToken Generate(
 			TimeStampRequest	request,
 			BigInteger			serialNumber,
 			DateTime			genTime)

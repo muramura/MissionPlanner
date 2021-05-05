@@ -54,14 +54,15 @@ namespace Org.BouncyCastle.X509.Store
 			set { this.reverseSelector = CloneSelector(value); }
 		}
 
-		/// <summary>
-		/// Decides if the given certificate pair should be selected. If
-		/// <c>obj</c> is not a <code>X509CertificatePair</code>, this method
-		/// returns <code>false</code>.
-		/// </summary>
-		/// <param name="obj">The <code>X509CertificatePair</code> to be tested.</param>
-		/// <returns><code>true</code> if the object matches this selector.</returns>
-		public bool Match(
+        /// <summary>
+        /// Decides if the given certificate pair should be selected. If
+        /// <c>obj</c> is not a <code>X509CertificatePair</code>, this method
+        /// returns <code>false</code>.
+        /// </summary>
+        /// <param name="obj">The <code>X509CertificatePair</code> to be tested.</param>
+        /// <returns><code>true</code> if the object matches this selector.</returns>
+        [Obsolete]
+        public bool Match(
 			object obj)
 		{
 			if (obj == null)

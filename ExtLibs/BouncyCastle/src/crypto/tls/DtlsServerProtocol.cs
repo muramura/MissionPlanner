@@ -25,6 +25,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             set { this.mVerifyRequests = value; }
         }
 
+        [Obsolete]
         public virtual DtlsTransport Accept(TlsServer server, DatagramTransport transport)
         {
             if (server == null)
@@ -79,6 +80,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             InvalidateSession(state);
         }
 
+        [Obsolete]
         internal virtual DtlsTransport ServerHandshake(ServerHandshakeState state, DtlsRecordLayer recordLayer)
         {
             SecurityParameters securityParameters = state.serverContext.SecurityParameters;
@@ -433,6 +435,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return buf.ToArray();
         }
 
+        [Obsolete]
         protected virtual void NotifyClientCertificate(ServerHandshakeState state, Certificate clientCertificate)
         {
             if (state.certificateRequest == null)
@@ -473,6 +476,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             state.server.NotifyClientCertificate(clientCertificate);
         }
 
+        [Obsolete]
         protected virtual void ProcessClientCertificate(ServerHandshakeState state, byte[] body)
         {
             MemoryStream buf = new MemoryStream(body, false);
@@ -484,6 +488,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             NotifyClientCertificate(state, clientCertificate);
         }
 
+        [Obsolete]
         protected virtual void ProcessCertificateVerify(ServerHandshakeState state, byte[] body, TlsHandshakeHash prepareFinishHash)
         {
             if (state.certificateRequest == null)

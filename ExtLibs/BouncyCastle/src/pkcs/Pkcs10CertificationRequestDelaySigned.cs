@@ -54,17 +54,23 @@ namespace Org.BouncyCastle.Pkcs
 			: base()
 		{
 		}
-		public Pkcs10CertificationRequestDelaySigned(
+
+        [Obsolete]
+        public Pkcs10CertificationRequestDelaySigned(
 			byte[] encoded)
 			: base(encoded)
 		{
 		}
-		public Pkcs10CertificationRequestDelaySigned(
+
+        [Obsolete]
+        public Pkcs10CertificationRequestDelaySigned(
 			Asn1Sequence seq)
 			: base(seq)
 		{
 		}
-		public Pkcs10CertificationRequestDelaySigned(
+
+        [Obsolete]
+        public Pkcs10CertificationRequestDelaySigned(
 			Stream input)
 			: base(input)
 		{

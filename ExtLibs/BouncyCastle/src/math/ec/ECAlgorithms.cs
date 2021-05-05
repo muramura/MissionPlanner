@@ -29,6 +29,7 @@ namespace Org.BouncyCastle.Math.EC
             return field.Dimension == 1;
         }
 
+        [Obsolete]
         public static ECPoint SumOfMultiplies(ECPoint[] ps, BigInteger[] ks)
         {
             if (ps == null || ks == null || ps.Length != ks.Length || ps.Length < 1)
@@ -64,6 +65,7 @@ namespace Org.BouncyCastle.Math.EC
             return ImplCheckResult(ImplSumOfMultiplies(imported, ks));
         }
 
+        [Obsolete]
         public static ECPoint SumOfTwoMultiplies(ECPoint P, BigInteger a, ECPoint Q, BigInteger b)
         {
             ECCurve cp = P.Curve;
@@ -106,6 +108,7 @@ namespace Org.BouncyCastle.Math.EC
         * 8: end for
         * 9: return R
         */
+        [Obsolete]
         public static ECPoint ShamirsTrick(ECPoint P, BigInteger k, ECPoint Q, BigInteger l)
         {
             ECCurve cp = P.Curve;
@@ -114,6 +117,7 @@ namespace Org.BouncyCastle.Math.EC
             return ImplCheckResult(ImplShamirsTrickJsf(P, k, Q, l));
         }
 
+        [Obsolete]
         public static ECPoint ImportPoint(ECCurve c, ECPoint p)
         {
             ECCurve cp = p.Curve;
@@ -207,6 +211,7 @@ namespace Org.BouncyCastle.Math.EC
             return p;
         }
 
+        [Obsolete]
         public static ECPoint CleanPoint(ECCurve c, ECPoint p)
         {
             ECCurve cp = p.Curve;

@@ -438,9 +438,10 @@ namespace Org.BouncyCastle.Cms
 				signedAttrGen, unsignedAttrGen, baseSignedTable));
 		}
 
-		/**
+        /**
         * generate a signed object that for a CMS Signed Data object
         */
+        [Obsolete]
         public CmsSignedData Generate(
             CmsProcessable content)
         {
@@ -453,6 +454,7 @@ namespace Org.BouncyCastle.Cms
         * of the message will be included in the signature. The content type
         * is set according to the OID represented by the string signedContentType.
         */
+        [Obsolete]
         public CmsSignedData Generate(
             string			signedContentType,
 			// FIXME Avoid accessing more than once to support CmsProcessableInputStream
@@ -565,6 +567,7 @@ namespace Org.BouncyCastle.Cms
         * of the message will be included in the signature with the
         * default content type "data".
         */
+        [Obsolete]
         public CmsSignedData Generate(
             CmsProcessable	content,
             bool			encapsulate)
@@ -572,7 +575,7 @@ namespace Org.BouncyCastle.Cms
             return this.Generate(Data, content, encapsulate);
         }
 
-		/**
+        /**
 		* generate a set of one or more SignerInformation objects representing counter signatures on
 		* the passed in SignerInformation object.
 		*
@@ -580,7 +583,8 @@ namespace Org.BouncyCastle.Cms
 		* @param sigProvider the provider to be used for counter signing.
 		* @return a store containing the signers.
 		*/
-		public SignerInformationStore GenerateCounterSigners(
+        [Obsolete]
+        public SignerInformationStore GenerateCounterSigners(
 			SignerInformation signer)
 		{
 			return this.Generate(null, new CmsProcessableByteArray(signer.GetSignature()), false).GetSignerInfos();

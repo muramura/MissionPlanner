@@ -46,6 +46,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             };
         }
 
+        [Obsolete]
         public override void ProcessClientExtensions(IDictionary clientExtensions)
         {
             base.ProcessClientExtensions(clientExtensions);

@@ -10,14 +10,15 @@ namespace Org.BouncyCastle.Asn1.Cms
 		private readonly KeyAgreeRecipientIdentifier identifier;
 		private readonly Asn1OctetString encryptedKey;
 
-		private RecipientEncryptedKey(
+        [Obsolete]
+        private RecipientEncryptedKey(
 			Asn1Sequence seq)
 		{
 			identifier = KeyAgreeRecipientIdentifier.GetInstance(seq[0]);
 			encryptedKey = (Asn1OctetString) seq[1];
 		}
 
-		/**
+        /**
 		 * return an RecipientEncryptedKey object from a tagged object.
 		 *
 		 * @param obj the tagged object holding the object we want.
@@ -26,20 +27,22 @@ namespace Org.BouncyCastle.Asn1.Cms
 		 * @exception ArgumentException if the object held by the
 		 *          tagged object cannot be converted.
 		 */
-		public static RecipientEncryptedKey GetInstance(
+        [Obsolete]
+        public static RecipientEncryptedKey GetInstance(
 			Asn1TaggedObject	obj,
 			bool				isExplicit)
 		{
 			return GetInstance(Asn1Sequence.GetInstance(obj, isExplicit));
 		}
 
-		/**
+        /**
 		 * return a RecipientEncryptedKey object from the given object.
 		 *
 		 * @param obj the object we want converted.
 		 * @exception ArgumentException if the object cannot be converted.
 		 */
-		public static RecipientEncryptedKey GetInstance(
+        [Obsolete]
+        public static RecipientEncryptedKey GetInstance(
 			object obj)
 		{
 			if (obj == null || obj is RecipientEncryptedKey)

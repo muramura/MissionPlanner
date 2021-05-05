@@ -27,13 +27,15 @@ namespace Org.BouncyCastle.Tsp
 		private readonly TimeStampTokenInfo	tstInfo;
 		private readonly CertID				certID;
 
-		public TimeStampToken(
+        [Obsolete]
+        public TimeStampToken(
 			Asn1.Cms.ContentInfo contentInfo)
 			: this(new CmsSignedData(contentInfo))
 		{
 		}
 
-		public TimeStampToken(
+        [Obsolete]
+        public TimeStampToken(
 			CmsSignedData signedData)
 		{
 			this.tsToken = signedData;
@@ -139,13 +141,14 @@ namespace Org.BouncyCastle.Tsp
 			return tsToken.GetCrls(type);
 		}
 
-	    public IX509Store GetAttributeCertificates(
+        [Obsolete]
+        public IX509Store GetAttributeCertificates(
 			string type)
 	    {
 	        return tsToken.GetAttributeCertificates(type);
 	    }
 
-		/**
+        /**
 		 * Validate the time stamp token.
 		 * <p>
 		 * To be valid the token must be signed by the passed in certificate and
@@ -159,7 +162,8 @@ namespace Org.BouncyCastle.Tsp
 		 * A successful call to validate means all the above are true.
 		 * </p>
 		 */
-		public void Validate(
+        [Obsolete]
+        public void Validate(
 			X509Certificate cert)
 		{
 			try

@@ -20,7 +20,8 @@ namespace Org.BouncyCastle.Crypto.Parameters
             this.domainParams = domainParameters;
         }
 
-		public ECKeyGenerationParameters(
+        [Obsolete]
+        public ECKeyGenerationParameters(
 			DerObjectIdentifier	publicKeyParamSet,
 			SecureRandom		random)
 			: this(ECKeyParameters.LookupParameters(publicKeyParamSet), random)

@@ -187,12 +187,13 @@ namespace Org.BouncyCastle.Cms
 			get { return new HashSet(_digestOids); }
 		}
 
-		/**
+        /**
 		* return the collection of signers that are associated with the
 		* signatures for the message.
 		* @throws CmsException
 		*/
-		public SignerInformationStore GetSignerInfos()
+        [Obsolete]
+        public SignerInformationStore GetSignerInfos()
 		{
 			if (_signerInfoStore == null)
 			{
@@ -234,7 +235,7 @@ namespace Org.BouncyCastle.Cms
 			return _signerInfoStore;
 		}
 
-		/**
+        /**
 		 * return a X509Store containing the attribute certificates, if any, contained
 		 * in this message.
 		 *
@@ -243,7 +244,8 @@ namespace Org.BouncyCastle.Cms
 		 * @exception org.bouncycastle.x509.NoSuchStoreException if the store type isn't available.
 		 * @exception CmsException if a general exception prevents creation of the X509Store
 		 */
-		public IX509Store GetAttributeCertificates(
+        [Obsolete]
+        public IX509Store GetAttributeCertificates(
 			string type)
 		{
 			if (_attributeStore == null)
@@ -345,7 +347,7 @@ namespace Org.BouncyCastle.Cms
 			return new CmsTypedStream(_signedContent.ContentType, digStream);
 		}
 
-		/**
+        /**
 		 * Replace the signerinformation store associated with the passed
 		 * in message contained in the stream original with the new one passed in.
 		 * You would probably only want to do this if you wanted to change the unsigned
@@ -358,7 +360,8 @@ namespace Org.BouncyCastle.Cms
 		 * @param out the stream to Write the new signed data object to.
 		 * @return out.
 		 */
-		public static Stream ReplaceSigners(
+        [Obsolete]
+        public static Stream ReplaceSigners(
 			Stream					original,
 			SignerInformationStore	signerInformationStore,
 			Stream					outStr)
@@ -389,7 +392,7 @@ namespace Org.BouncyCastle.Cms
 			return outStr;
 		}
 
-		/**
+        /**
 		 * Replace the certificate and CRL information associated with this
 		 * CMSSignedData object with the new one passed in.
 		 * <p>
@@ -401,7 +404,8 @@ namespace Org.BouncyCastle.Cms
 		 * @return out.
 		 * @exception CmsException if there is an error processing the CertStore
 		 */
-		public static Stream ReplaceCertificatesAndCrls(
+        [Obsolete]
+        public static Stream ReplaceCertificatesAndCrls(
 			Stream			original,
 			IX509Store		x509Certs,
 			IX509Store		x509Crls,

@@ -131,6 +131,7 @@ namespace Org.BouncyCastle.Crypto.Signers
          * the passed in message (for standard DSA the message should be
          * a SHA-1 hash of the real message to be verified).
          */
+        [Obsolete]
         public virtual bool VerifySignature(byte[] message, BigInteger r, BigInteger s)
         {
             BigInteger n = key.Parameters.N;

@@ -16,6 +16,7 @@ namespace Org.BouncyCastle.Asn1.Crmf
         private readonly int tagNo;
         private readonly Asn1Encodable obj;
 
+        [Obsolete]
         private PopoPrivKey(Asn1TaggedObject obj)
         {
             this.tagNo = obj.TagNo;
@@ -42,6 +43,7 @@ namespace Org.BouncyCastle.Asn1.Crmf
             }
         }
 
+        [Obsolete]
         public static PopoPrivKey GetInstance(Asn1TaggedObject tagged, bool isExplicit)
         {
             return new PopoPrivKey(Asn1TaggedObject.GetInstance(tagged.GetObject()));

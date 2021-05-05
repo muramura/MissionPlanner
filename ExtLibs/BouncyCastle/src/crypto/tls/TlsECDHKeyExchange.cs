@@ -64,6 +64,7 @@ namespace Org.BouncyCastle.Crypto.Tls
                 throw new TlsFatalAlert(AlertDescription.unexpected_message);
         }
 
+        [Obsolete]
         public override void ProcessServerCertificate(Certificate serverCertificate)
         {
             if (mKeyExchange == KeyExchangeAlgorithm.ECDH_anon)
@@ -123,6 +124,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             }
         }
 
+        [Obsolete]
         public override byte[] GenerateServerKeyExchange()
         {
             if (!RequiresServerKeyExchange)
@@ -136,6 +138,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             return buf.ToArray();
         }
 
+        [Obsolete]
         public override void ProcessServerKeyExchange(Stream input)
         {
             if (!RequiresServerKeyExchange)
@@ -200,6 +203,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             }
         }
 
+        [Obsolete]
         public override void GenerateClientKeyExchange(Stream output)
         {
             if (mAgreementCredentials == null)
@@ -218,6 +222,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             // TODO If the certificate is 'fixed', take the public key as mECAgreeClientPublicKey
         }
 
+        [Obsolete]
         public override void ProcessClientKeyExchange(Stream input)
         {
             if (mECAgreePublicKey != null)
@@ -234,6 +239,7 @@ namespace Org.BouncyCastle.Crypto.Tls
                 mServerECPointFormats, curve_params, point));
         }
 
+        [Obsolete]
         public override byte[] GeneratePremasterSecret()
         {
             if (mAgreementCredentials != null)

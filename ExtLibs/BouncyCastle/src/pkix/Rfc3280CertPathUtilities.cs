@@ -701,7 +701,7 @@ namespace Org.BouncyCastle.Pkix
 			return dpReasons.Intersect(idpReasons);
 		}
 
-		/**
+        /**
 		* Obtain and validate the certification path for the complete CRL issuer.
 		* If a key usage extension is present in the CRL issuer's certificate,
 		* verify that the cRLSign bit is set.
@@ -720,7 +720,8 @@ namespace Org.BouncyCastle.Pkix
 		* @throws AnnotatedException if the CRL is not valid or the status cannot be checked or
 		*                            some error occurs.
 		*/
-		internal static ISet ProcessCrlF(
+        [Obsolete]
+        internal static ISet ProcessCrlF(
 			X509Crl					crl,
 			object					cert,
 			X509Certificate			defaultCRLSignCert,
@@ -899,7 +900,7 @@ namespace Org.BouncyCastle.Pkix
 			return null;
 		}
 
-		/**
+        /**
 		* Checks a distribution point for revocation information for the
 		* certificate <code>cert</code>.
 		*
@@ -917,7 +918,8 @@ namespace Org.BouncyCastle.Pkix
 		* @throws AnnotatedException if the certificate is revoked or the status cannot be checked
 		*                            or some error occurs.
 		*/
-		private static void CheckCrl(
+        [Obsolete]
+        private static void CheckCrl(
 			DistributionPoint dp,
 			PkixParameters paramsPKIX,
 			X509Certificate cert,
@@ -1075,7 +1077,7 @@ namespace Org.BouncyCastle.Pkix
 			}
 		}
 
-		/**
+        /**
 		 * Checks a certificate if it is revoked.
 		 *
 		 * @param paramsPKIX       PKIX parameters.
@@ -1088,7 +1090,8 @@ namespace Org.BouncyCastle.Pkix
 		 * @throws AnnotatedException if the certificate is revoked or the status cannot be checked
 		 *                            or some error occurs.
 		 */
-		protected static void CheckCrls(
+        [Obsolete]
+        protected static void CheckCrls(
 			PkixParameters			paramsPKIX,
 			X509Certificate			cert,
 			DateTime				validDate,
@@ -1396,7 +1399,8 @@ namespace Org.BouncyCastle.Pkix
 			return _validPolicyTree;
 		}
 
-		internal static ISet[] ProcessCrlA1ii(
+        [Obsolete]
+        internal static ISet[] ProcessCrlA1ii(
 			DateTime		currentDate,
 			PkixParameters	paramsPKIX,
 			X509Certificate	cert,
@@ -1436,7 +1440,8 @@ namespace Org.BouncyCastle.Pkix
 			return new ISet[]{ completeSet, deltaSet };
 		}
 
-		internal static ISet ProcessCrlA1i(
+        [Obsolete]
+        internal static ISet ProcessCrlA1i(
 			DateTime		currentDate,
 			PkixParameters	paramsPKIX,
 			X509Certificate	cert,
@@ -1508,7 +1513,8 @@ namespace Org.BouncyCastle.Pkix
 			}
 		}
 
-		internal static void ProcessCertA(
+        [Obsolete]
+        internal static void ProcessCertA(
 			PkixCertPath			certPath,
 			PkixParameters			paramsPKIX,
 			int						index,
@@ -2376,7 +2382,8 @@ namespace Org.BouncyCastle.Pkix
 			}
 		}
 
-		internal static void ProcessCrlI(
+        [Obsolete]
+        internal static void ProcessCrlI(
 			DateTime		validDate,
 			X509Crl			deltacrl,
 			object			cert,
@@ -2389,7 +2396,8 @@ namespace Org.BouncyCastle.Pkix
 			}
 		}
 
-		internal static void ProcessCrlJ(
+        [Obsolete]
+        internal static void ProcessCrlJ(
 			DateTime	validDate,
 			X509Crl		completecrl,
 			object		cert,

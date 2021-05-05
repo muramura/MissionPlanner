@@ -104,6 +104,7 @@ namespace Org.BouncyCastle.Math.EC
             return new Config(this, this.m_coord, this.m_endomorphism, this.m_multiplier);
         }
 
+        [Obsolete]
         public virtual ECPoint ValidatePoint(BigInteger x, BigInteger y)
         {
             ECPoint p = CreatePoint(x, y);
@@ -451,6 +452,7 @@ namespace Org.BouncyCastle.Math.EC
          * <code>F<sub>p</sub></code> (X9.62 s 4.2.1 pg 17).
          * @return The decoded point.
          */
+        [Obsolete]
         public virtual ECPoint DecodePoint(byte[] encoded)
         {
             ECPoint p = null;
@@ -655,6 +657,7 @@ namespace Org.BouncyCastle.Math.EC
             this.m_coord = FP_DEFAULT_COORDS;
         }
 
+        [Obsolete]
         protected override ECCurve CloneCurve()
         {
             return new FpCurve(m_q, m_r, m_a, m_b, m_order, m_cofactor);
@@ -705,6 +708,7 @@ namespace Org.BouncyCastle.Math.EC
             return new FpPoint(this, x, y, zs, withCompression);
         }
 
+        [Obsolete]
         public override ECPoint ImportPoint(ECPoint p)
         {
             if (this != p.Curve && this.CoordinateSystem == COORD_JACOBIAN && !p.IsInfinity)
@@ -1014,6 +1018,7 @@ namespace Org.BouncyCastle.Math.EC
          * @param cofactor The cofactor of the elliptic curve, i.e.
          * <code>#E<sub>a</sub>(F<sub>2<sup>m</sup></sub>) = h * n</code>.
          */
+        [Obsolete]
         public F2mCurve(
             int			m, 
             int			k, 
@@ -1139,6 +1144,7 @@ namespace Org.BouncyCastle.Math.EC
             this.m_coord = F2M_DEFAULT_COORDS;
         }
 
+        [Obsolete]
         protected override ECCurve CloneCurve()
         {
             return new F2mCurve(m, k1, k2, k3, m_a, m_b, m_order, m_cofactor);

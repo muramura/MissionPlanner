@@ -25,7 +25,8 @@ namespace Org.BouncyCastle.X509.Extension
 		{
 		}
 
-		private static Asn1Sequence FromCertificate(
+        [Obsolete]
+        private static Asn1Sequence FromCertificate(
 			X509Certificate certificate)
 		{
 			try
@@ -73,14 +74,15 @@ namespace Org.BouncyCastle.X509.Extension
 			}
 		}
 
-		/**
+        /**
 		 * Create an AuthorityKeyIdentifier using the passed in certificate's public
 		 * key, issuer and serial number.
 		 *
 		 * @param certificate the certificate providing the information.
 		 * @throws CertificateParsingException if there is a problem processing the certificate
 		 */
-		public AuthorityKeyIdentifierStructure(
+        [Obsolete]
+        public AuthorityKeyIdentifierStructure(
 			X509Certificate certificate)
 			: base(FromCertificate(certificate))
 		{

@@ -9,14 +9,16 @@ namespace Org.BouncyCastle.Asn1.Cmp
 	{
 		private readonly PkiHeader header;
 		private readonly PkiBody body;
-		
-		private ProtectedPart(Asn1Sequence seq)
+
+        [Obsolete]
+        private ProtectedPart(Asn1Sequence seq)
 		{
 			header = PkiHeader.GetInstance(seq[0]);
 			body = PkiBody.GetInstance(seq[1]);
 		}
 
-		public static ProtectedPart GetInstance(object obj)
+        [Obsolete]
+        public static ProtectedPart GetInstance(object obj)
 		{
 			if (obj is ProtectedPart)
 				return (ProtectedPart)obj;

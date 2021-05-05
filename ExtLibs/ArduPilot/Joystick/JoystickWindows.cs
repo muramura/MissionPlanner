@@ -114,6 +114,7 @@ namespace MissionPlanner.Joystick
             return null;
         }
 
+        [Obsolete]
         public static new JoystickBase getJoyStickByName(string name)
         {
             var joysticklist = getDevices();

@@ -135,7 +135,8 @@ namespace Org.BouncyCastle.Asn1.Cms
 			get { return OriginatorPublicKey; }
 		}
 
-		public OriginatorPublicKey OriginatorPublicKey
+        [Obsolete]
+        public OriginatorPublicKey OriginatorPublicKey
 		{
 			get
 			{

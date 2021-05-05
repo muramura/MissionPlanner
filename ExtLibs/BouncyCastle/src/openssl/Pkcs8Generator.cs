@@ -78,7 +78,8 @@ namespace Org.BouncyCastle.OpenSsl
 			set { this.iterationCount = value; }
 		}
 
-		public PemObject Generate()
+        [Obsolete]
+        public PemObject Generate()
 		{
 			if (algorithm == null)
 			{

@@ -133,6 +133,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             this.mOfferedCompressionMethods = offeredCompressionMethods;
         }
 
+        [Obsolete]
         public virtual void ProcessClientExtensions(IDictionary clientExtensions)
         {
             this.mClientExtensions = clientExtensions;

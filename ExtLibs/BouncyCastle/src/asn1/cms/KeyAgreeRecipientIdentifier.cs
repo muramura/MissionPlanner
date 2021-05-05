@@ -7,7 +7,7 @@ namespace Org.BouncyCastle.Asn1.Cms
 	public class KeyAgreeRecipientIdentifier
 		: Asn1Encodable, IAsn1Choice
 	{
-		/**
+        /**
 		 * return an KeyAgreeRecipientIdentifier object from a tagged object.
 		 *
 		 * @param obj the tagged object holding the object we want.
@@ -16,20 +16,22 @@ namespace Org.BouncyCastle.Asn1.Cms
 		 * @exception ArgumentException if the object held by the
 		 *          tagged object cannot be converted.
 		 */
-		public static KeyAgreeRecipientIdentifier GetInstance(
+        [Obsolete]
+        public static KeyAgreeRecipientIdentifier GetInstance(
 			Asn1TaggedObject	obj,
 			bool				isExplicit)
 		{
 			return GetInstance(Asn1Sequence.GetInstance(obj, isExplicit));
 		}
-    
-		/**
+
+        /**
 		 * return an KeyAgreeRecipientIdentifier object from the given object.
 		 *
 		 * @param obj the object we want converted.
 		 * @exception ArgumentException if the object cannot be converted.
 		 */
-		public static KeyAgreeRecipientIdentifier GetInstance(
+        [Obsolete]
+        public static KeyAgreeRecipientIdentifier GetInstance(
 			object obj)
 		{
 			if (obj == null || obj is KeyAgreeRecipientIdentifier)

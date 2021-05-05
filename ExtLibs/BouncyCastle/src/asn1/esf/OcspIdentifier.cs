@@ -65,7 +65,8 @@ namespace Org.BouncyCastle.Asn1.Esf
 			get { return ocspResponderID; }
 		}
 
-		public DateTime ProducedAt
+        [Obsolete]
+        public DateTime ProducedAt
 		{
 			get { return producedAt.ToDateTime(); }
 		}

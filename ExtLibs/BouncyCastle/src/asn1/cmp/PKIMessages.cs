@@ -30,6 +30,7 @@ namespace Org.BouncyCastle.Asn1.Cmp
             content = new DerSequence(msgs);
         }
 
+        [Obsolete]
         public virtual PkiMessage[] ToPkiMessageArray()
         {
             PkiMessage[] result = new PkiMessage[content.Count];

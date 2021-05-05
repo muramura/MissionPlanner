@@ -208,7 +208,8 @@ namespace Org.BouncyCastle.Cms
 			return SignerUtilities.GetSigner(algorithm);
 		}
 
-		internal IX509Store CreateAttributeStore(
+        [Obsolete]
+        internal IX509Store CreateAttributeStore(
 			string	type,
 			Asn1Set	certSet)
 		{

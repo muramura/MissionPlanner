@@ -39,6 +39,7 @@ namespace Org.BouncyCastle.Pkix
     /// </summary>
     public class PkixCertPathValidator
     {
+        [Obsolete]
         public virtual PkixCertPathValidatorResult Validate(
 			PkixCertPath	certPath,
 			PkixParameters	paramsPkix)

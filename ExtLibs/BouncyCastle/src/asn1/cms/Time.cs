@@ -28,11 +28,12 @@ namespace Org.BouncyCastle.Asn1.Cms
             this.time = time;
         }
 
-		/**
+        /**
          * creates a time object from a given date - if the date is between 1950
          * and 2049 a UTCTime object is Generated, otherwise a GeneralizedTime
          * is used.
          */
+        [Obsolete]
         public Time(
             DateTime date)
         {
@@ -63,7 +64,8 @@ namespace Org.BouncyCastle.Asn1.Cms
             throw new ArgumentException("unknown object in factory: " + Platform.GetTypeName(obj), "obj");
         }
 
-		public string TimeString
+        [Obsolete]
+        public string TimeString
         {
 			get
 			{
@@ -78,7 +80,8 @@ namespace Org.BouncyCastle.Asn1.Cms
 			}
         }
 
-		public DateTime Date
+        [Obsolete]
+        public DateTime Date
         {
 			get
 			{

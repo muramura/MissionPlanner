@@ -14,6 +14,7 @@ namespace Org.BouncyCastle.Pkcs
         {
         }
 
+        [Obsolete]
         public static EncryptedPrivateKeyInfo CreateEncryptedPrivateKeyInfo(
             DerObjectIdentifier		algorithm,
             char[]					passPhrase,
@@ -26,6 +27,7 @@ namespace Org.BouncyCastle.Pkcs
                 PrivateKeyInfoFactory.CreatePrivateKeyInfo(key));
         }
 
+        [Obsolete]
         public static EncryptedPrivateKeyInfo CreateEncryptedPrivateKeyInfo(
             string					algorithm,
             char[]					passPhrase,
@@ -38,6 +40,7 @@ namespace Org.BouncyCastle.Pkcs
                 PrivateKeyInfoFactory.CreatePrivateKeyInfo(key));
         }
 
+        [Obsolete]
         public static EncryptedPrivateKeyInfo CreateEncryptedPrivateKeyInfo(
             string			algorithm,
             char[]			passPhrase,

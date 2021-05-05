@@ -73,12 +73,12 @@ namespace System.Drawing
 
         public static Color FromOle(int oleColor)
         {
-            if ((int) (oleColor & 4278190080u) == int.MinValue && (oleColor & 0xFFFFFF) <= 24)
-            {
-                switch (oleColor)
-                {
-                }
-            }
+            //if ((int) (oleColor & 4278190080u) == int.MinValue && (oleColor & 0xFFFFFF) <= 24)
+            //{
+            //    switch (oleColor)
+            //    {
+            //    }
+            //}
 
             return Color.FromArgb((byte) (oleColor & 0xFF), (byte) ((oleColor >> 8) & 0xFF),
                 (byte) ((oleColor >> 16) & 0xFF));

@@ -24,6 +24,7 @@ namespace Org.BouncyCastle.Security
         {
         }
 
+        [Obsolete]
         public static AsymmetricKeyParameter CreateKey(
             byte[] keyInfoData)
         {
@@ -32,6 +33,7 @@ namespace Org.BouncyCastle.Security
                     Asn1Object.FromByteArray(keyInfoData)));
         }
 
+        [Obsolete]
         public static AsymmetricKeyParameter CreateKey(
             Stream inStr)
         {
@@ -40,6 +42,7 @@ namespace Org.BouncyCastle.Security
                     Asn1Object.FromStream(inStr)));
         }
 
+        [Obsolete]
         public static AsymmetricKeyParameter CreateKey(
             SubjectPublicKeyInfo keyInfo)
         {

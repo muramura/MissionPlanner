@@ -1125,6 +1125,7 @@ namespace Org.BouncyCastle.Crypto.Tls
             }
         }
 
+        [Obsolete]
         internal static short GetClientCertificateType(Certificate clientCertificate, Certificate serverCertificate)
         {
             if (clientCertificate.IsEmpty)

@@ -100,7 +100,8 @@ namespace Org.BouncyCastle.Pkcs
         }
 
         // TODO Consider making obsolete
-//		[Obsolete("Use 'Pkcs12StoreBuilder' and 'Load' method instead")]
+        //		[Obsolete("Use 'Pkcs12StoreBuilder' and 'Load' method instead")]
+        [Obsolete]
         public Pkcs12Store(
             Stream	input,
             char[]	password)
@@ -109,6 +110,7 @@ namespace Org.BouncyCastle.Pkcs
             Load(input, password);
         }
 
+        [Obsolete]
         protected virtual void LoadKeyBag(PrivateKeyInfo privKeyInfo, Asn1Set bagAttributes)
         {
             AsymmetricKeyParameter privKey = PrivateKeyFactory.CreateKey(privKeyInfo);
@@ -179,6 +181,7 @@ namespace Org.BouncyCastle.Pkcs
             }
         }
 
+        [Obsolete]
         protected virtual void LoadPkcs8ShroudedKeyBag(EncryptedPrivateKeyInfo encPrivKeyInfo, Asn1Set bagAttributes,
             char[] password, bool wrongPkcs12Zero)
         {
@@ -191,6 +194,7 @@ namespace Org.BouncyCastle.Pkcs
             }
         }
 
+        [Obsolete]
         public void Load(
             Stream	input,
             char[]	password)
@@ -501,6 +505,7 @@ namespace Org.BouncyCastle.Pkcs
             return null;
         }
 
+        [Obsolete]
         public X509CertificateEntry[] GetCertificateChain(
             string alias)
         {
@@ -592,6 +597,7 @@ namespace Org.BouncyCastle.Pkcs
             return null;
         }
 
+        [Obsolete]
         public void SetCertificateEntry(
             string					alias,
             X509CertificateEntry	certEntry)
@@ -607,6 +613,7 @@ namespace Org.BouncyCastle.Pkcs
             chainCerts[new CertId(certEntry.Certificate.GetPublicKey())] = certEntry;
         }
 
+        [Obsolete]
         public void SetKeyEntry(
             string					alias,
             AsymmetricKeyEntry		keyEntry,
@@ -633,6 +640,7 @@ namespace Org.BouncyCastle.Pkcs
             }
         }
 
+        [Obsolete]
         public void DeleteEntry(
             string alias)
         {
@@ -699,6 +707,7 @@ namespace Org.BouncyCastle.Pkcs
             get { return GetAliasesTable().Count; }
         }
 
+        [Obsolete]
         public void Save(
             Stream			stream,
             char[]			password,
@@ -990,6 +999,7 @@ namespace Org.BouncyCastle.Pkcs
             derOut.WriteObject(pfx);
         }
 
+        [Obsolete]
         internal static byte[] CalculatePbeMac(
             DerObjectIdentifier	oid,
             byte[]				salt,
@@ -1008,6 +1018,7 @@ namespace Org.BouncyCastle.Pkcs
             return MacUtilities.DoFinal(mac, data);
         }
 
+        [Obsolete]
         private static byte[] CryptPbeData(
             bool				forEncryption,
             AlgorithmIdentifier	algId,

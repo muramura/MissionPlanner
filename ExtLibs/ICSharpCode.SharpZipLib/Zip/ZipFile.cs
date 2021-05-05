@@ -344,21 +344,22 @@ namespace ICSharpCode.SharpZipLib.Zip
 		bool HaveKeys {
 			get { return key != null; }
 		}
-		#endregion
+        #endregion
 
-		#region Constructors
-		/// <summary>
-		/// Opens a Zip file with the given name for reading.
-		/// </summary>
-		/// <param name="name">The name of the file to open.</param>
-		/// <exception cref="ArgumentNullException">The argument supplied is null.</exception>
-		/// <exception cref="IOException">
-		/// An i/o error occurs
-		/// </exception>
-		/// <exception cref="ZipException">
-		/// The file doesn't contain a valid zip archive.
-		/// </exception>
-		public ZipFile(string name)
+        #region Constructors
+        /// <summary>
+        /// Opens a Zip file with the given name for reading.
+        /// </summary>
+        /// <param name="name">The name of the file to open.</param>
+        /// <exception cref="ArgumentNullException">The argument supplied is null.</exception>
+        /// <exception cref="IOException">
+        /// An i/o error occurs
+        /// </exception>
+        /// <exception cref="ZipException">
+        /// The file doesn't contain a valid zip archive.
+        /// </exception>
+        [Obsolete]
+        public ZipFile(string name)
 		{
 			if (name == null) {
 				throw new ArgumentNullException(nameof(name));
@@ -377,18 +378,19 @@ namespace ICSharpCode.SharpZipLib.Zip
 			}
 		}
 
-		/// <summary>
-		/// Opens a Zip file reading the given <see cref="FileStream"/>.
-		/// </summary>
-		/// <param name="file">The <see cref="FileStream"/> to read archive data from.</param>
-		/// <exception cref="ArgumentNullException">The supplied argument is null.</exception>
-		/// <exception cref="IOException">
-		/// An i/o error occurs.
-		/// </exception>
-		/// <exception cref="ZipException">
-		/// The file doesn't contain a valid zip archive.
-		/// </exception>
-		public ZipFile(FileStream file)
+        /// <summary>
+        /// Opens a Zip file reading the given <see cref="FileStream"/>.
+        /// </summary>
+        /// <param name="file">The <see cref="FileStream"/> to read archive data from.</param>
+        /// <exception cref="ArgumentNullException">The supplied argument is null.</exception>
+        /// <exception cref="IOException">
+        /// An i/o error occurs.
+        /// </exception>
+        /// <exception cref="ZipException">
+        /// The file doesn't contain a valid zip archive.
+        /// </exception>
+        [Obsolete]
+        public ZipFile(FileStream file)
 		{
 			if (file == null) {
 				throw new ArgumentNullException(nameof(file));
@@ -410,23 +412,24 @@ namespace ICSharpCode.SharpZipLib.Zip
 			}
 		}
 
-		/// <summary>
-		/// Opens a Zip file reading the given <see cref="Stream"/>.
-		/// </summary>
-		/// <param name="stream">The <see cref="Stream"/> to read archive data from.</param>
-		/// <exception cref="IOException">
-		/// An i/o error occurs
-		/// </exception>
-		/// <exception cref="ZipException">
-		/// The stream doesn't contain a valid zip archive.<br/>
-		/// </exception>
-		/// <exception cref="ArgumentException">
-		/// The <see cref="Stream">stream</see> doesnt support seeking.
-		/// </exception>
-		/// <exception cref="ArgumentNullException">
-		/// The <see cref="Stream">stream</see> argument is null.
-		/// </exception>
-		public ZipFile(Stream stream)
+        /// <summary>
+        /// Opens a Zip file reading the given <see cref="Stream"/>.
+        /// </summary>
+        /// <param name="stream">The <see cref="Stream"/> to read archive data from.</param>
+        /// <exception cref="IOException">
+        /// An i/o error occurs
+        /// </exception>
+        /// <exception cref="ZipException">
+        /// The stream doesn't contain a valid zip archive.<br/>
+        /// </exception>
+        /// <exception cref="ArgumentException">
+        /// The <see cref="Stream">stream</see> doesnt support seeking.
+        /// </exception>
+        /// <exception cref="ArgumentNullException">
+        /// The <see cref="Stream">stream</see> argument is null.
+        /// </exception>
+        [Obsolete]
+        public ZipFile(Stream stream)
 		{
 			if (stream == null) {
 				throw new ArgumentNullException(nameof(stream));
@@ -678,22 +681,23 @@ namespace ICSharpCode.SharpZipLib.Zip
 			return (index >= 0) ? (ZipEntry)entries_[index].Clone() : null;
 		}
 
-		/// <summary>
-		/// Gets an input stream for reading the given zip entry data in an uncompressed form.
-		/// Normally the <see cref="ZipEntry"/> should be an entry returned by GetEntry().
-		/// </summary>
-		/// <param name="entry">The <see cref="ZipEntry"/> to obtain a data <see cref="Stream"/> for</param>
-		/// <returns>An input <see cref="Stream"/> containing data for this <see cref="ZipEntry"/></returns>
-		/// <exception cref="ObjectDisposedException">
-		/// The ZipFile has already been closed
-		/// </exception>
-		/// <exception cref="ICSharpCode.SharpZipLib.Zip.ZipException">
-		/// The compression method for the entry is unknown
-		/// </exception>
-		/// <exception cref="IndexOutOfRangeException">
-		/// The entry is not found in the ZipFile
-		/// </exception>
-		public Stream GetInputStream(ZipEntry entry)
+        /// <summary>
+        /// Gets an input stream for reading the given zip entry data in an uncompressed form.
+        /// Normally the <see cref="ZipEntry"/> should be an entry returned by GetEntry().
+        /// </summary>
+        /// <param name="entry">The <see cref="ZipEntry"/> to obtain a data <see cref="Stream"/> for</param>
+        /// <returns>An input <see cref="Stream"/> containing data for this <see cref="ZipEntry"/></returns>
+        /// <exception cref="ObjectDisposedException">
+        /// The ZipFile has already been closed
+        /// </exception>
+        /// <exception cref="ICSharpCode.SharpZipLib.Zip.ZipException">
+        /// The compression method for the entry is unknown
+        /// </exception>
+        /// <exception cref="IndexOutOfRangeException">
+        /// The entry is not found in the ZipFile
+        /// </exception>
+        [Obsolete]
+        public Stream GetInputStream(ZipEntry entry)
 		{
 			if (entry == null) {
 				throw new ArgumentNullException(nameof(entry));
@@ -713,23 +717,24 @@ namespace ICSharpCode.SharpZipLib.Zip
 			return GetInputStream(index);
 		}
 
-		/// <summary>
-		/// Creates an input stream reading a zip entry
-		/// </summary>
-		/// <param name="entryIndex">The index of the entry to obtain an input stream for.</param>
-		/// <returns>
-		/// An input <see cref="Stream"/> containing data for this <paramref name="entryIndex"/>
-		/// </returns>
-		/// <exception cref="ObjectDisposedException">
-		/// The ZipFile has already been closed
-		/// </exception>
-		/// <exception cref="ICSharpCode.SharpZipLib.Zip.ZipException">
-		/// The compression method for the entry is unknown
-		/// </exception>
-		/// <exception cref="IndexOutOfRangeException">
-		/// The entry is not found in the ZipFile
-		/// </exception>
-		public Stream GetInputStream(long entryIndex)
+        /// <summary>
+        /// Creates an input stream reading a zip entry
+        /// </summary>
+        /// <param name="entryIndex">The index of the entry to obtain an input stream for.</param>
+        /// <returns>
+        /// An input <see cref="Stream"/> containing data for this <paramref name="entryIndex"/>
+        /// </returns>
+        /// <exception cref="ObjectDisposedException">
+        /// The ZipFile has already been closed
+        /// </exception>
+        /// <exception cref="ICSharpCode.SharpZipLib.Zip.ZipException">
+        /// The compression method for the entry is unknown
+        /// </exception>
+        /// <exception cref="IndexOutOfRangeException">
+        /// The entry is not found in the ZipFile
+        /// </exception>
+        [Obsolete]
+        public Stream GetInputStream(long entryIndex)
 		{
 			if (isDisposed_) {
 				throw new ObjectDisposedException("ZipFile");
@@ -763,29 +768,31 @@ namespace ICSharpCode.SharpZipLib.Zip
 			return result;
 		}
 
-		#endregion
+        #endregion
 
-		#region Archive Testing
-		/// <summary>
-		/// Test an archive for integrity/validity
-		/// </summary>
-		/// <param name="testData">Perform low level data Crc check</param>
-		/// <returns>true if all tests pass, false otherwise</returns>
-		/// <remarks>Testing will terminate on the first error found.</remarks>
-		public bool TestArchive(bool testData)
+        #region Archive Testing
+        /// <summary>
+        /// Test an archive for integrity/validity
+        /// </summary>
+        /// <param name="testData">Perform low level data Crc check</param>
+        /// <returns>true if all tests pass, false otherwise</returns>
+        /// <remarks>Testing will terminate on the first error found.</remarks>
+        [Obsolete]
+        public bool TestArchive(bool testData)
 		{
 			return TestArchive(testData, TestStrategy.FindFirstError, null);
 		}
 
-		/// <summary>
-		/// Test an archive for integrity/validity
-		/// </summary>
-		/// <param name="testData">Perform low level data Crc check</param>
-		/// <param name="strategy">The <see cref="TestStrategy"></see> to apply.</param>
-		/// <param name="resultHandler">The <see cref="ZipTestResultHandler"></see> handler to call during testing.</param>
-		/// <returns>true if all tests pass, false otherwise</returns>
-		/// <exception cref="ObjectDisposedException">The object has already been closed.</exception>
-		public bool TestArchive(bool testData, TestStrategy strategy, ZipTestResultHandler resultHandler)
+        /// <summary>
+        /// Test an archive for integrity/validity
+        /// </summary>
+        /// <param name="testData">Perform low level data Crc check</param>
+        /// <param name="strategy">The <see cref="TestStrategy"></see> to apply.</param>
+        /// <param name="resultHandler">The <see cref="ZipTestResultHandler"></see> handler to call during testing.</param>
+        /// <returns>true if all tests pass, false otherwise</returns>
+        /// <exception cref="ObjectDisposedException">The object has already been closed.</exception>
+        [Obsolete]
+        public bool TestArchive(bool testData, TestStrategy strategy, ZipTestResultHandler resultHandler)
 		{
 			if (isDisposed_) {
 				throw new ObjectDisposedException("ZipFile");
@@ -1376,12 +1383,13 @@ namespace ICSharpCode.SharpZipLib.Zip
 			PostUpdateCleanup();
 		}
 
-		/// <summary>
-		/// Set the file comment to be recorded when the current update is <see cref="CommitUpdate">commited</see>.
-		/// </summary>
-		/// <param name="comment">The comment to record.</param>
-		/// <exception cref="ObjectDisposedException">ZipFile has been closed.</exception>
-		public void SetComment(string comment)
+        /// <summary>
+        /// Set the file comment to be recorded when the current update is <see cref="CommitUpdate">commited</see>.
+        /// </summary>
+        /// <param name="comment">The comment to record.</param>
+        /// <exception cref="ObjectDisposedException">ZipFile has been closed.</exception>
+        [Obsolete]
+        public void SetComment(string comment)
 		{
 			if (isDisposed_) {
 				throw new ObjectDisposedException("ZipFile");
@@ -2255,7 +2263,8 @@ namespace ICSharpCode.SharpZipLib.Zip
 			return result;
 		}
 
-		void AddEntry(ZipFile workFile, ZipUpdate update)
+        [Obsolete]
+        void AddEntry(ZipFile workFile, ZipUpdate update)
 		{
 			Stream source = null;
 
@@ -2302,7 +2311,8 @@ namespace ICSharpCode.SharpZipLib.Zip
 
 		}
 
-		void ModifyEntry(ZipFile workFile, ZipUpdate update)
+        [Obsolete]
+        void ModifyEntry(ZipFile workFile, ZipUpdate update)
 		{
 			workFile.WriteLocalEntryHeader(update);
 			long dataStart = workFile.baseStream_.Position;
@@ -2320,7 +2330,8 @@ namespace ICSharpCode.SharpZipLib.Zip
 			update.Entry.CompressedSize = dataEnd - dataStart;
 		}
 
-		void CopyEntryDirect(ZipFile workFile, ZipUpdate update, ref long destinationPosition)
+        [Obsolete]
+        void CopyEntryDirect(ZipFile workFile, ZipUpdate update, ref long destinationPosition)
 		{
 			bool skipOver = false || update.Entry.Offset == destinationPosition;
 
@@ -2364,7 +2375,8 @@ namespace ICSharpCode.SharpZipLib.Zip
 			}
 		}
 
-		void CopyEntry(ZipFile workFile, ZipUpdate update)
+        [Obsolete]
+        void CopyEntry(ZipFile workFile, ZipUpdate update)
 		{
 			workFile.WriteLocalEntryHeader(update);
 
@@ -2386,7 +2398,8 @@ namespace ICSharpCode.SharpZipLib.Zip
 			CopyDescriptorBytes(update, workFile.baseStream_, baseStream_);
 		}
 
-		void Reopen(Stream source)
+        [Obsolete]
+        void Reopen(Stream source)
 		{
 			if (source == null) {
 				throw new ZipException("Failed to reopen archive - no source");
@@ -2397,7 +2410,8 @@ namespace ICSharpCode.SharpZipLib.Zip
 			ReadEntries();
 		}
 
-		void Reopen()
+        [Obsolete]
+        void Reopen()
 		{
 			if (Name == null) {
 				throw new InvalidOperationException("Name is not known cannot Reopen");
@@ -2406,7 +2420,8 @@ namespace ICSharpCode.SharpZipLib.Zip
 			Reopen(File.Open(Name, FileMode.Open, FileAccess.Read, FileShare.Read));
 		}
 
-		void UpdateCommentOnly()
+        [Obsolete]
+        void UpdateCommentOnly()
 		{
 			long baseLength = baseStream_.Length;
 
@@ -3062,20 +3077,21 @@ namespace ICSharpCode.SharpZipLib.Zip
 			}
 		}
 
-		/// <summary>
-		/// Locate the data for a given entry.
-		/// </summary>
-		/// <returns>
-		/// The start offset of the data.
-		/// </returns>
-		/// <exception cref="System.IO.EndOfStreamException">
-		/// The stream ends prematurely
-		/// </exception>
-		/// <exception cref="ICSharpCode.SharpZipLib.Zip.ZipException">
-		/// The local header signature is invalid, the entry and central header file name lengths are different
-		/// or the local and entry compression methods dont match
-		/// </exception>
-		long LocateEntry(ZipEntry entry)
+        /// <summary>
+        /// Locate the data for a given entry.
+        /// </summary>
+        /// <returns>
+        /// The start offset of the data.
+        /// </returns>
+        /// <exception cref="System.IO.EndOfStreamException">
+        /// The stream ends prematurely
+        /// </exception>
+        /// <exception cref="ICSharpCode.SharpZipLib.Zip.ZipException">
+        /// The local header signature is invalid, the entry and central header file name lengths are different
+        /// or the local and entry compression methods dont match
+        /// </exception>
+        [Obsolete]
+        long LocateEntry(ZipEntry entry)
 		{
 			return TestLocalHeader(entry, HeaderTest.Extract);
 		}
@@ -3239,20 +3255,22 @@ namespace ICSharpCode.SharpZipLib.Zip
 				get { return isSourceString_; }
 			}
 
-			/// <summary>
-			/// Get the length of the comment when represented as raw bytes.
-			/// </summary>
-			public int RawLength {
+            /// <summary>
+            /// Get the length of the comment when represented as raw bytes.
+            /// </summary>
+            [Obsolete]
+            public int RawLength {
 				get {
 					MakeBytesAvailable();
 					return rawComment_.Length;
 				}
 			}
 
-			/// <summary>
-			/// Get the comment in its 'raw' form as plain bytes.
-			/// </summary>
-			public byte[] RawComment {
+            /// <summary>
+            /// Get the comment in its 'raw' form as plain bytes.
+            /// </summary>
+            [Obsolete]
+            public byte[] RawComment {
 				get {
 					MakeBytesAvailable();
 					return (byte[])rawComment_.Clone();
@@ -3287,12 +3305,13 @@ namespace ICSharpCode.SharpZipLib.Zip
 				}
 			}
 
-			/// <summary>
-			/// Implicit conversion of comment to a string.
-			/// </summary>
-			/// <param name="zipString">The <see cref="ZipString"/> to convert to a string.</param>
-			/// <returns>The textual equivalent for the input value.</returns>
-			static public implicit operator string(ZipString zipString)
+            /// <summary>
+            /// Implicit conversion of comment to a string.
+            /// </summary>
+            /// <param name="zipString">The <see cref="ZipString"/> to convert to a string.</param>
+            /// <returns>The textual equivalent for the input value.</returns>
+            [Obsolete]
+            static public implicit operator string(ZipString zipString)
 			{
 				zipString.MakeTextAvailable();
 				return zipString.comment_;

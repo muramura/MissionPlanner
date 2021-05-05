@@ -37,6 +37,7 @@ namespace Org.BouncyCastle.Asn1.GM
 
             internal static readonly X9ECParametersHolder Instance = new SM2P256V1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger p = FromHex("FFFFFFFEFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF00000000FFFFFFFFFFFFFFFF");
@@ -65,6 +66,7 @@ namespace Org.BouncyCastle.Asn1.GM
 
             internal static readonly X9ECParametersHolder Instance = new WapiP192V1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger p = FromHex("BDB6F4FE3E8B1D9E0DA8C0D46F4C318CEFE4AFE3B6B8551F");

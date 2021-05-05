@@ -11,7 +11,8 @@ namespace Org.BouncyCastle.Tsp
 		private TstInfo		tstInfo;
 		private DateTime	genTime;
 
-		public TimeStampTokenInfo(
+        [Obsolete]
+        public TimeStampTokenInfo(
 			TstInfo tstInfo)
 		{
 			this.tstInfo = tstInfo;

@@ -462,9 +462,10 @@ namespace Org.BouncyCastle.Cms
             RegisterDigestOid(si.DigestAlgorithmID.Algorithm.Id);
 		}
 
-		/**
+        /**
         * generate a signed object that for a CMS Signed Data object
         */
+        [Obsolete]
         public Stream Open(
             Stream outStream)
         {
@@ -477,6 +478,7 @@ namespace Org.BouncyCastle.Cms
         * of the message will be included in the signature with the
         * default content type "data".
         */
+        [Obsolete]
         public Stream Open(
             Stream	outStream,
             bool	encapsulate)
@@ -484,7 +486,7 @@ namespace Org.BouncyCastle.Cms
             return Open(outStream, Data, encapsulate);
         }
 
-		/**
+        /**
 		 * generate a signed object that for a CMS Signed Data
 		 * object using the given provider - if encapsulate is true a copy
 		 * of the message will be included in the signature with the
@@ -494,7 +496,8 @@ namespace Org.BouncyCastle.Cms
 		 * @param encapsulate true if data should be encapsulated.
 		 * @param dataOutputStream output stream to copy the data being signed to.
 		 */
-		public Stream Open(
+        [Obsolete]
+        public Stream Open(
 			Stream	outStream,
 			bool	encapsulate,
 			Stream	dataOutputStream)
@@ -502,12 +505,13 @@ namespace Org.BouncyCastle.Cms
 			return Open(outStream, Data, encapsulate, dataOutputStream);
 		}
 
-		/**
+        /**
         * generate a signed object that for a CMS Signed Data
         * object - if encapsulate is true a copy
         * of the message will be included in the signature. The content type
         * is set according to the OID represented by the string signedContentType.
         */
+        [Obsolete]
         public Stream Open(
             Stream	outStream,
             string	signedContentType,
@@ -516,7 +520,7 @@ namespace Org.BouncyCastle.Cms
 			return Open(outStream, signedContentType, encapsulate, null);
 		}
 
-		/**
+        /**
 		* generate a signed object that for a CMS Signed Data
 		* object using the given provider - if encapsulate is true a copy
 		* of the message will be included in the signature. The content type
@@ -526,7 +530,8 @@ namespace Org.BouncyCastle.Cms
 		* @param encapsulate true if data should be encapsulated.
 		* @param dataOutputStream output stream to copy the data being signed to.
 		*/
-		public Stream Open(
+        [Obsolete]
+        public Stream Open(
 			Stream	outStream,
 			string	signedContentType,
 			bool	encapsulate,
@@ -623,8 +628,9 @@ namespace Org.BouncyCastle.Cms
             }
 		}
 
-		// TODO Make public?
-		internal void Generate(
+        // TODO Make public?
+        [Obsolete]
+        internal void Generate(
 			Stream			outStream,
 			string			eContentType,
 			bool			encapsulate,
@@ -639,25 +645,26 @@ namespace Org.BouncyCastle.Cms
             Platform.Dispose(signedOut);
 		}
 
-		// RFC3852, section 5.1:
-		// IF ((certificates is present) AND
-		//    (any certificates with a type of other are present)) OR
-		//    ((crls is present) AND
-		//    (any crls with a type of other are present))
-		// THEN version MUST be 5
-		// ELSE
-		//    IF (certificates is present) AND
-		//       (any version 2 attribute certificates are present)
-		//    THEN version MUST be 4
-		//    ELSE
-		//       IF ((certificates is present) AND
-		//          (any version 1 attribute certificates are present)) OR
-		//          (any SignerInfo structures are version 3) OR
-		//          (encapContentInfo eContentType is other than id-data)
-		//       THEN version MUST be 3
-		//       ELSE version MUST be 1
-		//
-		private DerInteger CalculateVersion(
+        // RFC3852, section 5.1:
+        // IF ((certificates is present) AND
+        //    (any certificates with a type of other are present)) OR
+        //    ((crls is present) AND
+        //    (any crls with a type of other are present))
+        // THEN version MUST be 5
+        // ELSE
+        //    IF (certificates is present) AND
+        //       (any version 2 attribute certificates are present)
+        //    THEN version MUST be 4
+        //    ELSE
+        //       IF ((certificates is present) AND
+        //          (any version 1 attribute certificates are present)) OR
+        //          (any SignerInfo structures are version 3) OR
+        //          (encapContentInfo eContentType is other than id-data)
+        //       THEN version MUST be 3
+        //       ELSE version MUST be 1
+        //
+        [Obsolete]
+        private DerInteger CalculateVersion(
 			DerObjectIdentifier contentOid)
 		{
 			bool otherCert = false;
@@ -725,7 +732,8 @@ namespace Org.BouncyCastle.Cms
             return new DerInteger(1);
         }
 
-		private bool CheckForVersion3(
+        [Obsolete]
+        private bool CheckForVersion3(
 			IList signerInfos)
 		{
 			foreach (SignerInformation si in signerInfos)

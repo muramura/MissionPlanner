@@ -101,7 +101,8 @@ namespace Org.BouncyCastle.Cms
 			return (int) KeySizes[oid];
 		}
 
-		internal static RecipientInformationStore BuildRecipientInformationStore(
+        [Obsolete]
+        internal static RecipientInformationStore BuildRecipientInformationStore(
 			Asn1Set recipientInfos, CmsSecureReadable secureReadable)
 		{
 			IList infos = Platform.CreateArrayList();
@@ -114,7 +115,8 @@ namespace Org.BouncyCastle.Cms
 			return new RecipientInformationStore(infos);
 		}
 
-		private static void ReadRecipientInfo(
+        [Obsolete]
+        private static void ReadRecipientInfo(
 			IList infos, RecipientInfo info, CmsSecureReadable secureReadable)
 		{
 			Asn1Encodable recipInfo = info.Info;

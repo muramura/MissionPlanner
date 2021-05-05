@@ -324,6 +324,7 @@ namespace Org.BouncyCastle.Security
             }
         }
 
+        [Obsolete]
         public static ICipherParameters GenerateCipherParameters(
             DerObjectIdentifier algorithmOid,
             char[]              password,
@@ -332,6 +333,7 @@ namespace Org.BouncyCastle.Security
             return GenerateCipherParameters(algorithmOid.Id, password, false, pbeParameters);
         }
 
+        [Obsolete]
         public static ICipherParameters GenerateCipherParameters(
             DerObjectIdentifier algorithmOid,
             char[]              password,
@@ -341,6 +343,7 @@ namespace Org.BouncyCastle.Security
             return GenerateCipherParameters(algorithmOid.Id, password, wrongPkcs12Zero, pbeParameters);
         }
 
+        [Obsolete]
         public static ICipherParameters GenerateCipherParameters(
             AlgorithmIdentifier algID,
             char[]              password)
@@ -348,6 +351,7 @@ namespace Org.BouncyCastle.Security
             return GenerateCipherParameters(algID.Algorithm.Id, password, false, algID.Parameters);
         }
 
+        [Obsolete]
         public static ICipherParameters GenerateCipherParameters(
             AlgorithmIdentifier algID,
             char[]              password,
@@ -356,6 +360,7 @@ namespace Org.BouncyCastle.Security
             return GenerateCipherParameters(algID.Algorithm.Id, password, wrongPkcs12Zero, algID.Parameters);
         }
 
+        [Obsolete]
         public static ICipherParameters GenerateCipherParameters(
             string          algorithm,
             char[]          password,
@@ -364,6 +369,7 @@ namespace Org.BouncyCastle.Security
             return GenerateCipherParameters(algorithm, password, false, pbeParameters);
         }
 
+        [Obsolete]
         public static ICipherParameters GenerateCipherParameters(
             string          algorithm,
             char[]          password,
@@ -574,6 +580,7 @@ namespace Org.BouncyCastle.Security
             return CreateEngine(algorithmOid.Id);
         }
 
+        [Obsolete]
         public static object CreateEngine(
             AlgorithmIdentifier algID)
         {

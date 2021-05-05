@@ -176,6 +176,7 @@ namespace Org.BouncyCastle.Pkcs
             throw new ArgumentException("Class provided is not convertible: " + Platform.GetTypeName(key));
         }
 
+        [Obsolete]
         public static PrivateKeyInfo CreatePrivateKeyInfo(
             char[]					passPhrase,
             EncryptedPrivateKeyInfo	encInfo)
@@ -183,6 +184,7 @@ namespace Org.BouncyCastle.Pkcs
             return CreatePrivateKeyInfo(passPhrase, false, encInfo);
         }
 
+        [Obsolete]
         public static PrivateKeyInfo CreatePrivateKeyInfo(
             char[]					passPhrase,
             bool					wrongPkcs12Zero,

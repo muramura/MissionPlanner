@@ -26,6 +26,7 @@ namespace Org.BouncyCastle.Math.EC.Multiplier
             this.doublingCoord = doublingCoord;
         }
 
+        [Obsolete]
         protected override ECPoint MultiplyPositive(ECPoint p, BigInteger k)
         {
             ECCurve curveOrig = p.Curve;

@@ -419,6 +419,7 @@ namespace Org.BouncyCastle.Math.EC.Multiplier
                 this.m_includeNegated = includeNegated;
             }
 
+            [Obsolete]
             public PreCompInfo Precompute(PreCompInfo existing)
             {
                 WNafPreCompInfo existingWNaf = existing as WNafPreCompInfo;

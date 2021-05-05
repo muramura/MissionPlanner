@@ -35,6 +35,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
             this.parameters = parameters;
         }
 
+        [Obsolete]
         protected ECKeyParameters(
             string				algorithm,
             bool				isPrivate,
@@ -91,6 +92,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
             return parameters.GetHashCode() ^ base.GetHashCode();
         }
 
+        [Obsolete]
         internal ECKeyGenerationParameters CreateKeyGenerationParameters(
             SecureRandom random)
         {
@@ -110,6 +112,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
             return upper;
         }
 
+        [Obsolete]
         internal static ECDomainParameters LookupParameters(
             DerObjectIdentifier publicKeyParamSet)
         {

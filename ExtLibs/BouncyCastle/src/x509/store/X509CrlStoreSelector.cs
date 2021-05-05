@@ -181,7 +181,8 @@ namespace Org.BouncyCastle.X509.Store
 			set { this.maxBaseCrlNumber = value; }
 		}
 
-		public virtual bool Match(
+        [Obsolete]
+        public virtual bool Match(
 			object obj)
 		{
 			X509Crl c = obj as X509Crl;

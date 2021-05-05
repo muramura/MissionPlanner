@@ -524,7 +524,8 @@ namespace ICSharpCode.SharpZipLib.Zip
 			}
 		}
 
-		void ExtractFileEntry(ZipEntry entry, string targetName)
+        [Obsolete]
+        void ExtractFileEntry(ZipEntry entry, string targetName)
 		{
 			bool proceed = true;
 			if (overwrite_ != Overwrite.Always) {
@@ -582,7 +583,8 @@ namespace ICSharpCode.SharpZipLib.Zip
 			}
 		}
 
-		void ExtractEntry(ZipEntry entry)
+        [Obsolete]
+        void ExtractEntry(ZipEntry entry)
 		{
 			bool doExtraction = entry.IsCompressionMethodSupported();
 			string targetName = entry.Name;

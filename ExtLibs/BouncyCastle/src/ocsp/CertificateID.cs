@@ -25,12 +25,13 @@ namespace Org.BouncyCastle.Ocsp
 			this.id = id;
 		}
 
-		/**
+        /**
 		 * create from an issuer certificate and the serial number of the
 		 * certificate it signed.
 		 * @exception OcspException if any problems occur creating the id fields.
 		 */
-		public CertificateID(
+        [Obsolete]
+        public CertificateID(
 			string			hashAlgorithm,
 			X509Certificate	issuerCert,
 			BigInteger		serialNumber)
@@ -65,7 +66,8 @@ namespace Org.BouncyCastle.Ocsp
 			get { return id.SerialNumber.Value; }
 		}
 
-		public bool MatchesIssuer(
+        [Obsolete]
+        public bool MatchesIssuer(
 			X509Certificate	issuerCert)
 		{
 			return CreateCertID(id.HashAlgorithm, issuerCert, id.SerialNumber).Equals(id);
@@ -111,6 +113,7 @@ namespace Org.BouncyCastle.Ocsp
 				original.id.IssuerKeyHash, new DerInteger(newSerialNumber)));
 		}
 
+        [Obsolete]
         private static CertID CreateCertID(
 			AlgorithmIdentifier	hashAlg,
 			X509Certificate		issuerCert,

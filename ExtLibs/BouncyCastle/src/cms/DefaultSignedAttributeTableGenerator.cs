@@ -70,7 +70,8 @@ namespace Org.BouncyCastle.Cms
 		 *
 		 * @return a filled in Hashtable of attributes.
 		 */
-		protected virtual Hashtable createStandardAttributeTable(
+        [Obsolete]
+        protected virtual Hashtable createStandardAttributeTable(
 			IDictionary parameters)
 		{
             Hashtable std = new Hashtable(table);
@@ -79,6 +80,7 @@ namespace Org.BouncyCastle.Cms
 		}
 #endif
 
+        [Obsolete]
         private void DoCreateStandardAttributeTable(IDictionary parameters, IDictionary std)
         {
             // contentType will be absent if we're trying to generate a counter signature.
@@ -114,7 +116,8 @@ namespace Org.BouncyCastle.Cms
 		 * @param parameters source parameters
 		 * @return the populated attribute table
 		 */
-		public virtual AttributeTable GetAttributes(
+        [Obsolete]
+        public virtual AttributeTable GetAttributes(
 			IDictionary parameters)
 		{
             IDictionary table = createStandardAttributeTable(parameters);

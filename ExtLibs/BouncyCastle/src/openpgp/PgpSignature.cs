@@ -90,7 +90,8 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
             return IsCertification(SignatureType);
         }
 
-		public void InitVerify(
+        [Obsolete]
+        public void InitVerify(
             PgpPublicKey pubKey)
         {
 			lastb = 0;

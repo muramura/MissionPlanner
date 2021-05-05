@@ -15,6 +15,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
         internal BigInteger  h;
         internal BigInteger  hInv;
 
+        [Obsolete]
         public ECDomainParameters(
             ECCurve     curve,
             ECPoint     g,
@@ -23,6 +24,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
         {
         }
 
+        [Obsolete]
         public ECDomainParameters(
             ECCurve     curve,
             ECPoint     g,
@@ -32,6 +34,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
         {
         }
 
+        [Obsolete]
         public ECDomainParameters(
             ECCurve     curve,
             ECPoint     g,
@@ -94,6 +97,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
             return Arrays.Clone(seed);
         }
 
+        [Obsolete]
         public override bool Equals(
             object obj)
         {
@@ -108,6 +112,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
             return Equals(other);
         }
 
+        [Obsolete]
         protected virtual bool Equals(
             ECDomainParameters other)
         {
@@ -129,6 +134,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
             return hc;
         }
 
+        [Obsolete]
         internal static ECPoint Validate(ECCurve c, ECPoint q)
         {
             if (q == null)

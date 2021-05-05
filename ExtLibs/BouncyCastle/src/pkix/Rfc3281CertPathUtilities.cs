@@ -57,7 +57,7 @@ namespace Org.BouncyCastle.Pkix
 			}
 		}
 
-		/**
+        /**
 		* Checks if an attribute certificate is revoked.
 		* 
 		* @param attrCert Attribute certificate to check if it is revoked.
@@ -72,7 +72,8 @@ namespace Org.BouncyCastle.Pkix
 		* @throws CertPathValidatorException if the certificate is revoked or the
 		*             status cannot be checked or some error occurs.
 		*/
-		internal static void CheckCrls(
+        [Obsolete]
+        internal static void CheckCrls(
 			IX509AttributeCertificate	attrCert,
 			PkixParameters				paramsPKIX,
 			X509Certificate				issuerCert,
@@ -312,7 +313,8 @@ namespace Org.BouncyCastle.Pkix
 			}
 		}
 
-		internal static PkixCertPathValidatorResult ProcessAttrCert2(
+        [Obsolete]
+        internal static PkixCertPathValidatorResult ProcessAttrCert2(
 			PkixCertPath	certPath,
 			PkixParameters	pkixParams)
 		{
@@ -330,7 +332,7 @@ namespace Org.BouncyCastle.Pkix
 			}
 		}
 
-		/**
+        /**
 		* Searches for a holder public key certificate and verifies its
 		* certification path.
 		* 
@@ -347,7 +349,8 @@ namespace Org.BouncyCastle.Pkix
 		*             be built</li>
 		*             </ul>
 		*/
-		internal static PkixCertPath ProcessAttrCert1(
+        [Obsolete]
+        internal static PkixCertPath ProcessAttrCert1(
 			IX509AttributeCertificate	attrCert,
 			PkixParameters				pkixParams)
 		{
@@ -443,7 +446,7 @@ namespace Org.BouncyCastle.Pkix
 			return result.CertPath;
 		}
 
-		/**
+        /**
 		* 
 		* Checks a distribution point for revocation information for the
 		* certificate <code>attrCert</code>.
@@ -460,7 +463,8 @@ namespace Org.BouncyCastle.Pkix
 		* @throws Exception if the certificate is revoked or the status
 		*             cannot be checked or some error occurs.
 		*/
-		private static void CheckCrl(
+        [Obsolete]
+        private static void CheckCrl(
 			DistributionPoint			dp,
 			IX509AttributeCertificate	attrCert,
 			PkixParameters				paramsPKIX,

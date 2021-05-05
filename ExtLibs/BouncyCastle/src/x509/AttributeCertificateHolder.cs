@@ -326,7 +326,8 @@ namespace Org.BouncyCastle.X509
 			return new AttributeCertificateHolder((Asn1Sequence)holder.ToAsn1Object());
 		}
 
-		public bool Match(
+        [Obsolete]
+        public bool Match(
 //			Certificate cert)
 			X509Certificate x509Cert)
 		{
@@ -427,7 +428,8 @@ namespace Org.BouncyCastle.X509
 			return this.holder.GetHashCode();
 		}
 
-		public bool Match(
+        [Obsolete]
+        public bool Match(
 			object obj)
 		{
 			if (!(obj is X509Certificate))

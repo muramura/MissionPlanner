@@ -27,7 +27,8 @@ namespace Org.BouncyCastle.Bcpg.OpenPgp
             this.signatureType = sigPack.SignatureType;
         }
 
-		/// <summary>Initialise the signature object for verification.</summary>
+        /// <summary>Initialise the signature object for verification.</summary>
+        [Obsolete]
         public void InitVerify(
             PgpPublicKey pubKey)
         {

@@ -11,6 +11,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
     {
         private readonly ECPoint q;
 
+        [Obsolete]
         public ECPublicKeyParameters(
             ECPoint				q,
             ECDomainParameters	parameters)
@@ -30,6 +31,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
             this.q = ECDomainParameters.Validate(Parameters.Curve, q);
         }
 
+        [Obsolete]
         public ECPublicKeyParameters(
             string				algorithm,
             ECPoint				q,
@@ -42,6 +44,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
             this.q = ECDomainParameters.Validate(Parameters.Curve, q);
         }
 
+        [Obsolete]
         public ECPublicKeyParameters(
             string				algorithm,
             ECPoint				q,
@@ -59,6 +62,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
             get { return q; }
         }
 
+        [Obsolete]
         public override bool Equals(object obj)
         {
             if (obj == this)
@@ -72,6 +76,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
             return Equals(other);
         }
 
+        [Obsolete]
         protected bool Equals(
             ECPublicKeyParameters other)
         {

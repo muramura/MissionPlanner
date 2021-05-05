@@ -42,6 +42,7 @@ namespace Org.BouncyCastle.Crypto.Parameters
             this.d = d;
         }
 
+        [Obsolete]
         public ECPrivateKeyParameters(
             string				algorithm,
             BigInteger			d,

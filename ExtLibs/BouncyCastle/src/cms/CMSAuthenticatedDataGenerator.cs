@@ -47,11 +47,12 @@ namespace Org.BouncyCastle.Cms
 	    {
 	    }
 
-	    /**
+        /**
 	     * generate an enveloped object that contains an CMS Enveloped Data
 	     * object using the given provider and the passed in key generator.
 	     */
-		private CmsAuthenticatedData Generate(
+        [Obsolete]
+        private CmsAuthenticatedData Generate(
 			CmsProcessable		content,
 			string				macOid,
 			CipherKeyGenerator	keyGen)
@@ -131,10 +132,11 @@ namespace Org.BouncyCastle.Cms
 			return new CmsAuthenticatedData(contentInfo);
 		}
 
-	    /**
+        /**
 	     * generate an authenticated object that contains an CMS Authenticated Data object
 	     */
-	    public CmsAuthenticatedData Generate(
+        [Obsolete]
+        public CmsAuthenticatedData Generate(
 	        CmsProcessable	content,
 	        string			encryptionOid)
 	    {

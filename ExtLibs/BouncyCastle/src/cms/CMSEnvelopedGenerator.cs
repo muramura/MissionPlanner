@@ -123,13 +123,14 @@ namespace Org.BouncyCastle.Cms
             set { this.unprotectedAttributeGenerator = value; }
         }
 
-		/**
+        /**
 		 * add a recipient.
 		 *
 		 * @param cert recipient's public key certificate
 		 * @exception ArgumentException if there is a problem with the certificate
 		 */
-		public void AddKeyTransRecipient(
+        [Obsolete]
+        public void AddKeyTransRecipient(
 			X509Certificate cert)
 		{
 			KeyTransRecipientInfoGenerator ktrig = new KeyTransRecipientInfoGenerator();

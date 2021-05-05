@@ -20,7 +20,8 @@ namespace Org.BouncyCastle.Asn1.X9
         private BigInteger	h;
         private byte[]		seed;
 
-		public static X9ECParameters GetInstance(Object obj)
+        [Obsolete]
+        public static X9ECParameters GetInstance(Object obj)
 		{
 			if (obj is X9ECParameters)
 				return (X9ECParameters)obj;
@@ -31,6 +32,7 @@ namespace Org.BouncyCastle.Asn1.X9
             return null;
 		}
 
+        [Obsolete]
         public X9ECParameters(
             Asn1Sequence seq)
         {
@@ -147,6 +149,7 @@ namespace Org.BouncyCastle.Asn1.X9
             get { return curve; }
         }
 
+        [Obsolete]
         public ECPoint G
         {
             get { return g.Point; }

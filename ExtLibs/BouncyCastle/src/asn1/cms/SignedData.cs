@@ -37,6 +37,7 @@ namespace Org.BouncyCastle.Asn1.Cms
             throw new ArgumentException("Unknown object in factory: " + Platform.GetTypeName(obj), "obj");
         }
 
+        [Obsolete]
         public SignedData(
             Asn1Set     digestAlgorithms,
             ContentInfo contentInfo,
@@ -72,6 +73,7 @@ namespace Org.BouncyCastle.Asn1.Cms
         //       THEN version MUST be 3
         //       ELSE version MUST be 1
         //
+        [Obsolete]
         private DerInteger CalculateVersion(
             DerObjectIdentifier	contentOid,
             Asn1Set				certs,
@@ -143,6 +145,7 @@ namespace Org.BouncyCastle.Asn1.Cms
             return Version1;
         }
 
+        [Obsolete]
         private bool CheckForVersion3(
             Asn1Set signerInfs)
         {

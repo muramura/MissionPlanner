@@ -122,7 +122,8 @@ namespace Org.BouncyCastle.X509
 			get { return c.UserCertificate.Value; }
 		}
 
-		public DateTime RevocationDate
+        [Obsolete]
+        public DateTime RevocationDate
 		{
 			get { return c.RevocationDate.ToDateTime(); }
 		}
@@ -132,7 +133,8 @@ namespace Org.BouncyCastle.X509
 			get { return c.Extensions != null; }
 		}
 
-		public override string ToString()
+        [Obsolete]
+        public override string ToString()
 		{
 			StringBuilder buf = new StringBuilder();
 			string nl = Platform.NewLine;

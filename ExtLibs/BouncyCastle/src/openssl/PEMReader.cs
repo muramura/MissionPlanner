@@ -82,6 +82,7 @@ namespace Org.BouncyCastle.OpenSsl
             this.pFinder = pFinder;
         }
 
+        [Obsolete]
         public object ReadObject()
         {
             PemObject obj = ReadPemObject();
@@ -134,6 +135,7 @@ namespace Org.BouncyCastle.OpenSsl
                 rsaPubStructure.PublicExponent);
         }
 
+        [Obsolete]
         private AsymmetricKeyParameter ReadPublicKey(PemObject pemObject)
         {
             return PublicKeyFactory.CreateKey(pemObject.Content);
@@ -181,6 +183,7 @@ namespace Org.BouncyCastle.OpenSsl
         * @return the certificate request.
         * @throws IOException if an I/O error occured
         */
+        [Obsolete]
         private Pkcs10CertificationRequest ReadCertificateRequest(PemObject pemObject)
         {
             try
@@ -199,6 +202,7 @@ namespace Org.BouncyCastle.OpenSsl
         * @return the X509 Attribute Certificate
         * @throws IOException if an I/O error occured
         */
+        [Obsolete]
         private IX509AttributeCertificate ReadAttributeCertificate(PemObject pemObject)
         {
             return new X509V2AttributeCertificate(pemObject.Content);
@@ -228,6 +232,7 @@ namespace Org.BouncyCastle.OpenSsl
         /**
         * Read a Key Pair
         */
+        [Obsolete]
         private object ReadPrivateKey(PemObject pemObject)
         {
             //

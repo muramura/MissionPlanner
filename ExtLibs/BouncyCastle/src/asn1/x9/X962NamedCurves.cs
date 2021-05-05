@@ -25,6 +25,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new Prime192v1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("ffffffffffffffffffffffff99def836146bc9b1b4d22831", 16);
@@ -52,6 +53,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new Prime192v2Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("fffffffffffffffffffffffe5fb1a724dc80418648d8dd31", 16);
@@ -79,6 +81,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new Prime192v3Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("ffffffffffffffffffffffff7a62d031c83f4294f640ec13", 16);
@@ -106,6 +109,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new Prime239v1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("7fffffffffffffffffffffff7fffff9e5e9a9f5d9071fbd1522688909d0b", 16);
@@ -133,6 +137,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new Prime239v2Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("7fffffffffffffffffffffff800000cfa7e8594377d414c03821bc582063", 16);
@@ -160,6 +165,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new Prime239v3Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("7fffffffffffffffffffffff7fffff975deb41b3a6057c3c432146526551", 16);
@@ -187,6 +193,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new Prime256v1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("ffffffff00000000ffffffffffffffffbce6faada7179e84f3b9cac2fc632551", 16);
@@ -217,6 +224,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2pnb163v1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("0400000000000000000001E60FC8821CC74DAEAFC1", 16);
@@ -245,6 +253,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2pnb163v2Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("03FFFFFFFFFFFFFFFFFFFDF64DE1151ADBB78F10A7", 16);
@@ -273,6 +282,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2pnb163v3Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("03FFFFFFFFFFFFFFFFFFFE1AEE140F110AFF961309", 16);
@@ -300,6 +310,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2pnb176w1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("010092537397ECA4F6145799D62B0A19CE06FE26AD", 16);
@@ -328,6 +339,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2tnb191v1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("40000000000000000000000004A20E90C39067C893BBB9A5", 16);
@@ -356,6 +368,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2tnb191v2Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("20000000000000000000000050508CB89F652824E06B8173", 16);
@@ -384,6 +397,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2tnb191v3Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("155555555555555555555555610C0B196812BFB6288A3EA3", 16);
@@ -412,6 +426,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2pnb208w1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("0101BAF95C9723C57B6C21DA2EFF2D5ED588BDD5717E212F9D", 16);
@@ -440,6 +455,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2tnb239v1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("2000000000000000000000000000000F4D42FFE1492A4993F1CAD666E447", 16);
@@ -468,6 +484,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2tnb239v2Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("1555555555555555555555555555553C6F2885259C31E3FCDF154624522D", 16);
@@ -496,6 +513,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2tnb239v3Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("0CCCCCCCCCCCCCCCCCCCCCCCCCCCCCAC4912D2D9DF903EF9888B8A0E4CFF", 16);
@@ -524,6 +542,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2pnb272w1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("0100FAF51354E0E39E4892DF6E319C72C8161603FA45AA7B998A167B8F1E629521", 16);
@@ -552,6 +571,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2pnb304w1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("0101D556572AABAC800101D556572AABAC8001022D5C91DD173F8FB561DA6899164443051D", 16);
@@ -580,6 +600,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2tnb359v1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("01AF286BCA1AF286BCA1AF286BCA1AF286BCA1AF286BC9FB8F6B85C556892C20A7EB964FE7719E74F490758D3B", 16);
@@ -608,6 +629,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2pnb368w1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("010090512DA9AF72B08349D98A5DD4C7B0532ECA51CE03E2D10F3B7AC579BD87E909AE40A6F131E9CFCE5BD967", 16);
@@ -636,6 +658,7 @@ namespace Org.BouncyCastle.Asn1.X9
 
             internal static readonly X9ECParametersHolder Instance = new C2tnb431r1Holder();
 
+            [Obsolete]
             protected override X9ECParameters CreateParameters()
             {
                 BigInteger n = new BigInteger("0340340340340340340340340340340340340340340340340340340323C313FAB50589703B5EC68D3587FEC60D161CC149C1AD4A91", 16);

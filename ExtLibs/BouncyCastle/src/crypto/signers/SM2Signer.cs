@@ -88,6 +88,7 @@ namespace Org.BouncyCastle.Crypto.Signers
             digest.BlockUpdate(buf, off, len);
         }
 
+        [Obsolete]
         public virtual bool VerifySignature(byte[] signature)
         {
             try
@@ -162,6 +163,7 @@ namespace Org.BouncyCastle.Crypto.Signers
             }
         }
 
+        [Obsolete]
         private bool VerifySignature(BigInteger r, BigInteger s)
         {
             BigInteger n = ecParams.N;
