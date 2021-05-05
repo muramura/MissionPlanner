@@ -72,6 +72,7 @@ namespace MissionPlanner.Utilities
             log.Error(ex);
         }
 
+        [Obsolete]
         public static Form ShowXamarinControl(this ContentPage ctl, int Width, int Height)
         {
             var f = new Xamarin.Forms.Platform.WinForms.PlatformRenderer();
