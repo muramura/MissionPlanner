@@ -1,6 +1,7 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
+    <GenerateResourceUsePreserializedResources>true</GenerateResourceUsePreserializedResources>
     <TargetFramework>netstandard2.0</TargetFramework>
     <GeneratePackageOnBuild>false</GeneratePackageOnBuild>
     <ApplicationIcon />
@@ -21,44 +22,48 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Remove="GCSViews/WinForms.xaml.cs" />
+    <Compile Remove="GCSViews\WinForms.xaml.cs" />
+    <EmbeddedResource Remove="GCSViews/WinForms.xaml" />
+    <EmbeddedResource Remove="GCSViews\WinForms.xaml" />
     <Compile Remove="Forms\**" />
-    <Compile Remove="GMap.NET.WindowsForms\**" />
+    
     <EmbeddedResource Remove="Forms\**" />
-    <EmbeddedResource Remove="GMap.NET.WindowsForms\**" />
+    
     <None Remove="Forms\**" />
-    <None Remove="GMap.NET.WindowsForms\**" />
+    
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Remove="Controls\Cursors.cs" />
-    <Compile Remove="Controls\MouseEventArgs.cs" />
-    <Compile Remove="Controls\PaintEventArgs.cs" />
-    <Compile Remove="GCSViews\FlightData.xaml.cs" />
-    <Compile Remove="Linked\Control.cs" />
-    <Compile Remove="Linked\MainV2.cs" />
-    <Compile Remove="Linked\UserControl.cs" />
+    
+    
+    
+    
+    
+    
+    
     <Compile Remove="RTSP\Properties\AssemblyInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>
-    <EmbeddedResource Remove="GCSViews\FlightData.xaml" />
+    
   </ItemGroup>
 
   <ItemGroup>
-    <Compile Include="..\..\..\Controls\MavlinkCheckBox.cs" Link="GCSViews\MavlinkCheckBox.cs" />
-    <Compile Include="..\..\..\Controls\MavlinkCheckBoxBitMask.cs" Link="GCSViews\MavlinkCheckBoxBitMask.cs" />
-    <Compile Include="..\..\..\Controls\MavlinkComboBox.cs" Link="GCSViews\MavlinkComboBox.cs" />
-    <Compile Include="..\..\..\Controls\MAVLinkParamChanged.cs" Link="GCSViews\MAVLinkParamChanged.cs" />
-    <Compile Include="..\..\..\Controls\MyDataGridView.cs" Link="GCSViews\MyDataGridView.cs" />
-    <Compile Include="..\..\..\Controls\paramcompare.cs" Link="GCSViews\paramcompare.cs" />
-    <Compile Include="..\..\..\Controls\paramcompare.Designer.cs" Link="GCSViews\paramcompare.Designer.cs" />
-    <Compile Include="..\..\..\GCSViews\ConfigurationView\ConfigRawParams.cs" Link="GCSViews\ConfigurationView\ConfigRawParams.cs" />
-    <Compile Include="..\..\..\GCSViews\ConfigurationView\ConfigRawParams.Designer.cs" Link="GCSViews\ConfigurationView\ConfigRawParams.Designer.cs" />
+    
+    
+    
+    
+    
+    
+    
+    
+    
     <Compile Include="..\..\..\test\FirmwareSelection.xaml.cs" Link="Linked\FirmwareSelection.xaml.cs" />
     <None Include="..\..\..\Utilities\ExtensionsMP.cs" Link="GCSViews\ExtensionsMP.cs" />
     <Compile Include="..\..\Controls\IDynamicParameterControl.cs" Link="GCSViews\IDynamicParameterControl.cs" />
-    <Compile Include="..\..\Controls\MyButton.cs" Link="GCSViews\MyButton.cs" />
-    <Compile Include="..\..\Controls\MyUserControl.cs" Link="GCSViews\MyUserControl.cs" />
+    
+    
   </ItemGroup>
 
   <ItemGroup>
@@ -141,7 +146,6 @@
     <ProjectReference Include="..\..\MissionPlanner.Drawing\MissionPlanner.Drawing.csproj">
       <Aliases></Aliases>
     </ProjectReference>
-    <ProjectReference Include="..\..\mono\mcs\class\System.Windows.Forms\System.Windows.Forms-net_4_x.csproj" />
     <ProjectReference Include="..\..\px4uploader\px4uploader.csproj" />
     <ProjectReference Include="..\..\Strings\MissionPlanner.Strings.csproj" />
     <ProjectReference Include="..\..\Utilities\MissionPlanner.Utilities.csproj" />

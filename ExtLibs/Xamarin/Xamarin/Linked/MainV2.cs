@@ -12,6 +12,9 @@ namespace MissionPlanner
 {
     public class MainV2
     {
+        public static bool isHerelink { get; set; } = false;
+        public static bool speechEnabled() => false;
+        
         public static MAVLinkInterface comPort;
         public static MainV2 instance;
         /// <summary>
@@ -192,7 +195,7 @@ namespace MissionPlanner
                     }
 
                     // speech altitude warning - message high warning
-                    if ((speechEnabled()  && speechEngine != null &&
+                    if (speechEnabled() && speechEngine != null &&
                         (MainV2.comPort.logreadmode || comPort.BaseStream.IsOpen))
                     {
                         float warnalt = float.MaxValue;

@@ -42,6 +42,13 @@ namespace Xamarin
     {
         public static FlightData instance;
         public static GMapOverlay kmlpolygons;
+
+        Slider tracklog = new Slider();
+        Label LBL_logfn = new Label();
+        Label lbl_logpercent = new Label();
+        Label lbl_playbackspeed = new Label();
+        Button BUT_playlog = new Button();
+
         public static HUD myhud;
         public static GMapControl mymap;
         public static bool threadrun;
@@ -524,7 +531,7 @@ namespace Xamarin
         {
             //POI.POIModified += POI_POIModified;
 
-            tfr.GotTFRs += tfr_GotTFRs;
+            // tfr.GotTFRs += tfr_GotTFRs;
 
             //if (!Settings.Instance.ContainsKey("ShowNoFly") || Settings.Instance.GetBoolean("ShowNoFly"))
             //NoFly.NoFly.NoFlyEvent += NoFly_NoFlyEvent;
@@ -1108,12 +1115,11 @@ namespace Xamarin
                         updateClearRoutesMarkers();
 
                         // add this after the mav icons are drawn
-                        if (MainV2.comPort.MAV.cs.MovingBase != null &&
-                            MainV2.comPort.MAV.cs.MovingBase == PointLatLngAlt.Zero)
+                        if (false)
                         {
                             addMissionRouteMarker(new GMarkerGoogle(currentloc, GMarkerGoogleType.blue_dot)
                             {
-                                Position = MainV2.comPort.MAV.cs.MovingBase,
+                                Position = PointLatLngAlt.Zero,
                                 ToolTipText = "Moving Base",
                                 ToolTipMode = MarkerTooltipMode.OnMouseOver
                             });
@@ -1468,6 +1474,7 @@ namespace Xamarin
 
         void tfr_GotTFRs(object sender, EventArgs e)
         {
+            TFR tfr = new TFR();
             Invoke((Action) delegate
             {
                 foreach (var item in tfr.tfrs)
@@ -1714,6 +1721,45 @@ namespace Xamarin
         }
 
         private MAVLinkInterface mav => MainV2.comPort;
+
+        
+        private async void Takeoff_1m_OnClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                MainV2.comPort.setMode("GUIDED");
+                await MainV2.comPort.doCommandAsync(MainV2.comPort.MAV.sysid, MainV2.comPort.MAV.compid, MAVLink.MAV_CMD.TAKEOFF, 0, 0, 0, 0, 0, 0, 1.0f);
+            }
+            catch (Exception ex)
+            {
+                UserDialogs.Instance.Toast(ex.Message, TimeSpan.FromSeconds(3));
+            }
+        }
+
+        private void Land_OnClicked(object sender, EventArgs e)
+        {
+            MainV2.comPort.setMode("LAND");
+        }
+
+        private void Btn_AltHold_Clicked(object sender, EventArgs e)
+        {
+            MainV2.comPort.setMode("ALT_HOLD");
+        }
+
+        private void Btn_Loiter_Clicked(object sender, EventArgs e)
+        {
+            MainV2.comPort.setMode("LOITER");
+        }
+
+        private void Btn_Stabilize_Clicked(object sender, EventArgs e)
+        {
+            MainV2.comPort.setMode("STABILIZE");
+        }
+
+        private void Btn_RTL_Clicked(object sender, EventArgs e)
+        {
+            MainV2.comPort.setMode("RTL");
+        }
 
         private async void Arm_OnClicked(object sender, EventArgs e)
         {
