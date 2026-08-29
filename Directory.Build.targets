@@ -1,0 +1,23 @@
+<Project>
+  <Target Name="FilterAppleDoubleBeforeCompile" BeforeTargets="CoreCompile">
+    <ItemGroup>
+      <Compile Remove="@(Compile)" Condition="$([System.String]::Copy('%(FileName)').StartsWith('._'))" />
+      <Compile Remove="@(Compile)" Condition="$([System.String]::Copy('%(FullPath)').Contains('/._'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="RemoveLegacySupportFromJavaStubs" BeforeTargets="_GenerateJavaStubs;_GeneratePackageManagerJava;_CreateBaseApk">
+    <ItemGroup>
+      <_ResolvedUserMonoAndroidAssemblies Remove="@(_ResolvedUserMonoAndroidAssemblies)" Condition="$([System.String]::Copy('%(FileName)').StartsWith('Xamarin.Android.Support'))" />
+      <ResolvedAssemblies Remove="@(ResolvedAssemblies)" Condition="$([System.String]::Copy('%(FileName)').StartsWith('Xamarin.Android.Support'))" />
+    </ItemGroup>
+  </Target>
+
+  <Target Name="FilterLegacySupportFromDex" BeforeTargets="_DetermineJavaLibrariesToCompile;_CompileDex;_CompileToDalvik;_CompileToDalvikWithD8;_CreateBaseApk">
+    <ItemGroup>
+      <_AndroidLibraryProjectsImportsList Remove="@(_AndroidLibraryProjectsImportsList)" Condition="$([System.String]::Copy('%(FullPath)').Contains('/jl/bin/'))" />
+      <AndroidExternalJavaLibrary Remove="@(AndroidExternalJavaLibrary)" Condition="$([System.String]::Copy('%(FullPath)').Contains('/jl/bin/'))" />
+      <_JavaLibrariesToDex Remove="@(_JavaLibrariesToDex)" Condition="$([System.String]::Copy('%(FullPath)').Contains('/jl/bin/'))" />
+    </ItemGroup>
+  </Target>
+</Project>

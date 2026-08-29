@@ -1,3 +1,4 @@
+using Resource = _Microsoft.Android.Resource.Designer.Resource;
 ﻿using Acr.UserDialogs;
 using Android.App;
 using Android.Content;
@@ -25,7 +26,7 @@ using Android.Bluetooth;
 using AndroidX.Core.Content;
 using Xamarin.Essentials;
 using MissionPlanner.GCSViews;
-using MissionPlanner.GCSViews.ConfigurationView;
+// using MissionPlanner.GCSViews.ConfigurationView;
 using Environment = Android.OS.Environment;
 using Settings = MissionPlanner.Utilities.Settings;
 using Thread = System.Threading.Thread;
@@ -173,6 +174,28 @@ namespace Xamarin.Droid
                                  WindowManagerFlags.HardwareAccelerated);
 
             base.OnCreate(savedInstanceState);
+            try
+            {
+                var connectivityManager = (global::Android.Net.ConnectivityManager)GetSystemService(global::Android.Content.Context.ConnectivityService);
+                if (connectivityManager != null)
+                {
+                    foreach (var net in connectivityManager.GetAllNetworks())
+                    {
+                        var caps = connectivityManager.GetNetworkCapabilities(net);
+                        if (caps != null && caps.HasTransport(global::Android.Net.TransportType.Wifi))
+                        {
+                            connectivityManager.BindProcessToNetwork(net);
+                            global::Android.Util.Log.Info("MainActivity", "Successfully bound process to WiFi network: " + net);
+                            break;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                global::Android.Util.Log.Warn("MainActivity", "BindProcessToNetwork ex: " + ex);
+            }
+
 
             global::Xamarin.Forms.Forms.Init(this, savedInstanceState);
             Xamarin.Essentials.Platform.Init(this, savedInstanceState);
@@ -230,12 +253,12 @@ namespace Xamarin.Droid
             Log.Info("MP", "Settings.CustomUserDataDirectory " + Settings.CustomUserDataDirectory);
 
             try { 
-                WinForms.Android = true;
-                WinForms.BundledPath = Application.Context.ApplicationInfo.NativeLibraryDir;
+            // WinForms.Android = true;
+            // WinForms.BundledPath = Application.Context.ApplicationInfo.NativeLibraryDir;
                 GStreamer.BundledPath = Application.Context.ApplicationInfo.NativeLibraryDir;
                 GStreamer.Android = true;
             } catch { }
-            Log.Info("MP", "WinForms.BundledPath " + WinForms.BundledPath);
+            // Log.Info("MP", "WinForms.BundledPath " + WinForms.BundledPath);
 
             try
             {
@@ -255,7 +278,7 @@ namespace Xamarin.Droid
             {
                 JavaSystem.LoadLibrary("gstreamer_android");
 
-                Org.Freedesktop.Gstreamer.GStreamer.Init(this.ApplicationContext);
+            // Org.Freedesktop.Gstreamer.GStreamer.Init(this.ApplicationContext);
             }
             catch (Exception ex) { Log.Error("MP", ex.ToString()); }
 
@@ -278,7 +301,7 @@ namespace Xamarin.Droid
             //androidvideo.Start();
             AndroidVideo.onNewImage += (e, o) => 
             {
-                WinForms.SetHUDbg(o);
+            // WinForms.SetHUDbg(o);
             };
 
 
@@ -363,11 +386,11 @@ namespace Xamarin.Droid
                 var gdaldir = Settings.GetRunningDirectory() + "gdalimages";
                 Directory.CreateDirectory(gdaldir);
 
-                MissionPlanner.Utilities.GDAL.GDALBase = new GDAL.GDAL();
+            // MissionPlanner.Utilities.GDAL.GDALBase = new GDAL.GDAL();
 
-                GDAL.GDAL.ScanDirectory(gdaldir);
+            // GDAL.GDAL.ScanDirectory(gdaldir);
 
-                GMap.NET.MapProviders.GMapProviders.List.Add(GDAL.GDALProvider.Instance);
+            // GMap.NET.MapProviders.GMapProviders.List.Add(GDAL.GDALProvider.Instance);
             });
             
 
@@ -571,7 +594,7 @@ namespace Xamarin.Droid
 
             Log.Verbose(TAG, "usb device attached");
 
-            WinForms.InitDevice = ()=>
+            // WinForms.InitDevice = ()=>
             {
                 Log.Info(TAG, "WinForms.InitDevice");
                 UsbBroadcastReceiver.OnReceive(this.ApplicationContext, intent);

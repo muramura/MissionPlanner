@@ -181,6 +181,81 @@ namespace Xamarin
 
             FlightData_Load(null, null);
 
+            int streamRequestCounter = 0;
+            Forms.Device.StartTimer(TimeSpan.FromMilliseconds(50), () =>
+            {
+                try
+                {
+                    if (MainV2.comPort != null)
+                    {
+                        var mav = MainV2.comPort.MAV;
+                        if (mav == null || mav.sysid == 0)
+                        {
+                            foreach (var m in MainV2.comPort.MAVlist)
+                            {
+                                if (m.sysid > 0)
+                                {
+                                    MainV2.comPort.sysidcurrent = m.sysid;
+                                    MainV2.comPort.compidcurrent = m.compid;
+                                    mav = m;
+                                    break;
+                                }
+                            }
+                        }
+                        var cs = mav?.cs ?? MainV2.comPort.MAV?.cs;
+                        bool isOpen = MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen;
+
+                        if (cs != null && isOpen)
+                        {
+                            if (++streamRequestCounter % 20 == 1)
+                            {
+                                log.Info($"=== StampFly Live Attitude === Roll={cs.roll:0.1} Pitch={cs.pitch:0.1} Yaw={cs.yaw:0.1} Batt={cs.battery_voltage:0.2}V");
+                                try
+                                {
+                                    MainV2.comPort.MAVlist[1, 1].mavlinkv2 = true;
+                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.ALL, 10, 1, 1);
+                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA1, 10, 1, 1);
+                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 10, 1, 1);
+                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 5, 1, 1);
+                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, 2, 1, 1);
+                                    _ = MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL, 30, 50000, 0, 0, 0, 0, 0, false);
+                                }
+                                catch { }
+                            }
+                            // Update HUD attitude & values in real-time
+                            hud1.roll = (float)cs.roll;
+                            hud1.pitch = (float)cs.pitch;
+                            hud1.heading = (float)cs.yaw;
+                            hud1.status = cs.armed;
+                            hud1.alt = (float)cs.alt;
+                            hud1.groundspeed = (float)cs.groundspeed;
+                            hud1.airspeed = (float)cs.airspeed;
+                            hud1.batterylevel = (float)cs.battery_voltage;
+                            hud1.batteryremaining = (float)cs.battery_remaining;
+                            hud1.linkqualitygcs = (float)cs.linkqualitygcs;
+                            hud1.mode = cs.mode;
+                            hud1.connected = true;
+                            hud1.Invalidate();
+
+                            // Update top telemetry bar
+                            LBL_battery_volt.Text = $"{cs.battery_voltage:0.00} V";
+                            LBL_alt_val.Text = $"Alt: {cs.alt:0.0} m";
+                            LBL_mode_val.Text = string.IsNullOrEmpty(cs.mode) ? "STABILIZE" : cs.mode.ToUpper();
+                            LBL_link_val.Text = $"{cs.linkqualitygcs}%";
+                            LBL_link_val.TextColor = cs.linkqualitygcs > 50 ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#EF4444");
+
+                            if (cs.lat != 0 && cs.lng != 0 && Math.Abs(cs.lat) > 0.001)
+                            {
+                                gMapControl1.Position = new PointLatLng(cs.lat, cs.lng);
+                            }
+                        }
+                    }
+                }
+                catch { }
+                return true;
+            });
+
+
             Activate();
         }
 
@@ -1736,42 +1811,93 @@ namespace Xamarin
             }
         }
 
-        private void Land_OnClicked(object sender, EventArgs e)
+        private async void Land_OnClicked(object sender, EventArgs e)
         {
-            MainV2.comPort.setMode("LAND");
+            try
+            {
+                log.Info("Land_OnClicked");
+                MainV2.comPort.setMode(1, 1, "Land");
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 9, 0, 0, 0, 0, 0, false);
+                UserDialogs.Instance.Toast("緊急着陸（LAND）送信", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
         }
 
-        private void Btn_AltHold_Clicked(object sender, EventArgs e)
+        private async void Btn_AltHold_Clicked(object sender, EventArgs e)
         {
-            MainV2.comPort.setMode("ALT_HOLD");
+            try
+            {
+                log.Info("Btn_AltHold_Clicked");
+                MainV2.comPort.setMode(1, 1, "AltHold");
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 2, 0, 0, 0, 0, 0, false);
+                UserDialogs.Instance.Toast("ALTHOLD モード要求送信", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
         }
 
-        private void Btn_Loiter_Clicked(object sender, EventArgs e)
+        private async void Btn_Loiter_Clicked(object sender, EventArgs e)
         {
-            MainV2.comPort.setMode("LOITER");
+            try
+            {
+                log.Info("Btn_Loiter_Clicked");
+                MainV2.comPort.setMode(1, 1, "Loiter");
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 5, 0, 0, 0, 0, 0, false);
+                UserDialogs.Instance.Toast("LOITER モード要求送信", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
         }
 
-        private void Btn_Stabilize_Clicked(object sender, EventArgs e)
+        private async void Btn_Stabilize_Clicked(object sender, EventArgs e)
         {
-            MainV2.comPort.setMode("STABILIZE");
+            try
+            {
+                log.Info("Btn_Stabilize_Clicked");
+                MainV2.comPort.setMode(1, 1, "Stabilize");
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 0, 0, 0, 0, 0, 0, false);
+                UserDialogs.Instance.Toast("STABILIZE モード要求送信", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
         }
 
-        private void Btn_RTL_Clicked(object sender, EventArgs e)
+        private async void Btn_RTL_Clicked(object sender, EventArgs e)
         {
-            MainV2.comPort.setMode("RTL");
+            try
+            {
+                log.Info("Btn_RTL_Clicked");
+                MainV2.comPort.setMode(1, 1, "RTL");
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 6, 0, 0, 0, 0, 0, false);
+                UserDialogs.Instance.Toast("RTL モード要求送信", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
         }
 
         private async void Arm_OnClicked(object sender, EventArgs e)
         {
             try
             {
-                await MainV2.comPort.doARMAsync(MainV2.comPort.MAV.sysid, MainV2.comPort.MAV.compid, true);
+                log.Info("Arm_OnClicked");
+                await MainV2.comPort.doARMAsync(1, 1, true);
+                UserDialogs.Instance.Toast("ARM（始動）送信", TimeSpan.FromSeconds(1));
             }
             catch (Exception exception)
             {
-                UserDialogs.Instance.Toast(exception.Message, TimeSpan.FromSeconds(3));
-                Console.WriteLine(exception);
-                //throw;
+                UserDialogs.Instance.Toast("ARM Error: " + exception.Message, TimeSpan.FromSeconds(2));
+                log.Error(exception);
             }
         }
 
@@ -1779,13 +1905,14 @@ namespace Xamarin
         {
             try
             {
-                await mav.doARMAsync(mav.MAV.sysid, mav.MAV.compid, false);
+                log.Info("Disarm_OnClicked");
+                await MainV2.comPort.doARMAsync(1, 1, false);
+                UserDialogs.Instance.Toast("DISARM（停止）送信", TimeSpan.FromSeconds(1));
             }
             catch (Exception exception)
             {
-                UserDialogs.Instance.Toast(exception.Message, TimeSpan.FromSeconds(3));
-                Console.WriteLine(exception);
-               // throw;
+                UserDialogs.Instance.Toast("DISARM Error: " + exception.Message, TimeSpan.FromSeconds(2));
+                log.Error(exception);
             }
         }
 

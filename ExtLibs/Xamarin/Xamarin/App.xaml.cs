@@ -65,6 +65,51 @@ namespace Xamarin
             }
 
             MainPage = new MainPage();
+            try
+            {
+                AutoConnect.NewMavlinkConnection += (sender, serial) =>
+                {
+                    try
+                    {
+                        log.Info("AutoConnect.NewMavlinkConnection " + serial.PortName);
+
+                        if (MainV2.comPort == null)
+                            MainV2.comPort = new MAVLinkInterface();
+
+                        if (MainV2.instance == null)
+                            new MainV2();
+
+                        MainV2.comPort.BaseStream = serial;
+                        MainV2.comPort.giveComport = true;
+                        MainV2.comPort.Open(false, true, false);
+                        MainV2.comPort.giveComport = false;
+
+                        if (!MainV2.Comports.Contains(MainV2.comPort))
+                            MainV2.Comports.Add(MainV2.comPort);
+
+                        _ = Task.Run(() => MainV2.instance.SerialReader());
+
+                        try
+                        {
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.ALL, 4);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA1, 10);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 10);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 3);
+                        }
+                        catch { }
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("AutoConnect Error: " + ex);
+                    }
+                };
+                AutoConnect.Start();
+            }
+            catch (Exception ex)
+            {
+                log.Error("AutoConnect.Start ex: " + ex);
+            }
+
         }
 
         private void CurrentDomain_UnhandledException(object sender, UnhandledExceptionEventArgs e)

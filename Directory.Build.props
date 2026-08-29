@@ -1,0 +1,14 @@
+<Project>
+  <PropertyGroup>
+    <!-- 中間ファイル(obj)と出力(bin)を両方 Mac 内蔵 SSD (APFS) に置くことで ._* の発生を完全に根絶 -->
+    <BaseIntermediateOutputPath>/tmp/mp_build/obj/$(MSBuildProjectName)/</BaseIntermediateOutputPath>
+    <BaseOutputPath>/tmp/mp_build/bin/$(MSBuildProjectName)/</BaseOutputPath>
+    <DefaultItemExcludes>$(DefaultItemExcludes);**/._*;**/.DS_Store</DefaultItemExcludes>
+    <WarningLevel>0</WarningLevel>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Remove="**/._*" />
+    <Compile Remove="**/._*.cs" />
+  </ItemGroup>
+</Project>

@@ -5366,6 +5366,12 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
                     // process for all mavs, filtering done inside - subscription handler
                     PacketReceived(message);
 
+                    if (message.msgid == (uint)MAVLink.MAVLINK_MSG_ID.ATTITUDE)
+                    {
+                        var att = message.ToStructure<MAVLink.mavlink_attitude_t>();
+                        log.Info($"[ATTITUDE-PKT] Roll={att.roll * 57.2957795f:0.1} Pitch={att.pitch * 57.2957795f:0.1} Yaw={att.yaw * 57.2957795f:0.1}");
+                    }
+                    log.Info($"[RCV-MSG] sys:{message.sysid} comp:{message.compid} msgid:{message.msgid} len:{message.payloadlength}");
                     _OnPacketReceived?.Invoke(this, message);
 
                     if (debugmavlink)
@@ -6661,35 +6667,60 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
         {
             mode.target_system = sysid;
 
-            if (modein == null || modein == "")
+            if (string.IsNullOrEmpty(modein))
                 return false;
+
+            // Direct Copter mode mapping fallback
+            var cleanMode = modein.Replace("_", "").Replace(" ", "").ToLower();
+            uint customMode = uint.MaxValue;
+            switch (cleanMode)
+            {
+                case "stabilize": customMode = 0; break;
+                case "acro": customMode = 1; break;
+                case "althold": customMode = 2; break;
+                case "auto": customMode = 3; break;
+                case "guided": customMode = 4; break;
+                case "loiter": customMode = 5; break;
+                case "rtl": customMode = 6; break;
+                case "circle": customMode = 7; break;
+                case "land": customMode = 9; break;
+                case "drift": customMode = 11; break;
+                case "sport": customMode = 13; break;
+                case "flip": customMode = 14; break;
+                case "autotune": customMode = 15; break;
+                case "poshold": customMode = 16; break;
+                case "brake": customMode = 17; break;
+                case "throw": customMode = 18; break;
+                case "flowhold": customMode = 22; break;
+            }
+
+            if (customMode != uint.MaxValue)
+            {
+                mode.base_mode = (byte)MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
+                mode.custom_mode = customMode;
+                return true;
+            }
 
             try
             {
                 List<KeyValuePair<int, string>> modelist = Common.getModesList(MAVlist[sysid, compid].cs.firmware);
-
-                foreach (KeyValuePair<int, string> pair in modelist)
+                if (modelist != null)
                 {
-                    if (pair.Value.ToLower() == modein.ToLower())
+                    foreach (KeyValuePair<int, string> pair in modelist)
                     {
-                        mode.base_mode = (byte) MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
-                        mode.custom_mode = (uint) pair.Key;
+                        if (pair.Value.ToLower() == modein.ToLower())
+                        {
+                            mode.base_mode = (byte) MAV_MODE_FLAG.CUSTOM_MODE_ENABLED;
+                            mode.custom_mode = (uint) pair.Key;
+                            return true;
+                        }
                     }
                 }
-
-                if (mode.base_mode == 0)
-                {
-                    log.Error("No Mode Changed " + modein);
-                    return false;
-                }
             }
-            catch
-            {
-                log.Error("Failed to find Mode");
-                return false;
-            }
+            catch { }
 
-            return true;
+            log.Error("No Mode Changed " + modein);
+            return false;
         }
 
         public void setAPType(byte sysid, byte compid)

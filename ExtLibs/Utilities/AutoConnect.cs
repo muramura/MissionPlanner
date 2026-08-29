@@ -61,15 +61,25 @@ namespace MissionPlanner.Utilities
 
         public static void Start()
         {
-            var config = Settings.Instance[SettingsName];
-
-            if (config == null)
+            try
             {
-                Settings.Instance[SettingsName] = connectionInfos.ToJSON();
-                config = Settings.Instance[SettingsName];
-            }
+                var config = Settings.Instance[SettingsName];
 
-            connectionInfos = config.FromJSON<List<ConnectionInfo>>();
+                if (config == null)
+                {
+                    Settings.Instance[SettingsName] = connectionInfos.ToJSON();
+                    config = Settings.Instance[SettingsName];
+                }
+
+                if (config != null)
+                {
+                    connectionInfos = config.FromJSON<List<ConnectionInfo>>();
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("AutoConnect settings load exception, using defaults: " + ex.Message);
+            }
 
             foreach (var connectionInfo in connectionInfos)
             {
@@ -373,7 +383,7 @@ namespace MissionPlanner.Utilities
         public static void RaiseNewVideoStream(object E, string s) => NewVideoStream?.Invoke(E, s);
         public static void RaiseNewMavlinkConnection(object E, ICommsSerial s) => NewMavlinkConnection?.Invoke(E, s);
 
-        private static void clientdataMAVLink(IAsyncResult ar)
+        private         static void clientdataMAVLink(IAsyncResult ar)
         {
             var client = ((UdpClient) ar.AsyncState);
 
@@ -381,28 +391,36 @@ namespace MissionPlanner.Utilities
                 return;
             try
             {
-                ICommsSerial commsSerial = null;
+                IPEndPoint remoteEp = new IPEndPoint(IPAddress.Any, 0);
+                try
+                {
+                    client.EndReceive(ar, ref remoteEp);
+                }
+                catch { }
 
                 var port = ((IPEndPoint)client.Client.LocalEndPoint).Port;
 
-                if (client.Client.Connected) 
-                {
-                    Comms.UdpSerialConnect udpclient = new Comms.UdpSerialConnect();
-                    udpclient.client = client;
-                    udpclient.IsOpen = true;
-                    udpclient.hostEndPoint = (IPEndPoint)client.Client.RemoteEndPoint;
-                    udpclient.Port = port.ToString();
-                    commsSerial = udpclient;
-                }
-                else
-                {
-                    
-                    var udpclient = new Comms.UdpSerial(client);
-                    udpclient.Port = port.ToString();
-                    commsSerial = udpclient;
-                }               
+                var udpclient = new Comms.UdpSerial(client);
+                udpclient.IsOpen = true;
+                udpclient.Port = port.ToString();
 
-                NewMavlinkConnection?.BeginInvoke(null, commsSerial, null, null);
+                if (remoteEp != null && !remoteEp.Address.Equals(IPAddress.Any))
+                {
+                    udpclient.EndPointList.Add(remoteEp);
+                }
+                udpclient.EndPointList.Add(new IPEndPoint(IPAddress.Parse("192.168.4.1"), port));
+                udpclient.EndPointList.Add(new IPEndPoint(IPAddress.Broadcast, port));
+
+                ICommsSerial commsSerial = udpclient;
+
+                try
+                {
+                    NewMavlinkConnection?.Invoke(null, commsSerial);
+                }
+                catch (Exception ex)
+                {
+                    log.Error("NewMavlinkConnection invoke ex: " + ex);
+                }
             }
             catch (Exception ex)
             {

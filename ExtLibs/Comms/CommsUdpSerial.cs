@@ -264,15 +264,30 @@ namespace MissionPlanner.Comms
         public void Write(byte[] write, int offset, int length)
         {
             VerifyConnected();
-            // this is not ideal. but works
-            foreach (var ipEndPoint in EndPointList)
+            byte[] data = write;
+            if (offset != 0 || length != write.Length)
+            {
+                data = new byte[length];
+                Buffer.BlockCopy(write, offset, data, 0, length);
+            }
+
+            if (EndPointList.Count == 0)
+            {
+                EndPointList.Add(new IPEndPoint(IPAddress.Parse("192.168.4.1"), 14550));
+            }
+
+            foreach (var ipEndPoint in EndPointList.ToArray())
+            {
                 try
                 {
-                    client.Send(write, length, ipEndPoint);
+                    int sent = client.Send(data, length, ipEndPoint);
+                    log.InfoFormat("[UDP-OUT] Sent {0} bytes to {1}", sent, ipEndPoint);
                 }
-                catch
+                catch (Exception ex)
                 {
-                } //throw new Exception("Comport / Socket Closed"); }
+                    log.WarnFormat("[UDP-OUT] Error to {0}: {1}", ipEndPoint, ex.Message);
+                }
+            }
         }
 
         public void DiscardInBuffer()
