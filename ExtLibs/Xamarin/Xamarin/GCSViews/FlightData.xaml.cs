@@ -123,9 +123,25 @@ namespace Xamarin
 
             gMapControl1.MapProvider = GMapProviders.GoogleSatelliteMap;
 
-            gMapControl1.MapScaleInfoEnabled = true;
-            gMapControl1.ScalePen = new Pen(Color.White);
+            gMapControl1.ShowTileGridLines = false;
+            gMapControl1.MapScaleInfoEnabled = false;
+            gMapControl1.MinZoom = 1;
+            gMapControl1.MaxZoom = 24;
+
+            // Default position centered on Japan with high zoom so satellite imagery fills 100% full screen
+            gMapControl1.EmptyTileBorders = new Pen(Color.Transparent, 0);
+            gMapControl1.EmptyTileColor = Color.FromArgb(17, 24, 39);
+            gMapControl1.ShowTileGridLines = false;
+
+            double initLat = Settings.Instance.GetDouble("maplast_lat", 35.6812);
+            double initLng = Settings.Instance.GetDouble("maplast_lng", 139.7671);
+            if (initLat == 0 && initLng == 0)
+            {
+                initLat = 35.6812;
+                initLng = 139.7671;
+            }
             gMapControl1.Position = new PointLatLng(0, 0);
+            gMapControl1.Zoom = 3;
 
             this.gMapControl1.OnPositionChanged += new GMap.NET.PositionChanged(this.gMapControl1_OnPositionChanged);
             // this.gMapControl1.Click += new System.EventHandler(this.gMapControl1_Click);
@@ -267,8 +283,7 @@ namespace Xamarin
             hud1.speedunit = CurrentState.SpeedUnit;
             hud1.distunit = CurrentState.DistanceUnit;
 
-            Mode.Items.AddRange(MissionPlanner.ArduPilot.Common.getModesList(MainV2.comPort.MAV.cs.firmware)
-                .Select(a => a.Value));
+            // Mode items populated via OnFlightModeTapped
 
             CheckBatteryShow();
 
@@ -1388,7 +1403,7 @@ namespace Xamarin
                                 mapupdate = DateTime.Now;
                             }
 
-                            if (route.Points.Count == 1 && gMapControl1.Zoom == 3) // 3 is the default load zoom
+                            if (route.Points.Count == 1 && gMapControl1.Zoom <= 5) // 3 is the default load zoom
                             {
                                 updateMapPosition(currentloc);
                                 updateMapZoom(17);
@@ -1798,16 +1813,168 @@ namespace Xamarin
         private MAVLinkInterface mav => MainV2.comPort;
 
         
+                private async void OnFlightModeTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                string currentMode = MainV2.comPort.MAV?.cs?.mode ?? "STABILIZE";
+                string action = await DisplayActionSheet($"フライトモード選択 (現在: {currentMode})", "キャンセル", null,
+                    "STABILIZE (手動)",
+                    "ALTHOLD (高度維持)",
+                    "LOITER (定点維持)",
+                    "LAND (着陸)",
+                    "RTL (自動帰還)",
+                    "POSHOLD (位置維持)",
+                    "FLOWHOLD (フロー維持)",
+                    "ACRO (アクロ)");
+
+                if (string.IsNullOrEmpty(action) || action == "キャンセル")
+                    return;
+
+                string targetMode = "STABILIZE";
+                uint customMode = 0;
+
+                if (action.StartsWith("STABILIZE")) { targetMode = "Stabilize"; customMode = 0; }
+                else if (action.StartsWith("ALTHOLD")) { targetMode = "AltHold"; customMode = 2; }
+                else if (action.StartsWith("LOITER")) { targetMode = "Loiter"; customMode = 5; }
+                else if (action.StartsWith("LAND")) { targetMode = "Land"; customMode = 9; }
+                else if (action.StartsWith("RTL")) { targetMode = "RTL"; customMode = 6; }
+                else if (action.StartsWith("POSHOLD")) { targetMode = "PosHold"; customMode = 16; }
+                else if (action.StartsWith("FLOWHOLD")) { targetMode = "FlowHold"; customMode = 22; }
+                else if (action.StartsWith("ACRO")) { targetMode = "Acro"; customMode = 1; }
+
+                log.InfoFormat("User selected mode from TopBar: {0} ({1})", action, targetMode);
+
+                MainV2.comPort.setMode(1, 1, targetMode);
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, customMode, 0, 0, 0, 0, 0, false);
+                UserDialogs.Instance.Toast($"{targetMode.ToUpper()} モードに変更要求送信", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+                        private async void OnMotorControlTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                bool isArmed = MainV2.comPort.MAV?.cs?.armed ?? false;
+                string statusStr = isArmed ? "アーム中（ARMED）" : "停止中（DISARMED）";
+                string action = await DisplayActionSheet($"モーター制御 (現在: {statusStr})", "キャンセル", null,
+                    "🟢 ARM（モーター始動）",
+                    "🔴 DISARM（モーター停止）",
+                    "🚨 緊急着陸（LAND）");
+
+                if (string.IsNullOrEmpty(action) || action == "キャンセル")
+                    return;
+
+                if (action.Contains("ARM（モーター始動）"))
+                {
+                    await MainV2.comPort.doARMAsync(1, 1, true);
+                    UserDialogs.Instance.Toast("🟢 ARM（始動）コマンド送信", TimeSpan.FromSeconds(1));
+                }
+                else if (action.Contains("DISARM（モーター停止）"))
+                {
+                    await MainV2.comPort.doARMAsync(1, 1, false);
+                    UserDialogs.Instance.Toast("🔴 DISARM（停止）コマンド送信", TimeSpan.FromSeconds(1));
+                }
+                else if (action.Contains("緊急着陸"))
+                {
+                    MainV2.comPort.setMode(1, 1, "Land");
+                    await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 9, 0, 0, 0, 0, 0, false);
+                    UserDialogs.Instance.Toast("🚨 緊急着陸コマンド送信", TimeSpan.FromSeconds(1));
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private async void OnQuickLandTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                log.Info("OnQuickLandTapped");
+                MainV2.comPort.setMode(1, 1, "Land");
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 9, 0, 0, 0, 0, 0, false);
+                UserDialogs.Instance.Toast("🛬 着陸（LAND）モード送信", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private async void OnQuickRTLTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                log.Info("OnQuickRTLTapped");
+                MainV2.comPort.setMode(1, 1, "RTL");
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 6, 0, 0, 0, 0, 0, false);
+                UserDialogs.Instance.Toast("🏠 自動帰還（RTL）モード送信", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
         private async void Takeoff_1m_OnClicked(object sender, EventArgs e)
         {
             try
             {
-                MainV2.comPort.setMode("GUIDED");
-                await MainV2.comPort.doCommandAsync(MainV2.comPort.MAV.sysid, MainV2.comPort.MAV.compid, MAVLink.MAV_CMD.TAKEOFF, 0, 0, 0, 0, 0, 0, 1.0f);
+                log.Info("Takeoff_1m_OnClicked");
+                if (!MainV2.comPort.MAV.cs.armed)
+                {
+                    await MainV2.comPort.doARMAsync(1, 1, true);
+                    await Task.Delay(500);
+                }
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.TAKEOFF, 0, 0, 0, 0, 0, 0, 1.0f, false);
+                UserDialogs.Instance.Toast("🛫 離陸（1.0m）コマンド送信", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {
-                UserDialogs.Instance.Toast(ex.Message, TimeSpan.FromSeconds(3));
+                log.Error(ex);
+            }
+        }
+
+        private async void Btn_Arm_Toggle_Clicked(object sender, EventArgs e)
+        {
+            try
+            {
+                bool isArmed = MainV2.comPort.MAV?.cs?.armed ?? false;
+                string statusStr = isArmed ? "アーム中（ARMED）" : "停止中（DISARMED）";
+                string action = await DisplayActionSheet($"モーター制御 (現在: {statusStr})", "キャンセル", null,
+                    "🟢 ARM（始動）",
+                    "🔴 DISARM（停止）",
+                    "🚨 緊急着陸（LAND）");
+
+                if (string.IsNullOrEmpty(action) || action == "キャンセル")
+                    return;
+
+                if (action.Contains("ARM（始動）"))
+                {
+                    await MainV2.comPort.doARMAsync(1, 1, true);
+                    UserDialogs.Instance.Toast("🟢 ARM（始動）コマンド送信", TimeSpan.FromSeconds(1));
+                }
+                else if (action.Contains("DISARM（停止）"))
+                {
+                    await MainV2.comPort.doARMAsync(1, 1, false);
+                    UserDialogs.Instance.Toast("🔴 DISARM（停止）コマンド送信", TimeSpan.FromSeconds(1));
+                }
+                else if (action.Contains("緊急着陸"))
+                {
+                    MainV2.comPort.setMode(1, 1, "Land");
+                    await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 9, 0, 0, 0, 0, 0, false);
+                    UserDialogs.Instance.Toast("🚨 緊急着陸コマンド送信", TimeSpan.FromSeconds(1));
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
             }
         }
 
@@ -1980,7 +2147,6 @@ namespace Xamarin
 
         private void Mode_OnSelectedIndexChanged(object sender, EventArgs e)
         {
-            modeselected = Mode.SelectedItem.ToString();
         }
     }
 

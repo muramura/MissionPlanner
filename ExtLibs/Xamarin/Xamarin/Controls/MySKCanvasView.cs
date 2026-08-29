@@ -322,7 +322,7 @@ namespace Xamarin.Controls
                 MySKGLView_SizeChanged(null, null);
             }
 
-            e.Surface.Canvas.Clear(SKColors.AliceBlue);
+            e.Surface.Canvas.Clear(new SKColor(17, 24, 39));
            
             var sk = new Graphics(e.Surface);
             try

@@ -163,9 +163,9 @@ namespace GMap.NET.WindowsForms
       /// pen for empty tile borders
       /// </summary>
 #if !PocketPC
-      public Pen EmptyTileBorders = new Pen(Brushes.White, 1);
+      public Pen EmptyTileBorders = new Pen(Brushes.Transparent, 0);
 #else
-      public Pen EmptyTileBorders = new Pen(Color.White, 1);
+      public Pen EmptyTileBorders = new Pen(Color.Transparent, 0);
 #endif
 
       public bool ShowCenter = true;
@@ -270,8 +270,8 @@ namespace GMap.NET.WindowsForms
       }
 #endif
 
-      Brush EmptytileBrush = new SolidBrush(Color.Navy);
-      Color emptyTileColor = Color.Navy;
+      Brush EmptytileBrush = new SolidBrush(Color.FromArgb(17, 24, 39));
+      Color emptyTileColor = Color.FromArgb(17, 24, 39);
 
       /// <summary>
       /// color of empty tile background
@@ -794,37 +794,14 @@ namespace GMap.NET.WindowsForms
                                   if (Core.FailedLoads.ContainsKey(lt))
                                   {
                                       var ex = Core.FailedLoads[lt];
-#if !PocketPC
-                                      g.FillRectangle(EmptytileBrush,
-                                          new RectangleF(Core.tileRect.X, Core.tileRect.Y, Core.tileRect.Width,
-                                              Core.tileRect.Height));
-
-                                      g.DrawString("Exception: " + ex.Message, MissingDataFont, Brushes.Red,
-                                          new RectangleF(Core.tileRect.X + 11, Core.tileRect.Y + 11,
-                                              Core.tileRect.Width - 11, Core.tileRect.Height - 11));
-
-                                      g.DrawString(EmptyTileText, MissingDataFont, Brushes.Blue,
-                                          new RectangleF(Core.tileRect.X, Core.tileRect.Y, Core.tileRect.Width,
-                                              Core.tileRect.Height), CenterFormat);
-
-#else
-                              g.FillRectangle(EmptytileBrush, new System.Drawing.Rectangle((int) Core.tileRect.X, (int) Core.tileRect.Y, (int) Core.tileRect.Width, (int) Core.tileRect.Height));
-
-                              g.DrawString("Exception: " + ex.Message, MissingDataFont, TileGridMissingTextBrush, new RectangleF(Core.tileRect.X + 11, Core.tileRect.Y + 11, Core.tileRect.Width - 11, Core.tileRect.Height - 11));
-
-                              g.DrawString(EmptyTileText, MissingDataFont, TileGridMissingTextBrush, new RectangleF(Core.tileRect.X, Core.tileRect.Y + Core.tileRect.Width / 2 + (ShowTileGridLines ? 11 : -22), Core.tileRect.Width, Core.tileRect.Height), BottomFormat);
-#endif
-
-                                      g.DrawRectangle(EmptyTileBorders, (int) Core.tileRect.X, (int) Core.tileRect.Y,
-                                          (int) Core.tileRect.Width, (int) Core.tileRect.Height);
+                                      // suppressed error drawing on empty tiles
                                   }
                               }
                           }
 
                           if (ShowTileGridLines)
                           {
-                              g.DrawRectangle(EmptyTileBorders, (int) Core.tileRect.X, (int) Core.tileRect.Y,
-                                  (int) Core.tileRect.Width, (int) Core.tileRect.Height);
+                              // g.DrawRectangle(EmptyTileBorders, (int) Core.tileRect.X, (int) Core.tileRect.Y, (int) Core.tileRect.Width, (int) Core.tileRect.Height);
                               {
 #if !PocketPC
                                   g.DrawString(
@@ -1558,13 +1535,13 @@ namespace GMap.NET.WindowsForms
 
          // center in virtual spcace...
 #if DEBUG
-         g.DrawLine(ScalePen, -20, 0, 20, 0);
-         g.DrawLine(ScalePen, 0, -20, 0, 20);
+         // g.DrawLine(ScalePen, -20, 0, 20, 0);
+         // g.DrawLine(ScalePen, 0, -20, 0, 20);
 
 #if PocketPC
-         g.DrawString("debug build", CopyrightFont, CopyrightBrush, 2, CopyrightFont.Size);
+         // g.DrawString("debug build", CopyrightFont, CopyrightBrush, 2, CopyrightFont.Size);
 #else
-         g.DrawString("debug build", CopyrightFont, Brushes.Blue, 2, CopyrightFont.Height);
+         // g.DrawString("debug build", CopyrightFont, Brushes.Blue, 2, CopyrightFont.Height);
 #endif
 
 #endif
