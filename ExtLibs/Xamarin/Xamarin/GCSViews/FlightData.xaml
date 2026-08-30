@@ -14,9 +14,9 @@
         <GMap:GMapControl x:Name="gMapControl1" BackgroundColor="#111827"
                           VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
 
-        <!-- 2. TOP FLOATING TELEMETRY & CONTROL BAR (半透明グラスモーフィズム) -->
-        <Frame Margin="12,8" Padding="12,4" CornerRadius="10" HasShadow="True"
-               BackgroundColor="#1E293BE6" BorderColor="#334155"
+        <!-- 2. TOP FULL-WIDTH TELEMETRY & CONTROL BAR (上部・左右密着型グラスモーフィズム) -->
+        <Frame Margin="0" Padding="16,4" CornerRadius="0" HasShadow="True"
+               BackgroundColor="#8C0F172A" BorderColor="#475569"
                HeightRequest="38" VerticalOptions="Start" HorizontalOptions="FillAndExpand">
             <Grid VerticalOptions="CenterAndExpand">
                 <Grid.ColumnDefinitions>
@@ -78,11 +78,11 @@
         </Frame>
 
         <!-- 3. TOP-LEFT FLOATING VERTICAL ACTION ICONS: 🛬着陸 / 🏠帰還 / 🛫離陸 (縦並び) -->
-        <StackLayout Orientation="Vertical" Spacing="8" Margin="12,62,0,0"
+        <StackLayout Orientation="Vertical" Spacing="8" Margin="12,46,0,0"
                      HorizontalOptions="Start" VerticalOptions="Start">
             
             <!-- 🛬 着陸 (LAND) -->
-            <Frame BackgroundColor="#1E293BE6" BorderColor="#D97706" CornerRadius="8" Padding="10,6" HasShadow="True">
+            <Frame BackgroundColor="#8C0F172A" BorderColor="#D97706" CornerRadius="8" Padding="10,6" HasShadow="True">
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnQuickLandTapped"/>
                 </Frame.GestureRecognizers>
@@ -96,7 +96,7 @@
             </Frame>
 
             <!-- 🏠 帰還 (RTL) -->
-            <Frame BackgroundColor="#1E293BE6" BorderColor="#8B5CF6" CornerRadius="8" Padding="10,6" HasShadow="True">
+            <Frame BackgroundColor="#8C0F172A" BorderColor="#8B5CF6" CornerRadius="8" Padding="10,6" HasShadow="True">
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnQuickRTLTapped"/>
                 </Frame.GestureRecognizers>
@@ -110,7 +110,7 @@
             </Frame>
 
             <!-- 🛫 離陸 (1.0m) -->
-            <Frame BackgroundColor="#1E293BE6" BorderColor="#3B82F6" CornerRadius="8" Padding="10,6" HasShadow="True">
+            <Frame BackgroundColor="#8C0F172A" BorderColor="#3B82F6" CornerRadius="8" Padding="10,6" HasShadow="True">
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Tapped="Takeoff_1m_OnClicked"/>
                 </Frame.GestureRecognizers>
