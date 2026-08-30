@@ -77,8 +77,8 @@ namespace MissionPlanner.Controls
         private float _gpshdop = 0;
         private float _gpshdop2 = 0;
         float _greenSSAp = 10;
-        private Color _groundColor1 = Color.FromArgb(0x9b, 0xb8, 0x24);
-        private Color _groundColor2 = Color.FromArgb(0x41, 0x4f, 0x07);
+        private Color _groundColor1 = Color.FromArgb(0x8B, 0x5A, 0x2B);
+        private Color _groundColor2 = Color.FromArgb(0x4A, 0x2E, 0x12);
         private float _groundcourse = 0;
         private float _groundspeed = 0;
         private float _heading = 0;
@@ -1144,6 +1144,16 @@ namespace MissionPlanner.Controls
                     _heading = 0;
                 }
 
+                // 円形 (丸型) クリッピングで航空計器スタイルにくり抜く
+                try
+                {
+                    var circlePath = new System.Drawing.Drawing2D.GraphicsPath();
+                    int minDim = Math.Min(this.Width, this.Height) - 2;
+                    circlePath.AddEllipse((this.Width - minDim) / 2, (this.Height - minDim) / 2, minDim, minDim);
+                    graphicsObject.SetClip(circlePath);
+                }
+                catch { }
+
                 graphicsObject.TranslateTransform(this.Width / 2, this.Height / 2);
 
                 if (!Russian)
@@ -2158,6 +2168,15 @@ namespace MissionPlanner.Controls
         {
             if (text == null || text == "")
                 return;
+
+            // 上部ツールバーに表示されている重複テキストを非表示にして純粋な姿勢計にする
+            if (text == HUDT.DISARMED || text == HUDT.ARMED || text == HUDT.FAILSAFE ||
+                text.StartsWith("AS") || text.StartsWith("GS") || text.StartsWith("GPS") ||
+                text == _mode || text.Contains("%") || text.Contains(":") ||
+                text == "Vibe" || text == "EKF" || text.Contains(">"))
+            {
+                return;
+            }
 
             font.Size = fontsize;
 

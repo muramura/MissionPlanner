@@ -255,10 +255,66 @@ namespace Xamarin
 
                             // Update top telemetry bar
                             LBL_battery_volt.Text = $"{cs.battery_voltage:0.00} V";
-                            LBL_alt_val.Text = $"Alt: {cs.alt:0.0} m";
-                            LBL_mode_val.Text = string.IsNullOrEmpty(cs.mode) ? "STABILIZE" : cs.mode.ToUpper();
+                            LBL_mode_val.Text = (string.IsNullOrEmpty(cs.mode) ? "STABILIZE" : cs.mode.ToUpper()) + " ▾";
                             LBL_link_val.Text = $"{cs.linkqualitygcs}%";
                             LBL_link_val.TextColor = cs.linkqualitygcs > 50 ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#EF4444");
+
+                            // GNSS Status
+                            if (cs.gpsstatus >= 3)
+                            {
+                                LBL_gps_status.Text = $"3D ({cs.satcount})";
+                                LBL_gps_status.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                            }
+                            else if (cs.gpsstatus > 0)
+                            {
+                                LBL_gps_status.Text = $"Fix ({cs.satcount})";
+                                LBL_gps_status.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                            }
+                            else
+                            {
+                                LBL_gps_status.Text = cs.satcount > 0 ? $"No GPS ({cs.satcount})" : "No GPS";
+                                LBL_gps_status.TextColor = global::Xamarin.Forms.Color.FromHex("#F87171");
+                            }
+
+                            // Quick Tab Telemetry Updates
+                            try
+                            {
+                                LBL_quick_alt.Text = $"{cs.alt:0.0} m";
+                                LBL_quick_speed.Text = $"{cs.groundspeed:0.0} m/s";
+                                LBL_quick_yaw.Text = $"{cs.yaw:0}°";
+                                LBL_quick_dist.Text = $"{cs.wp_dist:0.0} m";
+                                LBL_quick_climb.Text = $"{cs.verticalspeed:0.0} m/s";
+                                LBL_quick_volt.Text = $"{cs.battery_voltage:0.00} V";
+                                LBL_quick_curr.Text = $"{cs.current:0.0} A";
+                                LBL_quick_sats.Text = $"{cs.satcount} sats";
+
+                                if (View_StatusTab.IsVisible)
+                                {
+                                    LBL_status_list.Text = $"Roll: {cs.roll:0.0}°\nPitch: {cs.pitch:0.0}°\nYaw: {cs.yaw:0.0}°\nAlt: {cs.alt:0.0}m\nClimb: {cs.verticalspeed:0.0}m/s\nVolt: {cs.battery_voltage:0.00}V\nCur: {cs.current:0.0}A\nSatCount: {cs.satcount}\nGPSFix: {cs.gpsstatus}\nArmed: {cs.armed}\nMode: {cs.mode}";
+                                }
+                            }
+                            catch { }
+
+                            // Phone Battery Level
+                            try
+                            {
+                                var phoneBat = (int)(global::Xamarin.Essentials.Battery.ChargeLevel * 100);
+                                if (phoneBat >= 0)
+                                    LBL_phone_battery.Text = $"{phoneBat}%";
+                            }
+                            catch { }
+
+                            // Arm / Disarm Status
+                            if (cs.armed)
+                            {
+                                LBL_arm_val.Text = "🟢 ARMED ▾";
+                                LBL_arm_val.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                            }
+                            else
+                            {
+                                LBL_arm_val.Text = "🔴 DISARMED ▾";
+                                LBL_arm_val.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                            }
 
                             if (cs.lat != 0 && cs.lng != 0 && Math.Abs(cs.lat) > 0.001)
                             {
@@ -1890,6 +1946,118 @@ namespace Xamarin
             {
                 log.Error(ex);
             }
+        }
+
+
+        private async void OnMessagesTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                var cs = MainV2.comPort?.MAV?.cs;
+                if (cs != null && cs.messages != null && cs.messages.Count > 0)
+                {
+                    var msgList = cs.messages.Skip(Math.Max(0, cs.messages.Count - 20)).Select(m => $"[{m.time:HH:mm:ss}] {m.message}").ToList();
+                    msgList.Reverse(); // 最新を上に
+                    string allMsgs = string.Join(Environment.NewLine + Environment.NewLine, msgList);
+                    await DisplayAlert("FC / MP メッセージ履歴", allMsgs, "閉じる");
+                }
+                else
+                {
+                    await DisplayAlert("FC / MP メッセージ", "現在、受信したメッセージはありません。", "OK");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnMessagesTapped ex: " + ex);
+            }
+        }
+
+
+        private void OnTabQuickClicked(object sender, EventArgs e)
+        {
+            View_QuickTab.IsVisible = true;
+            View_ActionsTab.IsVisible = false;
+            View_StatusTab.IsVisible = false;
+
+            Btn_Tab_Quick.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#2563EB");
+            Btn_Tab_Quick.TextColor = global::Xamarin.Forms.Color.White;
+            Btn_Tab_Actions.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_Tab_Actions.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            Btn_Tab_Status.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_Tab_Status.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+        }
+
+        private void OnTabActionsClicked(object sender, EventArgs e)
+        {
+            View_QuickTab.IsVisible = false;
+            View_ActionsTab.IsVisible = true;
+            View_StatusTab.IsVisible = false;
+
+            Btn_Tab_Quick.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_Tab_Quick.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            Btn_Tab_Actions.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#2563EB");
+            Btn_Tab_Actions.TextColor = global::Xamarin.Forms.Color.White;
+            Btn_Tab_Status.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_Tab_Status.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+        }
+
+        private void OnTabStatusClicked(object sender, EventArgs e)
+        {
+            View_QuickTab.IsVisible = false;
+            View_ActionsTab.IsVisible = false;
+            View_StatusTab.IsVisible = true;
+
+            Btn_Tab_Quick.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_Tab_Quick.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            Btn_Tab_Actions.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_Tab_Actions.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            Btn_Tab_Status.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#2563EB");
+            Btn_Tab_Status.TextColor = global::Xamarin.Forms.Color.White;
+        }
+
+        private void OnCollapseDockClicked(object sender, EventArgs e)
+        {
+            Pnl_FlightDock.IsVisible = false;
+            Pnl_FlightDockCollapsed.IsVisible = true;
+        }
+
+        private void OnExpandDockClicked(object sender, EventArgs e)
+        {
+            Pnl_FlightDock.IsVisible = true;
+            Pnl_FlightDockCollapsed.IsVisible = false;
+        }
+
+        private async void OnModeStabilizeClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                MainV2.comPort.setMode(1, 1, "Stabilize");
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 0, 0, 0, 0, 0, 0, false);
+                UserDialogs.Instance.Toast("🕹️ STABILIZE モード要求", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex) { log.Error(ex); }
+        }
+
+        private async void OnModeAltHoldClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                MainV2.comPort.setMode(1, 1, "AltHold");
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 2, 0, 0, 0, 0, 0, false);
+                UserDialogs.Instance.Toast("🔒 ALTHOLD (高度維持) 要求", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex) { log.Error(ex); }
+        }
+
+        private async void OnModeLoiterClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                MainV2.comPort.setMode(1, 1, "Loiter");
+                await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 5, 0, 0, 0, 0, 0, false);
+                UserDialogs.Instance.Toast("📍 LOITER (位置維持) 要求", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex) { log.Error(ex); }
         }
 
         private async void OnQuickLandTapped(object sender, EventArgs e)

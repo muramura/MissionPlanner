@@ -1005,8 +1005,8 @@ namespace MissionPlanner.Controls
 
         private Color _skyColor1 = Color.Blue;
         private Color _skyColor2 = Color.LightBlue;
-        private Color _groundColor1 = Color.FromArgb(0x9b, 0xb8, 0x24);
-        private Color _groundColor2 = Color.FromArgb(0x41, 0x4f, 0x07);
+        private Color _groundColor1 = Color.FromArgb(0x8B, 0x5A, 0x2B);
+        private Color _groundColor2 = Color.FromArgb(0x4A, 0x2E, 0x12);
 
         private Color _hudcolor = Color.White;
         private Pen _whitePen = new Pen(Color.White, 2);

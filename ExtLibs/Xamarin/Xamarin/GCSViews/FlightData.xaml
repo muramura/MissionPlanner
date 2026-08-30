@@ -14,10 +14,10 @@
         <GMap:GMapControl x:Name="gMapControl1" BackgroundColor="#111827"
                           VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
 
-        <!-- 2. TOP FULL-WIDTH TELEMETRY & CONTROL BAR (上部・左右密着型グラスモーフィズム) -->
-        <Frame Margin="0" Padding="16,4" CornerRadius="0" HasShadow="True"
-               BackgroundColor="#8C0F172A" BorderColor="#475569"
-               HeightRequest="38" VerticalOptions="Start" HorizontalOptions="FillAndExpand">
+        <!-- ================= 2. TOP FULL-WIDTH TELEMETRY & CONTROL BAR ================= -->
+        <Frame Margin="0" Padding="12,4" CornerRadius="0" HasShadow="False"
+               BackgroundColor="#590F172A" BorderColor="#475569"
+               HeightRequest="34" VerticalOptions="Start" HorizontalOptions="FillAndExpand">
             <Grid VerticalOptions="CenterAndExpand">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
@@ -25,64 +25,245 @@
                     <ColumnDefinition Width="Auto"/>
                 </Grid.ColumnDefinitions>
 
-                <!-- Left: Telemetry & Interactive Mode Picker -->
-                <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="10" VerticalOptions="Center">
-                    <!-- Battery -->
-                    <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
-                        <Label Text="🔋" FontSize="13" VerticalOptions="Center"/>
-                        <Label x:Name="LBL_battery_volt" Text="-- V" TextColor="#10B981" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
-                    </StackLayout>
+                <!-- Left: StampFly Logo, GNSS Status, Drone Battery, Phone Battery, Message Button -->
+                <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalOptions="Center">
+                    <!-- Logo (Clean Text) -->
+                    <Label Text="StampFly" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
                     
-                    <BoxView WidthRequest="1" HeightRequest="14" BackgroundColor="#475569" VerticalOptions="Center"/>
+                    <BoxView WidthRequest="1" HeightRequest="12" BackgroundColor="#475569" VerticalOptions="Center"/>
                     
-                    <!-- Altitude -->
-                    <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
-                        <Label Text="📏" FontSize="13" VerticalOptions="Center"/>
-                        <Label x:Name="LBL_alt_val" Text="Alt: 0.0 m" TextColor="#F8FAFC" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <!-- GNSS Status -->
+                    <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                        <Label Text="🛰️" FontSize="11" VerticalOptions="Center"/>
+                        <Label x:Name="LBL_gps_status" Text="No GPS" TextColor="#F87171" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
                     </StackLayout>
 
-                    <BoxView WidthRequest="1" HeightRequest="14" BackgroundColor="#475569" VerticalOptions="Center"/>
+                    <BoxView WidthRequest="1" HeightRequest="12" BackgroundColor="#475569" VerticalOptions="Center"/>
 
-                    <!-- Interactive Flight Mode Selector Button -->
-                    <Frame BackgroundColor="#334155" CornerRadius="6" Padding="8,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
+                    <!-- Drone Battery -->
+                    <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                        <Label Text="🔋" FontSize="12" VerticalOptions="Center"/>
+                        <Label x:Name="LBL_battery_volt" Text="-- V" TextColor="#10B981" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                    </StackLayout>
+
+                    <BoxView WidthRequest="1" HeightRequest="12" BackgroundColor="#475569" VerticalOptions="Center"/>
+
+                    <!-- Android Phone Battery -->
+                    <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                        <Label Text="📱" FontSize="11" VerticalOptions="Center"/>
+                        <Label x:Name="LBL_phone_battery" Text="--%" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                    </StackLayout>
+
+                    <BoxView WidthRequest="1" HeightRequest="12" BackgroundColor="#475569" VerticalOptions="Center"/>
+
+                    <!-- FC / MP Messages Button -->
+                    <Frame BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnMessagesTapped"/>
+                        </Frame.GestureRecognizers>
+                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                            <Label Text="💬" FontSize="11" VerticalOptions="Center"/>
+                            <Label Text="MSG" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </StackLayout>
+                    </Frame>
+                </StackLayout>
+
+                <!-- Center: Flight Mode & Telemetry Link -->
+                <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalOptions="Center" VerticalOptions="Center">
+                    <!-- Flight Mode Selector Pill -->
+                    <Frame BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnFlightModeTapped"/>
                         </Frame.GestureRecognizers>
-                        <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
-                            <Label Text="🕹️" FontSize="12" VerticalOptions="Center"/>
-                            <Label x:Name="LBL_mode_val" Text="STABILIZE ▾" TextColor="#F59E0B" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                            <Label Text="🕹️" FontSize="11" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_mode_val" Text="STABILIZE ▾" TextColor="#F59E0B" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
 
-                    <BoxView WidthRequest="1" HeightRequest="14" BackgroundColor="#475569" VerticalOptions="Center"/>
-
                     <!-- Link Quality -->
-                    <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
-                        <Label Text="📶" FontSize="13" VerticalOptions="Center"/>
-                        <Label x:Name="LBL_link_val" Text="0%" TextColor="#10B981" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                        <Label Text="📶" FontSize="11" VerticalOptions="Center"/>
+                        <Label x:Name="LBL_link_val" Text="0%" TextColor="#10B981" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
                     </StackLayout>
                 </StackLayout>
 
-                <!-- Right (電波表示の右側): ARM / DISARM / 緊急着陸 選択ドロップダウン -->
+                <!-- Right: Arm/Disarm Status & Emergency Land Button -->
                 <StackLayout Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
-                    <Frame BackgroundColor="#334155" CornerRadius="6" Padding="10,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
+                    <!-- Arm/Disarm Status Pill -->
+                    <Frame BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnMotorControlTapped"/>
                         </Frame.GestureRecognizers>
-                        <StackLayout Orientation="Horizontal" Spacing="5" VerticalOptions="Center">
-                            <Label x:Name="LBL_arm_val" Text="🔴 DISARMED ▾" TextColor="#EF4444" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                        <Label x:Name="LBL_arm_val" Text="🔴 DISARMED ▾" TextColor="#EF4444" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                    </Frame>
+
+                    <!-- Emergency Land Button -->
+                    <Frame BackgroundColor="#DC2626" CornerRadius="5" Padding="8,2" HasShadow="False" VerticalOptions="Center" BorderColor="#EF4444">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnQuickLandTapped"/>
+                        </Frame.GestureRecognizers>
+                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                            <Label Text="🚨" FontSize="11" VerticalOptions="Center"/>
+                            <Label Text="緊急着陸" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
                 </StackLayout>
             </Grid>
         </Frame>
 
-        <!-- 3. TOP-LEFT FLOATING VERTICAL ACTION ICONS: 🛬着陸 / 🏠帰還 / 🛫離陸 (縦並び) -->
-        <StackLayout Orientation="Vertical" Spacing="8" Margin="12,46,0,0"
-                     HorizontalOptions="Start" VerticalOptions="Start">
+        <!-- ================= 3. LEFT FOLDABLE FLIGHT DOCK (展開時) ================= -->
+        <Frame x:Name="Pnl_FlightDock" Margin="0,38,0,0" Padding="6,6,6,6" CornerRadius="0" HasShadow="False"
+               WidthRequest="220" HorizontalOptions="Start" VerticalOptions="Start"
+               BackgroundColor="#590F172A" BorderColor="#475569" IsVisible="True">
+            <Grid RowDefinitions="Auto,Auto,Auto" RowSpacing="6">
+                
+                <!-- 上部: タブセレクター & 畳むボタン -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,*,*,Auto" ColumnSpacing="3">
+                    <Button x:Name="Btn_Tab_Quick" Grid.Column="0" Text="Quick" FontSize="9" FontAttributes="Bold"
+                            BackgroundColor="#2563EB" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="24" Padding="0"
+                            Clicked="OnTabQuickClicked"/>
+                    <Button x:Name="Btn_Tab_Actions" Grid.Column="1" Text="Actions" FontSize="9" FontAttributes="Bold"
+                            BackgroundColor="#1E293B" TextColor="#94A3B8" CornerRadius="4" HeightRequest="24" Padding="0"
+                            Clicked="OnTabActionsClicked"/>
+                    <Button x:Name="Btn_Tab_Status" Grid.Column="2" Text="Status" FontSize="9" FontAttributes="Bold"
+                            BackgroundColor="#1E293B" TextColor="#94A3B8" CornerRadius="4" HeightRequest="24" Padding="0"
+                            Clicked="OnTabStatusClicked"/>
+                    <!-- ◀ 折りたたみボタン -->
+                    <Button Grid.Column="3" Text="◀" FontSize="11" FontAttributes="Bold"
+                            BackgroundColor="#334155" TextColor="#E2E8F0" CornerRadius="4" HeightRequest="24" WidthRequest="24" Padding="0"
+                            Clicked="OnCollapseDockClicked"/>
+                </Grid>
+
+                <!-- 中央: タブ表示エリア -->
+                <Grid Grid.Row="1">
+                    <!-- Quick タブ (テレメトリ 2列x4行 = 8項目タイル) -->
+                    <ScrollView x:Name="View_QuickTab" IsVisible="True">
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="3" RowSpacing="3">
+                            <!-- 1. 高度 -->
+                            <Frame Grid.Row="0" Grid.Column="0" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
+                                <StackLayout Spacing="0">
+                                    <Label Text="高度 (Alt)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_alt" Text="0.0 m" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold"/>
+                                </StackLayout>
+                            </Frame>
+                            <!-- 2. 速度 -->
+                            <Frame Grid.Row="0" Grid.Column="1" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
+                                <StackLayout Spacing="0">
+                                    <Label Text="速度 (Speed)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_speed" Text="0.0 m/s" TextColor="#10B981" FontSize="12" FontAttributes="Bold"/>
+                                </StackLayout>
+                            </Frame>
+                            <!-- 3. 方位 -->
+                            <Frame Grid.Row="1" Grid.Column="0" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
+                                <StackLayout Spacing="0">
+                                    <Label Text="方位 (Yaw)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_yaw" Text="0° N" TextColor="#F59E0B" FontSize="12" FontAttributes="Bold"/>
+                                </StackLayout>
+                            </Frame>
+                            <!-- 4. 距離 -->
+                            <Frame Grid.Row="1" Grid.Column="1" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
+                                <StackLayout Spacing="0">
+                                    <Label Text="距離 (Dist)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_dist" Text="0.0 m" TextColor="#A78BFA" FontSize="12" FontAttributes="Bold"/>
+                                </StackLayout>
+                            </Frame>
+                            <!-- 5. 昇降率 -->
+                            <Frame Grid.Row="2" Grid.Column="0" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
+                                <StackLayout Spacing="0">
+                                    <Label Text="昇降率 (Climb)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_climb" Text="0.0 m/s" TextColor="#F472B6" FontSize="12" FontAttributes="Bold"/>
+                                </StackLayout>
+                            </Frame>
+                            <!-- 6. 電圧 -->
+                            <Frame Grid.Row="2" Grid.Column="1" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
+                                <StackLayout Spacing="0">
+                                    <Label Text="電圧 (Volt)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_volt" Text="-- V" TextColor="#10B981" FontSize="12" FontAttributes="Bold"/>
+                                </StackLayout>
+                            </Frame>
+                            <!-- 7. 電流 -->
+                            <Frame Grid.Row="3" Grid.Column="0" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
+                                <StackLayout Spacing="0">
+                                    <Label Text="電流 (Current)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_curr" Text="0.0 A" TextColor="#FACC15" FontSize="12" FontAttributes="Bold"/>
+                                </StackLayout>
+                            </Frame>
+                            <!-- 8. 衛星数 -->
+                            <Frame Grid.Row="3" Grid.Column="1" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
+                                <StackLayout Spacing="0">
+                                    <Label Text="衛星数 (Sats)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_sats" Text="0 sats" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold"/>
+                                </StackLayout>
+                            </Frame>
+                        </Grid>
+                    </ScrollView>
+
+                    <!-- Actions タブ (操作ボタン一覧) -->
+                    <ScrollView x:Name="View_ActionsTab" IsVisible="False">
+                        <StackLayout Spacing="3">
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="3">
+                                <Button Grid.Column="0" Text="🛬 着陸 (LAND)" FontSize="9" FontAttributes="Bold"
+                                        BackgroundColor="#D97706" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
+                                        Clicked="OnQuickLandTapped"/>
+                                <Button Grid.Column="1" Text="🏠 帰還 (RTL)" FontSize="9" FontAttributes="Bold"
+                                        BackgroundColor="#7C3AED" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
+                                        Clicked="OnQuickRTLTapped"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="3">
+                                <Button Grid.Column="0" Text="🛫 離陸 (1.0m)" FontSize="9" FontAttributes="Bold"
+                                        BackgroundColor="#0284C7" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
+                                        Clicked="Takeoff_1m_OnClicked"/>
+                                <Button Grid.Column="1" Text="🕹️ STABILIZE" FontSize="9" FontAttributes="Bold"
+                                        BackgroundColor="#475569" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
+                                        Clicked="OnModeStabilizeClicked"/>
+                            </Grid>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="3">
+                                <Button Grid.Column="0" Text="🔒 ALTHOLD" FontSize="9" FontAttributes="Bold"
+                                        BackgroundColor="#475569" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
+                                        Clicked="OnModeAltHoldClicked"/>
+                                <Button Grid.Column="1" Text="📍 LOITER" FontSize="9" FontAttributes="Bold"
+                                        BackgroundColor="#475569" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
+                                        Clicked="OnModeLoiterClicked"/>
+                            </Grid>
+                        </StackLayout>
+                    </ScrollView>
+
+                    <!-- Status タブ (全テレメトリ変数一覧) -->
+                    <ScrollView x:Name="View_StatusTab" IsVisible="False">
+                        <StackLayout Spacing="2">
+                            <Label x:Name="LBL_status_list" Text="テレメトリ受信待機中..." TextColor="#CBD5E1" FontSize="9" FontFamily="Monospace"/>
+                        </StackLayout>
+                    </ScrollView>
+                </Grid>
+
+                <!-- 下部: コンパクト丸型HUD (項目のすぐ下に配置) -->
+                <Frame Grid.Row="2" Margin="0,2,0,0" Padding="0" CornerRadius="65" HasShadow="False"
+                       WidthRequest="130" HeightRequest="130" IsClippedToBounds="True"
+                       HorizontalOptions="Center" VerticalOptions="Center"
+                       BackgroundColor="#590F172A" BorderColor="#475569">
+                    <controls:HUD x:Name="hud1" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
+                </Frame>
+            </Grid>
+        </Frame>
+
+        <!-- ================= 4. 折りたたみ時の最小化サイドバー ================= -->
+        <StackLayout x:Name="Pnl_FlightDockCollapsed" Orientation="Vertical" Spacing="4" Margin="0,38,0,0"
+                     HorizontalOptions="Start" VerticalOptions="Start" IsVisible="False">
             
+            <!-- 🧭 展開ボタン -->
+            <Frame BackgroundColor="#590F172A" BorderColor="#475569" CornerRadius="8" Padding="10,6" HasShadow="False">
+                <Frame.GestureRecognizers>
+                    <TapGestureRecognizer Tapped="OnExpandDockClicked"/>
+                </Frame.GestureRecognizers>
+                <StackLayout Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                    <Label Text="🧭" FontSize="14" VerticalOptions="Center"/>
+                    <Label Text="展開 ▶" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                </StackLayout>
+            </Frame>
+
             <!-- 🛬 着陸 (LAND) -->
-            <Frame BackgroundColor="#8C0F172A" BorderColor="#D97706" CornerRadius="8" Padding="10,6" HasShadow="True">
+            <Frame BackgroundColor="#590F172A" BorderColor="#D97706" CornerRadius="8" Padding="10,6" HasShadow="False">
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnQuickLandTapped"/>
                 </Frame.GestureRecognizers>
@@ -96,7 +277,7 @@
             </Frame>
 
             <!-- 🏠 帰還 (RTL) -->
-            <Frame BackgroundColor="#8C0F172A" BorderColor="#8B5CF6" CornerRadius="8" Padding="10,6" HasShadow="True">
+            <Frame BackgroundColor="#590F172A" BorderColor="#8B5CF6" CornerRadius="8" Padding="10,6" HasShadow="False">
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Tapped="OnQuickRTLTapped"/>
                 </Frame.GestureRecognizers>
@@ -109,27 +290,20 @@
                 </StackLayout>
             </Frame>
 
-            <!-- 🛫 離陸 (1.0m) -->
-            <Frame BackgroundColor="#8C0F172A" BorderColor="#3B82F6" CornerRadius="8" Padding="10,6" HasShadow="True">
+            <!-- 🛫 離陸 (Takeoff 1.0m) -->
+            <Frame BackgroundColor="#590F172A" BorderColor="#0284C7" CornerRadius="8" Padding="10,6" HasShadow="False">
                 <Frame.GestureRecognizers>
                     <TapGestureRecognizer Tapped="Takeoff_1m_OnClicked"/>
                 </Frame.GestureRecognizers>
                 <StackLayout Orientation="Horizontal" Spacing="8" VerticalOptions="Center">
                     <Label Text="🛫" FontSize="16" VerticalOptions="Center"/>
                     <StackLayout Spacing="0" VerticalOptions="Center">
-                        <Label Text="離陸" TextColor="#BFDBFE" FontSize="12" FontAttributes="Bold"/>
+                        <Label Text="離陸" TextColor="#BAE6FD" FontSize="12" FontAttributes="Bold"/>
                         <Label Text="1.0m" TextColor="#94A3B8" FontSize="9"/>
                     </StackLayout>
                 </StackLayout>
             </Frame>
         </StackLayout>
 
-        <!-- 4. BOTTOM-LEFT FLOATING HUD PiP -->
-        <Frame Margin="12" Padding="0" CornerRadius="12" HasShadow="True"
-               WidthRequest="230" HeightRequest="175"
-               HorizontalOptions="Start" VerticalOptions="End"
-               BackgroundColor="#1F2937" BorderColor="#374151">
-            <controls:HUD x:Name="hud1" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
-        </Frame>
     </Grid>
 </ContentPage>
