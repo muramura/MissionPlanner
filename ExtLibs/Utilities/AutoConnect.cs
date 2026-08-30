@@ -81,8 +81,14 @@ namespace MissionPlanner.Utilities
                 log.Warn("AutoConnect settings load exception, using defaults: " + ex.Message);
             }
 
+            // Ensure default MAVLink 14550 and 14551 ports are always enabled and opened
+            ProcessEntry(new ConnectionInfo("Mavlink default port", true, 14550, ProtocolType.Udp, ConnectionFormat.MAVLink, Direction.Inbound, ""));
+            ProcessEntry(new ConnectionInfo("Mavlink alt port", true, 14551, ProtocolType.Udp, ConnectionFormat.MAVLink, Direction.Inbound, ""));
+
             foreach (var connectionInfo in connectionInfos)
             {
+                if (connectionInfo.Port == 14550 || connectionInfo.Port == 14551)
+                    continue;
                 ProcessEntry(connectionInfo);
             }
         }

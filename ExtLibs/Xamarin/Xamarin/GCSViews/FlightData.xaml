@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8" ?>
+﻿<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:forms="clr-namespace:SkiaSharp.Views.Forms;assembly=SkiaSharp.Views.Forms"
@@ -30,7 +30,7 @@
                     <!-- Battery -->
                     <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
                         <Label Text="🔋" FontSize="13" VerticalOptions="Center"/>
-                        <Label x:Name="LBL_battery_volt" Text="4.15 V" TextColor="#10B981" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                        <Label x:Name="LBL_battery_volt" Text="-- V" TextColor="#10B981" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
                     </StackLayout>
                     
                     <BoxView WidthRequest="1" HeightRequest="14" BackgroundColor="#475569" VerticalOptions="Center"/>
@@ -59,7 +59,7 @@
                     <!-- Link Quality -->
                     <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
                         <Label Text="📶" FontSize="13" VerticalOptions="Center"/>
-                        <Label x:Name="LBL_link_val" Text="100%" TextColor="#10B981" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                        <Label x:Name="LBL_link_val" Text="0%" TextColor="#10B981" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
                     </StackLayout>
                 </StackLayout>
 
