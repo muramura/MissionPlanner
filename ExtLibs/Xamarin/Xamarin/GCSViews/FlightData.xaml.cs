@@ -140,8 +140,8 @@ namespace Xamarin
                 initLat = 35.6812;
                 initLng = 139.7671;
             }
-            gMapControl1.Position = new PointLatLng(0, 0);
-            gMapControl1.Zoom = 3;
+            gMapControl1.Position = new PointLatLng(initLat, initLng);
+            gMapControl1.Zoom = 16;
 
             this.gMapControl1.OnPositionChanged += new GMap.NET.PositionChanged(this.gMapControl1_OnPositionChanged);
             // this.gMapControl1.Click += new System.EventHandler(this.gMapControl1_Click);
@@ -157,7 +157,7 @@ namespace Xamarin
                                          "gmapcache" + Path.DirectorySeparatorChar;
             gMapControl1.MaxZoom = 24;
             gMapControl1.MinZoom = 1;
-            gMapControl1.Zoom = 3;
+            gMapControl1.Zoom = 16;
 
             gMapControl1.ScaleMode = ScaleModes.Fractional;
             gMapControl1.LevelsKeepInMemmory = 5;

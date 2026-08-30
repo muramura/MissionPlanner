@@ -324,7 +324,7 @@ namespace MissionPlanner.Utilities
         /// <returns></returns>
         public static string GetDataDirectory()
         {
-            if (isMono())
+            if (isMono() || isUnix)
             {
                 return GetUserDataDirectory();
             }
