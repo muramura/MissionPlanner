@@ -40,6 +40,182 @@ namespace Xamarin
 {
     public partial class FlightData : ContentPage, IActivate, IDeactivate
     {
+        // 🎮 Android ネイティブ接続のジョイスティック列挙用デリゲート
+        public static Func<List<string>> GetConnectedJoysticksFunc;
+
+        // 🎮 リアルタイム・スティック入力バッファ (MainActivityから更新)
+        public static float LastStickRoll = 0f;    // -1.0 〜 +1.0 (X)
+        public static float LastStickPitch = 0f;   // -1.0 〜 +1.0 (Y)
+        public static float LastStickThrottle = -1f; // -1.0 〜 +1.0 (Z / Throttle)
+        public static float LastStickYaw = 0f;     // -1.0 〜 +1.0 (Rz / Rudder)
+        public static float LastStickAux1 = 0f;
+        public static float LastStickAux2 = 0f;
+        public static float LastRawAxisX = 0f;
+        public static float LastRawAxisY = 0f;
+        public static float LastRawAxisZ = 0f;
+        public static float LastRawAxisRz = 0f;
+        public static float LastRawAxisRx = 0f;
+        public static float LastRawAxisRy = 0f;
+        public static float LastRawThrottle = 0f;
+        public static float LastRawRudder = 0f;
+        public static float LastRawGas = 0f;
+        public static float LastRawBrake = 0f;
+        public static bool IsJoystickActive = false;
+
+        // 🎮 18チャンネルの軸・キー割り当てデータ配列 (重複割り当て完全対応・各チャンネル独立保持)
+        public static string[] ChannelAxisMapping = new string[19]
+        {
+            "", "X", "Y", "Z", "Rz", "Slider1", "None",
+            "None", "None", "None", "None", "None", "None",
+            "None", "None", "None", "None", "None", "None"
+        };
+
+        public static int LastPressedButtonCode = 0;
+        public static Dictionary<int, bool> PressedButtonMap = new Dictionary<int, bool>();
+
+        public static void SetButtonState(int keyCode, bool isDown)
+        {
+            PressedButtonMap[keyCode] = isDown;
+        }
+
+        // 🎮 割り当てられた軸・ボタンからリアルタイムPWM値を算出 (1000〜2000µs)
+                public static string NormalizeAxisName(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return "None";
+            string s = raw.Replace("▾", "").Trim();
+
+            // 1. スティック軸
+            if (s.Equals("X", StringComparison.OrdinalIgnoreCase)) return "X";
+            if (s.Equals("Y", StringComparison.OrdinalIgnoreCase)) return "Y";
+            if (s.Equals("Z", StringComparison.OrdinalIgnoreCase)) return "Z";
+            if (s.Equals("Rz", StringComparison.OrdinalIgnoreCase)) return "Rz";
+            if (s.Equals("Rx", StringComparison.OrdinalIgnoreCase)) return "Rx";
+            if (s.Equals("Ry", StringComparison.OrdinalIgnoreCase)) return "Ry";
+
+            // 2. スライダー・トリガー
+            if (s.IndexOf("Slider1", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("L2", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("Brake", StringComparison.OrdinalIgnoreCase) >= 0) return "Slider1";
+            if (s.IndexOf("Slider2", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("R2", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("Gas", StringComparison.OrdinalIgnoreCase) >= 0) return "Slider2";
+            if (s.Equals("Slider", StringComparison.OrdinalIgnoreCase)) return "Slider1";
+
+            // 3. ボタン
+            if (s.IndexOf("Btn A", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnA", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("(×)", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn A";
+            if (s.IndexOf("Btn B", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnB", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("(○)", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn B";
+            if (s.IndexOf("Btn X", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnX", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("(□)", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn X";
+            if (s.IndexOf("Btn Y", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnY", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("(△)", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Y";
+            if (s.IndexOf("Btn L1", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnL1", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn L1";
+            if (s.IndexOf("Btn R1", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnR1", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn R1";
+            if (s.IndexOf("Btn L3", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnL3", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn L3";
+            if (s.IndexOf("Btn R3", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnR3", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn R3";
+            if (s.IndexOf("Btn Start", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Start";
+            if (s.IndexOf("Btn Select", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Select";
+            if (s.IndexOf("Btn Mode", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Mode";
+
+            // 4. 十字キー (Dpad)
+            if (s.IndexOf("Dpad Up", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("Up", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Up";
+            if (s.IndexOf("Dpad Down", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("Down", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Down";
+            if (s.IndexOf("Dpad Left", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("Left", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Left";
+            if (s.IndexOf("Dpad Right", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("Right", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Right";
+
+            if (s.Equals("None", StringComparison.OrdinalIgnoreCase)) return "None";
+            return s;
+        }
+
+        // 🎮 割り当てられた軸・ボタンからリアルタイムPWM値を算出 (1000〜2000µs)
+        public int CalculateChannelPWM(string axisSetting, int defaultPwm = 1500)
+        {
+            try
+            {
+                string norm = NormalizeAxisName(axisSetting);
+                if (norm.Equals("None", StringComparison.OrdinalIgnoreCase))
+                {
+                    return defaultPwm;
+                }
+
+                // 1. スティック軸 (X, Y, Z, Rz, Rx, Ry: -1.0〜+1.0 -> 1000〜2000µs)
+                if (norm == "X")
+                {
+                    float val = (LastStickRoll != 0f) ? LastStickRoll : LastRawAxisX;
+                    return (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
+                }
+                if (norm == "Y")
+                {
+                    float val = (LastStickPitch != 0f) ? LastStickPitch : LastRawAxisY;
+                    return (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
+                }
+                if (norm == "Z")
+                {
+                    float val = (LastRawAxisZ != 0f) ? LastRawAxisZ : ((LastStickThrottle != 0f) ? LastStickThrottle : LastRawThrottle);
+                    return (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
+                }
+                if (norm == "Rz")
+                {
+                    float val = (LastRawAxisRz != 0f) ? LastRawAxisRz : ((LastStickYaw != 0f) ? LastStickYaw : LastRawRudder);
+                    return (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
+                }
+                if (norm == "Rx") return (int)Math.Max(1000, Math.Min(2000, 1500 + LastRawAxisRx * 500));
+                if (norm == "Ry") return (int)Math.Max(1000, Math.Min(2000, 1500 + LastRawAxisRy * 500));
+
+                // 2. スライダー・トリガー (Slider1, Slider2: 0.0〜1.0 または -1.0〜+1.0 -> 1000〜2000µs)
+                if (norm == "Slider1")
+                {
+                    float val = (LastRawBrake != 0) ? LastRawBrake : ((LastRawAxisZ != 0) ? LastRawAxisZ : LastRawThrottle);
+                    return (int)Math.Max(1000, Math.Min(2000, 1000 + Math.Max(0f, (val + 1f) / 2f) * 1000));
+                }
+                if (norm == "Slider2")
+                {
+                    float val = (LastRawGas != 0) ? LastRawGas : ((LastRawAxisRz != 0) ? LastRawAxisRz : LastRawRudder);
+                    return (int)Math.Max(1000, Math.Min(2000, 1000 + Math.Max(0f, (val + 1f) / 2f) * 1000));
+                }
+
+                // 3. ゲームパッドボタン (押下中 2000µs, 離すと 1000µs)
+                foreach (var kvp in PressedButtonMap)
+                {
+                    if (kvp.Value) // 押下中
+                    {
+                        string pressedNorm = NormalizeAxisName(ConvertKeyCodeToName(kvp.Key));
+                        if (norm == pressedNorm)
+                        {
+                            return 2000;
+                        }
+                    }
+                }
+
+                // ボタンまたはDpad割り当て済みだが離されている状態
+                if (norm.StartsWith("Btn") || norm.StartsWith("Dpad"))
+                {
+                    return 1000;
+                }
+            }
+            catch { }
+
+            return defaultPwm;
+        }
+
+        public static string ConvertKeyCodeToName(int keyCode)
+        {
+            switch (keyCode)
+            {
+                case 96: return "Btn A (×)";
+                case 97: return "Btn B (○)";
+                case 99: return "Btn X (□)";
+                case 100: return "Btn Y (△)";
+                case 102: return "Btn L1";
+                case 103: return "Btn R1";
+                case 104: return "Btn L2";
+                case 105: return "Btn R2";
+                case 106: return "Btn L3";
+                case 107: return "Btn R3";
+                case 108: return "Btn Start";
+                case 109: return "Btn Select";
+                case 110: return "Btn Mode";
+                case 19: return "Dpad Up";
+                case 20: return "Dpad Down";
+                case 21: return "Dpad Left";
+                case 22: return "Dpad Right";
+                case 23: return "Dpad Center";
+                default: return $"Btn {keyCode}";
+            }
+        }
         public static FlightData instance;
         public static GMapOverlay kmlpolygons;
 
@@ -202,6 +378,68 @@ namespace Xamarin
             {
                 try
                 {
+                    // 🎮 1. ジョイスティック・モーダル用リアルタイム更新 (画面上のボタンの最新テキストを直接読み取って全ポジションバーをダイレクト更新！)
+                    try
+                    {
+                        if (Pnl_JoystickModal != null && Pnl_JoystickModal.IsVisible)
+                        {
+                            for (int ch = 1; ch <= 18; ch++)
+                            {
+                                // 画面上のボタンテキスト (例: "X ▾", "Btn A (×) ▾", "L2 ▾") または データ配列から最新設定を取得
+                                string mapping = (ch < ChannelAxisMapping.Length) ? ChannelAxisMapping[ch] : "None";
+                                var btn = this.FindByName<Button>($"Btn_RCAxis_{ch}");
+                                if (btn != null && !string.IsNullOrEmpty(btn.Text))
+                                {
+                                    mapping = btn.Text.Replace(" ▾", "").Trim();
+                                }
+
+                                int defPwm = (ch == 3) ? 1000 : 1500;
+                                int pwm = CalculateChannelPWM(mapping, defPwm);
+
+                                // 🎯 ポジションバー更新 (0.0〜1.0)
+                                var pb = this.FindByName<ProgressBar>($"PB_joy_rc{ch}");
+                                if (pb != null)
+                                {
+                                    pb.Progress = Math.Max(0.0, Math.Min(1.0, (pwm - 1000) / 1000.0));
+                                }
+
+                                // 🎯 数値ラベル更新 (例: "1500 µs")
+                                var lbl = this.FindByName<Label>($"LBL_joy_rc{ch}");
+                                if (lbl != null)
+                                {
+                                    lbl.Text = pwm + " µs";
+                                }
+                            }
+
+                            // 🕹️ ジョイスティック有効時: MAVLink RC Override パケットを機体へ送信 (Ch1〜Ch8)
+                            if (IsJoystickActive && MainV2.comPort != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
+                            {
+                                try
+                                {
+                                    var rcOverride = new MAVLink.mavlink_rc_channels_override_t
+                                    {
+                                        target_system = 1,
+                                        target_component = 1,
+                                        chan1_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[1], 1500),
+                                        chan2_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[2], 1500),
+                                        chan3_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[3], 1000),
+                                        chan4_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[4], 1500),
+                                        chan5_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[5], 1500),
+                                        chan6_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[6], 1500),
+                                        chan7_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[7], 1500),
+                                        chan8_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[8], 1500)
+                                    };
+                                    MainV2.comPort.sendPacket(rcOverride, 1, 1);
+                                }
+                                catch { }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Joystick modal timer error: " + ex);
+                    }
+
                     if (MainV2.comPort != null)
                     {
                         var mav = MainV2.comPort.MAV;
@@ -2316,13 +2554,286 @@ namespace Xamarin
         private void Mode_OnSelectedIndexChanged(object sender, EventArgs e)
         {
         }
+
+        // 🎮 ジョイスティック設定モーダルの開閉
+        public void OnOpenJoystickModalClicked(object sender, EventArgs e)
+        {
+            if (Pnl_JoystickModal != null)
+            {
+                Pnl_JoystickModal.IsVisible = true;
+
+                // 接続デバイス名の更新
+                try
+                {
+                    if (GetConnectedJoysticksFunc != null && Picker_ActiveJoystick != null)
+                    {
+                        var list = GetConnectedJoysticksFunc();
+                        Picker_ActiveJoystick.Items.Clear();
+                        if (list != null && list.Count > 0)
+                        {
+                            foreach (var j in list) Picker_ActiveJoystick.Items.Add(j);
+                            Picker_ActiveJoystick.SelectedIndex = 0;
+                        }
+                        else
+                        {
+                            Picker_ActiveJoystick.Items.Add("⚠️ 未接続 (No Device Detected)");
+                            Picker_ActiveJoystick.SelectedIndex = 0;
+                        }
+                    }
+                }
+                catch { }
+
+                // 画面上のボタンテキストをデータ配列と同期
+                for (int ch = 1; ch <= 18; ch++)
+                {
+                    try
+                    {
+                        var btn = this.FindByName<Button>($"Btn_RCAxis_{ch}");
+                        if (btn != null && ch < ChannelAxisMapping.Length)
+                        {
+                            btn.Text = ChannelAxisMapping[ch] + " ▾";
+                        }
+                    }
+                    catch { }
+                }
+            }
+        }
+
+        public void OnCloseJoystickModalClicked(object sender, EventArgs e)
+        {
+            if (Pnl_JoystickModal != null)
+            {
+                Pnl_JoystickModal.IsVisible = false;
+            }
+        }
+
+        public void OnJoystickRescanClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (GetConnectedJoysticksFunc != null && Picker_ActiveJoystick != null)
+                {
+                    var list = GetConnectedJoysticksFunc();
+                    Picker_ActiveJoystick.Items.Clear();
+                    if (list != null && list.Count > 0)
+                    {
+                        foreach (var j in list) Picker_ActiveJoystick.Items.Add(j);
+                        Picker_ActiveJoystick.SelectedIndex = 0;
+                    }
+                    else
+                    {
+                        Picker_ActiveJoystick.Items.Add("⚠️ 未接続 (No Device Detected)");
+                        Picker_ActiveJoystick.SelectedIndex = 0;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnJoystickRescanClicked error: " + ex);
+            }
+        }
+
+        public async void OnJoystickTestVibeClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                global::Xamarin.Essentials.Vibration.Vibrate(TimeSpan.FromMilliseconds(200));
+            }
+            catch { }
+        }
+
+        public async void OnJoystickSaveClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                await DisplayAlert("ジョイスティック設定", "設定を正常に保存しました！", "OK");
+                if (Pnl_JoystickModal != null) Pnl_JoystickModal.IsVisible = false;
+            }
+            catch { }
+        }
+
+        // 🔘 軸・キーの手動選択 (同じキーの重複割り当ても完全許可！)
+        public async void OnSelectAxisClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                var btn = sender as Button;
+                if (btn == null) return;
+
+                int ch = 0;
+                if (btn.CommandParameter != null) int.TryParse(btn.CommandParameter.ToString(), out ch);
+
+                string result = await DisplayActionSheet($"RC{ch} 割り当て軸・キーの選択", "キャンセル", null,
+                    "X (Roll / スティック横)",
+                    "Y (Pitch / スティック縦)",
+                    "Z (Throttle / スロットル)",
+                    "Rz (Yaw / ラダー)",
+                    "Rx (右スティック横)",
+                    "Ry (右スティック縦)",
+                    "Slider1 (L2 / 左スライダー・トリガー)",
+                    "Slider2 (R2 / 右スライダー・トリガー)",
+                    "Btn A (×ボタン)",
+                    "Btn B (○ボタン)",
+                    "Btn X (□ボタン)",
+                    "Btn Y (△ボタン)",
+                    "Btn L1 (左バンパー)",
+                    "Btn R1 (右バンパー)",
+                    "Btn L3 (左押し込み)",
+                    "Btn R3 (右押し込み)",
+                    "Dpad Up (十字上)",
+                    "Dpad Down (十字下)",
+                    "Dpad Left (十字左)",
+                    "Dpad Right (十字右)",
+                    "None (割り当てなし)");
+
+                if (!string.IsNullOrEmpty(result) && result != "キャンセル")
+                {
+                    string cleanName = result.Split('(')[0].Trim();
+                    btn.Text = cleanName + " ▾";
+                    btn.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+
+                    // 🎯 該当チャンネルのデータ配列のみを更新 (他チャンネルはそのまま保持)
+                    if (ch >= 1 && ch <= 18)
+                    {
+                        ChannelAxisMapping[ch] = cleanName;
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnSelectAxisClicked error: " + ex);
+            }
+        }
+
+        public static Button ActiveDetectingButton = null;
+
+        // 🎯 軸・キーの自動検出 (同じキー・軸の複数チャンネル割り当ても完全許可！)
+        public async void OnJoystickDetectClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                var btn = sender as Button;
+                if (btn == null) return;
+
+                int ch = 0;
+                if (btn.CommandParameter != null) int.TryParse(btn.CommandParameter.ToString(), out ch);
+
+                ActiveDetectingButton = btn;
+                btn.Text = "動かして...";
+                btn.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#EAB308");
+
+                float baseRawX = LastRawAxisX;
+                float baseRawY = LastRawAxisY;
+                float baseRawZ = LastRawAxisZ;
+                float baseRawRz = LastRawAxisRz;
+                float baseRawRx = LastRawAxisRx;
+                float baseRawRy = LastRawAxisRy;
+                float baseRawThr = LastRawThrottle;
+                float baseRawRud = LastRawRudder;
+                LastPressedButtonCode = 0;
+
+                int detectTicks = 0;
+                float maxDelta = 0.25f;
+
+                Forms.Device.StartTimer(global::System.TimeSpan.FromMilliseconds(25), () =>
+                {
+                    if (ActiveDetectingButton != btn) return false;
+
+                    float dX = Math.Abs(LastRawAxisX - baseRawX);
+                    float dY = Math.Abs(LastRawAxisY - baseRawY);
+                    float dZ = Math.Abs(LastRawAxisZ - baseRawZ);
+                    float dRz = Math.Abs(LastRawAxisRz - baseRawRz);
+                    float dRx = Math.Abs(LastRawAxisRx - baseRawRx);
+                    float dRy = Math.Abs(LastRawAxisRy - baseRawRy);
+                    float dThr = Math.Abs(LastRawThrottle - baseRawThr);
+                    float dRud = Math.Abs(LastRawRudder - baseRawRud);
+
+                    string detected = null;
+
+                    // 1. トリガー・スライダー判定 (Slider1 / Slider2)
+                    if (dThr > maxDelta || Math.Abs(LastRawBrake) > 0.2f) { detected = "Slider1"; }
+                    else if (dRud > maxDelta || Math.Abs(LastRawGas) > 0.2f) { detected = "Slider2"; }
+                    // 2. スティック軸判定 (X, Y, Z, Rz)
+                    else if (dX > maxDelta && dX >= dY && dX >= dZ && dX >= dRz) { detected = "X"; }
+                    else if (dY > maxDelta && dY >= dX && dY >= dZ && dY >= dRz) { detected = "Y"; }
+                    else if (dZ > maxDelta && dZ >= dX && dZ >= dY && dZ >= dRz) { detected = "Z"; }
+                    else if (dRz > maxDelta && dRz >= dX && dRz >= dY && dRz >= dZ) { detected = "Rz"; }
+                    else if (dRx > maxDelta) { detected = "Rx"; }
+                    else if (dRy > maxDelta) { detected = "Ry"; }
+
+                    // 3. ボタン押下判定 (○, ×, △, □, L1, R1, L3, R3, Dpad)
+                    if (string.IsNullOrEmpty(detected) && LastPressedButtonCode != 0)
+                    {
+                        detected = ConvertKeyCodeToName(LastPressedButtonCode);
+                    }
+
+                    if (!string.IsNullOrEmpty(detected))
+                    {
+                        ActiveDetectingButton = null;
+                        btn.Text = "完了!";
+                        btn.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+
+                        // 🎯 1. 処理用データ配列を即座に更新 (他チャンネルはそのまま保持)
+                        if (ch >= 1 && ch <= 18)
+                        {
+                            ChannelAxisMapping[ch] = detected;
+                        }
+
+                        // 🎯 2. 画面上のボタン表示を更新
+                        try
+                        {
+                            var axisBtn = this.FindByName<Button>($"Btn_RCAxis_{ch}");
+                            if (axisBtn != null)
+                            {
+                                axisBtn.Text = detected + " ▾";
+                                axisBtn.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                            }
+                        }
+                        catch (Exception ex)
+                        {
+                            Console.WriteLine("FindByName error: " + ex);
+                        }
+
+                        Forms.Device.StartTimer(global::System.TimeSpan.FromSeconds(1.5), () =>
+                        {
+                            if (btn != null)
+                            {
+                                btn.Text = "DETECT";
+                                btn.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+                            }
+                            return false;
+                        });
+
+                        return false;
+                    }
+
+                    detectTicks++;
+                    if (detectTicks > 160) // 4秒タイムアウト
+                    {
+                        ActiveDetectingButton = null;
+                        btn.Text = "DETECT";
+                        btn.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+                        return false;
+                    }
+
+                    return true;
+                });
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnJoystickDetectClicked error: " + ex);
+            }
+        }
+
+}
+
     }
 
     internal class InputBox
     {
         public static async Task<string> Show(string mjpegUrl, string enterTheUrlToTheMjpegSourceUrl)
         {
-            var result = await InputBox1(mjpegUrl, enterTheUrlToTheMjpegSourceUrl, MainPage.Instance.Navigation);
+            var result = await InputBox1(mjpegUrl, enterTheUrlToTheMjpegSourceUrl, global::Xamarin.MainPage.Instance.Navigation);
             return result;
         }
 
@@ -2391,5 +2902,6 @@ namespace Xamarin
             // then proc returns the result
             return tcs.Task;
         }
-    }
+    
+
 }

@@ -317,6 +317,38 @@ namespace Xamarin.Droid
 
             UserDialogs.Init(this);
 
+            // 🎮 ジョイスティック・ゲームパッド検出ハンドラ登録
+            FlightData.GetConnectedJoysticksFunc = () =>
+            {
+                var list = new global::System.Collections.Generic.List<string>();
+                try
+                {
+                    var ids = global::Android.Views.InputDevice.GetDeviceIds();
+                    if (ids != null)
+                    {
+                        foreach (var id in ids)
+                        {
+                            var dev = global::Android.Views.InputDevice.GetDevice(id);
+                            if (dev != null && !dev.IsVirtual)
+                            {
+                                var src = dev.Sources;
+                                if ((src & global::Android.Views.InputSourceType.Joystick) == global::Android.Views.InputSourceType.Joystick ||
+                                    (src & global::Android.Views.InputSourceType.Gamepad) == global::Android.Views.InputSourceType.Gamepad ||
+                                    (src & global::Android.Views.InputSourceType.ClassJoystick) == global::Android.Views.InputSourceType.ClassJoystick)
+                                {
+                                    list.Add(dev.Name);
+                                }
+                            }
+                        }
+                    }
+                }
+                catch (global::System.Exception ex)
+                {
+                    global::Android.Util.Log.Error("MainActivity", "GetConnectedJoysticks error: " + ex);
+                }
+                return list;
+            };
+
             AndroidEnvironment.UnhandledExceptionRaiser += AndroidEnvironment_UnhandledExceptionRaiser;
 
             {
@@ -437,69 +469,206 @@ namespace Xamarin.Droid
             audioTrack.Stop();
         }
 
-        public override bool OnGenericMotionEvent(MotionEvent e)
+        // 🎮 Android全域でのジョイスティック・モーションイベント最優先ディスパッチ
+                // 🎮 ゲームパッド・ジョイスティックのボタンによる誤バック（終了ダイアログ）を防止
+                // 🎮 コントローラー（PS4/PS5等のタッチパッド含む）からのクリック・EnterによるPicker誤オープンを完全防止
+        public override bool DispatchTouchEvent(global::Android.Views.MotionEvent ev)
         {
-            if(e.Source == InputSourceType.Joystick)
+            if (ev != null && ev.Device != null && !ev.Device.IsVirtual)
             {
-                Log.Debug(TAG, "OnGenericMotionEvent Joystick");
-                var xrange = e.Device?.GetMotionRange(Axis.X, e.Source);
-                var x = e.GetAxisValue(Axis.X);
+                var src = ev.Device.Sources;
+                if ((src & global::Android.Views.InputSourceType.Gamepad) == global::Android.Views.InputSourceType.Gamepad ||
+                    (src & global::Android.Views.InputSourceType.Joystick) == global::Android.Views.InputSourceType.Joystick)
+                {
+                    // コントローラー内蔵タッチパッドからのタッチイベントは画面のUIフォーカスを奪わせない
+                    return true;
+                }
+            }
+            return base.DispatchTouchEvent(ev);
+        }
 
-                var yrange = e.Device?.GetMotionRange(Axis.Y, e.Source);
-                var y = e.GetAxisValue(Axis.Y);
+        public override bool DispatchKeyEvent(global::Android.Views.KeyEvent e)
+        {
+            if (e != null)
+            {
+                int keyCode = (int)e.KeyCode;
+                bool isDown = (e.Action == global::Android.Views.KeyEventActions.Down);
 
-                var zrange = e.Device?.GetMotionRange(Axis.Z, e.Source);
-                var z = e.GetAxisValue(Axis.Z);
+                // 🎮 ゲームパッド・ジョイスティック・十字キー・各種ボタンの判定
+                bool isGamePadOrJoystick = false;
+                if (e.Device != null)
+                {
+                    var src = e.Device.Sources;
+                    if (src.HasFlag(global::Android.Views.InputSourceType.Gamepad) ||
+                        src.HasFlag(global::Android.Views.InputSourceType.Joystick) ||
+                        src.HasFlag(global::Android.Views.InputSourceType.Dpad))
+                    {
+                        isGamePadOrJoystick = true;
+                    }
+                }
 
-                var rzrange = e.Device?.GetMotionRange(Axis.Rz, e.Source);
-                var rz = e.GetAxisValue(Axis.Rz);
+                if (global::Android.Views.KeyEvent.IsGamepadButton(e.KeyCode) ||
+                    e.KeyCode == global::Android.Views.Keycode.DpadUp ||
+                    e.KeyCode == global::Android.Views.Keycode.DpadDown ||
+                    e.KeyCode == global::Android.Views.Keycode.DpadLeft ||
+                    e.KeyCode == global::Android.Views.Keycode.DpadRight ||
+                    e.KeyCode == global::Android.Views.Keycode.DpadCenter ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonA ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonB ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonC ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonX ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonY ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonZ ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonL1 ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonR1 ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonL2 ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonR2 ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonThumbl ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonThumbr ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonStart ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonSelect ||
+                    e.KeyCode == global::Android.Views.Keycode.ButtonMode ||
+                    e.KeyCode == global::Android.Views.Keycode.Back)
+                {
+                    isGamePadOrJoystick = true;
+                }
 
-                x = (float)MathHelper.mapConstrained(x, xrange.Min, xrange.Max, -1, 1);
+                if (isGamePadOrJoystick)
+                {
+                    if (isDown)
+                    {
+                        FlightData.LastPressedButtonCode = keyCode;
+                    }
+                    FlightData.SetButtonState(keyCode, isDown);
+                    FlightData.IsJoystickActive = true;
 
-                y = (float)MathHelper.mapConstrained(y, yrange.Min, yrange.Max, -1, 1);
-
-                z = (float)MathHelper.mapConstrained(z, zrange.Min, zrange.Max, -1, 1);
-
-                rz = (float)MathHelper.mapConstrained(rz, rzrange.Min, rzrange.Max, -1, 1);
-
-                Log.Debug(TAG, $"OnGenericMotionEvent Joystick  {x} {y} {z} {rz}");
+                    // 🛡️ OSのフォーカス移動・UIクリック・ダイアログポップアップを100%完全遮断
+                    return true;
+                }
             }
 
-            if (e.Source == InputSourceType.Gamepad)
+            return base.DispatchKeyEvent(e);
+        }
+
+        public override bool DispatchGenericMotionEvent(global::Android.Views.MotionEvent ev)
+        {
+            try
             {
-                Log.Debug(TAG, "OnGenericMotionEvent Gamepad");
+                if (ev != null)
+                {
+                    // 🕹️ ゲームパッド・ジョイスティック判定 (PS4/PS5 DualShock/DualSense等のタッチパッド内蔵コントローラーも100%確実に受信！)
+                    bool isJoystickEvent = false;
+                    var evSrc = ev.Source;
+                    if (evSrc.HasFlag(global::Android.Views.InputSourceType.Joystick) ||
+                        evSrc.HasFlag(global::Android.Views.InputSourceType.Gamepad) ||
+                        (ev.Device != null && (ev.Device.Sources.HasFlag(global::Android.Views.InputSourceType.Joystick) || ev.Device.Sources.HasFlag(global::Android.Views.InputSourceType.Gamepad))))
+                    {
+                        // 画面への直接タッチイベント単独以外はすべてジョイスティック入力として処理
+                        if (evSrc != global::Android.Views.InputSourceType.Touchscreen)
+                        {
+                            isJoystickEvent = true;
+                        }
+                    }
+
+                    if (isJoystickEvent)
+                    {
+                        // 接続デバイスからの全軸入力を漏れなく取得
+                        float x = ev.GetAxisValue(global::Android.Views.Axis.X);
+                        float y = ev.GetAxisValue(global::Android.Views.Axis.Y);
+                        float z = ev.GetAxisValue(global::Android.Views.Axis.Z);
+                        float rz = ev.GetAxisValue(global::Android.Views.Axis.Rz);
+                        float rx = ev.GetAxisValue(global::Android.Views.Axis.Rx);
+                        float ry = ev.GetAxisValue(global::Android.Views.Axis.Ry);
+                        float throttle = ev.GetAxisValue(global::Android.Views.Axis.Throttle);
+                        float rudder = ev.GetAxisValue(global::Android.Views.Axis.Rudder);
+                        float gas = ev.GetAxisValue(global::Android.Views.Axis.Gas);
+                        float brake = ev.GetAxisValue(global::Android.Views.Axis.Brake);
+                        float hatx = ev.GetAxisValue(global::Android.Views.Axis.HatX);
+                        float haty = ev.GetAxisValue(global::Android.Views.Axis.HatY);
+
+                        // Roll (Ch1): X または Rx
+                        float roll = (x != 0) ? x : rx;
+                        // Pitch (Ch2): Y または Ry (反転考慮)
+                        float pitch = (y != 0) ? y : ry;
+                        // Throttle (Ch3): Throttle, Z, または Gas (-1.0 〜 +1.0)
+                        float thr = (throttle != 0) ? throttle : ((z != 0) ? z : ((gas != 0) ? gas : ((haty != 0) ? -haty : 0f)));
+                        // Yaw (Ch4): Rudder, Rz, または HatX
+                        float yaw = (rudder != 0) ? rudder : ((rz != 0) ? rz : hatx);
+
+                        FlightData.LastStickRoll = roll;
+                        FlightData.LastStickPitch = pitch;
+                        FlightData.LastStickThrottle = thr;
+                        FlightData.LastStickYaw = yaw;
+                        FlightData.LastRawAxisX = x;
+                        FlightData.LastRawAxisY = y;
+                        FlightData.LastRawAxisZ = z;
+                        FlightData.LastRawAxisRz = rz;
+                        FlightData.LastRawAxisRx = rx;
+                        FlightData.LastRawAxisRy = ry;
+                        FlightData.LastRawThrottle = throttle;
+                        FlightData.LastRawRudder = rudder;
+                        FlightData.LastRawGas = gas;
+                        FlightData.LastRawBrake = brake;
+                        FlightData.IsJoystickActive = true;
+
+                        // 🛡️ ジョイスティックからのモーション入力時のみUIフォーカス移動を遮断
+                        return true;
+                    }
+                }
+            }
+            catch (global::System.Exception ex)
+            {
+                global::Android.Util.Log.Error("MainActivity", "DispatchGenericMotionEvent error: " + ex);
             }
 
+            // 👆 タッチ操作・画面タップ・マウス操作はすべて正常にOSへ通す
+            return base.DispatchGenericMotionEvent(ev);
+        }
+
+        public override bool OnGenericMotionEvent(global::Android.Views.MotionEvent e)
+        {
             return base.OnGenericMotionEvent(e);
         }
 
         public override bool OnKeyDown([GeneratedEnum] Keycode keyCode, KeyEvent e)
         {
-            Log.Debug(TAG, "OnKeyDown " + keyCode);
-            switch (keyCode)
+            // 🎮 ボタン押下状態をFlightDataへ即座に伝達
+            FlightData.LastPressedButtonCode = (int)keyCode;
+            FlightData.SetButtonState((int)keyCode, true);
+            FlightData.IsJoystickActive = true;
+
+            // 🎮 ゲームパッド・ジョイスティックのボタン操作時はOSのダイアログ・Back処理を完全ガード
+            if (global::Android.Views.KeyEvent.IsGamepadButton(keyCode) ||
+                keyCode == Keycode.Back ||
+                keyCode == Keycode.ButtonA ||
+                keyCode == Keycode.ButtonB ||
+                keyCode == Keycode.ButtonC ||
+                keyCode == Keycode.ButtonX ||
+                keyCode == Keycode.ButtonY ||
+                keyCode == Keycode.ButtonZ ||
+                keyCode == Keycode.ButtonL1 ||
+                keyCode == Keycode.ButtonL2 ||
+                keyCode == Keycode.ButtonR1 ||
+                keyCode == Keycode.ButtonR2 ||
+                keyCode == Keycode.ButtonThumbl ||
+                keyCode == Keycode.ButtonThumbr ||
+                keyCode == Keycode.ButtonStart ||
+                keyCode == Keycode.ButtonSelect ||
+                keyCode == Keycode.ButtonMode ||
+                keyCode == Keycode.DpadCenter ||
+                keyCode == Keycode.DpadUp ||
+                keyCode == Keycode.DpadDown ||
+                keyCode == Keycode.DpadLeft ||
+                keyCode == Keycode.DpadRight)
             {
-                case Keycode.VolumeUp:
-                    Toast.MakeText(this, "VolumeUp key pressed", ToastLength.Short).Show();
-                    e.StartTracking();
-                    return true;
-                case Keycode.ButtonL1:
-                    e.StartTracking();
-                    return true;
-                case Keycode.ButtonL2:
-                    e.StartTracking();
-                    return true;
-                case Keycode.ButtonR1:
-                    e.StartTracking();
-                    return true;
-                case Keycode.ButtonR2:
-                    e.StartTracking();
-                    return true;  
-                case Keycode.ButtonMode:
-                    e.StartTracking();
-                    return true;
-                case Keycode.ButtonSelect:
-                    e.StartTracking();
-                    return true;
+                Log.Debug(TAG, "Game Controller Button Pressed: " + keyCode);
+                return true; // OSのBack処理へ渡さずアプリ内で消費
+            }
+
+            if (keyCode == Keycode.VolumeUp)
+            {
+                e.StartTracking();
+                return true;
             }
 
             return base.OnKeyDown(keyCode, e);
@@ -507,7 +676,36 @@ namespace Xamarin.Droid
 
         public override bool OnKeyUp([GeneratedEnum] Keycode keyCode, KeyEvent e)
         {
-            Log.Debug(TAG, "OnKeyUp " + keyCode);
+            // 🎮 ボタン離脱状態をFlightDataへ即座に伝達
+            FlightData.SetButtonState((int)keyCode, false);
+
+            // 🎮 ゲームパッド・ジョイスティックのボタン離脱時もOS処理へ流さない
+            if (global::Android.Views.KeyEvent.IsGamepadButton(keyCode) ||
+                keyCode == Keycode.Back ||
+                keyCode == Keycode.ButtonA ||
+                keyCode == Keycode.ButtonB ||
+                keyCode == Keycode.ButtonC ||
+                keyCode == Keycode.ButtonX ||
+                keyCode == Keycode.ButtonY ||
+                keyCode == Keycode.ButtonZ ||
+                keyCode == Keycode.ButtonL1 ||
+                keyCode == Keycode.ButtonL2 ||
+                keyCode == Keycode.ButtonR1 ||
+                keyCode == Keycode.ButtonR2 ||
+                keyCode == Keycode.ButtonThumbl ||
+                keyCode == Keycode.ButtonThumbr ||
+                keyCode == Keycode.ButtonStart ||
+                keyCode == Keycode.ButtonSelect ||
+                keyCode == Keycode.ButtonMode ||
+                keyCode == Keycode.DpadCenter ||
+                keyCode == Keycode.DpadUp ||
+                keyCode == Keycode.DpadDown ||
+                keyCode == Keycode.DpadLeft ||
+                keyCode == Keycode.DpadRight)
+            {
+                Log.Debug(TAG, "Game Controller Button Released: " + keyCode);
+                return true;
+            }
 
             if ((e.Flags & KeyEventFlags.CanceledLongPress) == 0)
             {

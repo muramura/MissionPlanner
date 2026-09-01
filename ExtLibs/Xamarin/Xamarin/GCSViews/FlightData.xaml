@@ -199,9 +199,9 @@
                         </Grid>
                     </ScrollView>
 
-                    <!-- Actions タブ (操作ボタン一覧) -->
+                    <!-- Actions タブ (操作ボタン ＆ ジョイスティック設定) -->
                     <ScrollView x:Name="View_ActionsTab" IsVisible="False">
-                        <StackLayout Spacing="3">
+                        <StackLayout Spacing="4">
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="3">
                                 <Button Grid.Column="0" Text="🛬 着陸 (LAND)" FontSize="9" FontAttributes="Bold"
                                         BackgroundColor="#D97706" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
@@ -226,6 +226,10 @@
                                         BackgroundColor="#475569" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
                                         Clicked="OnModeLoiterClicked"/>
                             </Grid>
+                            <!-- 🎮 JOYSTICK & KEY SETUP ボタン -->
+                            <Button Text="🎮 JOYSTICK &amp; KEY SETUP" FontSize="9" FontAttributes="Bold"
+                                    BackgroundColor="#2563EB" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="30"
+                                    Clicked="OnOpenJoystickModalClicked"/>
                         </StackLayout>
                     </ScrollView>
 
@@ -237,11 +241,11 @@
                     </ScrollView>
                 </Grid>
 
-                <!-- 下部: コンパクト丸型HUD (項目のすぐ下に配置) -->
-                <Frame Grid.Row="2" Margin="0,2,0,0" Padding="0" CornerRadius="65" HasShadow="False"
+                <!-- 下部: コンパクト丸型HUD (QUICKタブ選択時のみ表示) -->
+                <Frame x:Name="Frame_HUD" Grid.Row="2" Margin="0,2,0,0" Padding="0" CornerRadius="65" HasShadow="False"
                        WidthRequest="130" HeightRequest="130" IsClippedToBounds="True"
                        HorizontalOptions="Center" VerticalOptions="Center"
-                       BackgroundColor="#590F172A" BorderColor="#475569">
+                       BackgroundColor="#590F172A" BorderColor="#475569" IsVisible="True">
                     <controls:HUD x:Name="hud1" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
                 </Frame>
             </Grid>
@@ -304,6 +308,367 @@
                 </StackLayout>
             </Frame>
         </StackLayout>
+
+    
+        <!-- ================= 5. JOYSTICK & KEY MAPPING SETUP MODAL ================= -->
+        <Grid x:Name="Pnl_JoystickModal" Margin="0" Padding="0" BackgroundColor="#D90B1120" IsVisible="False">
+            <Frame Margin="16,10" Padding="12,10" CornerRadius="8" HasShadow="True"
+                   BackgroundColor="#1E293B" BorderColor="#475569"
+                   HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand">
+                <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
+                    
+                    <!-- 1. Header & Top Action Buttons -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                        <StackLayout Grid.Column="0" Orientation="Vertical" Spacing="1" VerticalOptions="Center">
+                            <StackLayout Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                <Label Text="🎮" FontSize="16" VerticalOptions="Center"/>
+                                <Label Text="Joystick &amp; Key Mapping Setup" TextColor="#38BDF8" FontSize="14" FontAttributes="Bold" VerticalOptions="Center"/>
+                            </StackLayout>
+                            <Label Text="Full Mission Planner Specification: Device selection, 16-channel axis calibration, key mapping, and real-time live value feedback."
+                                   TextColor="#94A3B8" FontSize="8"/>
+                        </StackLayout>
+
+                        <!-- Actions: RESCAN, TEST VIBE, SAVE, CLOSE -->
+                        <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
+                            <Button Text="🔄 RESCAN" FontSize="9" FontAttributes="Bold"
+                                    BackgroundColor="#334155" TextColor="#E2E8F0" CornerRadius="4" HeightRequest="26" Padding="6,0"
+                                    Clicked="OnJoystickRescanClicked"/>
+                            <Button Text="📳 VIBE" FontSize="9" FontAttributes="Bold"
+                                    BackgroundColor="#059669" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="26" Padding="6,0"
+                                    Clicked="OnJoystickTestVibeClicked"/>
+                            <Button Text="💾 SAVE" FontSize="9" FontAttributes="Bold"
+                                    BackgroundColor="#2563EB" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="26" Padding="8,0"
+                                    Clicked="OnJoystickSaveClicked"/>
+                            <Button Text="✖" FontSize="11" FontAttributes="Bold"
+                                    BackgroundColor="#EF4444" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="26" WidthRequest="26" Padding="0"
+                                    Clicked="OnCloseJoystickModalClicked"/>
+                        </StackLayout>
+                    </Grid>
+
+                    <!-- 2. Active Joystick & Stick Mode Selector Row -->
+                    <Frame Grid.Row="1" BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="8,4" HasShadow="False">
+                        <Grid ColumnDefinitions="Auto,*,Auto,*,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                            <Label Grid.Column="0" Text="Active Joystick:" TextColor="#CBD5E1" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Picker x:Name="Picker_ActiveJoystick" Grid.Column="1" TextColor="#38BDF8" FontSize="11" HeightRequest="36" VerticalOptions="Center">
+                                <Picker.Items>
+                                    <x:String>Virtual On-Screen Touch Sticks (Mode 2)</x:String>
+                                    <x:String>Bluetooth Gamepad Controller</x:String>
+                                    <x:String>USB OTG Radio Transmitter</x:String>
+                                </Picker.Items>
+                                <Picker.SelectedIndex>0</Picker.SelectedIndex>
+                            </Picker>
+
+                            <Label Grid.Column="2" Text="Stick Mode:" TextColor="#CBD5E1" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Picker x:Name="Picker_StickMode" Grid.Column="3" TextColor="#F59E0B" FontSize="11" HeightRequest="36" VerticalOptions="Center">
+                                <Picker.Items>
+                                    <x:String>Mode 2 (Throttle/Yaw Left, Pitch/Roll Right)</x:String>
+                                    <x:String>Mode 1 (Pitch/Yaw Left, Throttle/Roll Right)</x:String>
+                                </Picker.Items>
+                                <Picker.SelectedIndex>0</Picker.SelectedIndex>
+                            </Picker>
+
+                            <!-- Checkboxes: Elevons & Manual Control -->
+                            <StackLayout Grid.Column="4" Orientation="Horizontal" Spacing="2" VerticalOptions="Center">
+                                <CheckBox x:Name="CHK_elevons" Color="#38BDF8" VerticalOptions="Center"/>
+                                <Label Text="Elevons (Delta)" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                            </StackLayout>
+
+                            <StackLayout Grid.Column="5" Orientation="Horizontal" Spacing="2" VerticalOptions="Center">
+                                <CheckBox x:Name="CHK_manual_control" IsChecked="True" Color="#10B981" VerticalOptions="Center"/>
+                                <Label Text="Manual Control (#200)" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                            </StackLayout>
+                        </Grid>
+                    </Frame>
+
+                    <!-- 3. Scrollable Content: Channels, Calibration & Key Mapping -->
+                    <ScrollView Grid.Row="2">
+                        <StackLayout Spacing="8">
+                            
+                            <!-- Section A: Radio Channels & Axis Calibration -->
+                            <Frame BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="8,6" HasShadow="False">
+                                <StackLayout Spacing="4">
+                                    <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="🎮 Radio Channels &amp; Axis Calibration (Real-Time Live Value Feedback)"
+                                               TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                        <Label Grid.Column="1" Text="1000 µs (Min) ──── 1500 µs (Mid) ──── 2000 µs (Max)"
+                                               TextColor="#64748B" FontSize="8"/>
+                                    </Grid>
+
+                                    <!-- Table Header -->
+                                    <Grid ColumnDefinitions="75,80,45,45,60,*,70" ColumnSpacing="4" Padding="0,2">
+                                        <Label Grid.Column="0" Text="Radio Channel" TextColor="#94A3B8" FontSize="8" FontAttributes="Bold"/>
+                                        <Label Grid.Column="1" Text="Assigned Axis" TextColor="#94A3B8" FontSize="8" FontAttributes="Bold"/>
+                                        <Label Grid.Column="2" Text="Rev" TextColor="#94A3B8" FontSize="8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                        <Label Grid.Column="3" Text="Expo" TextColor="#94A3B8" FontSize="8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                        <Label Grid.Column="4" Text="Auto Detect" TextColor="#94A3B8" FontSize="8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                        <Label Grid.Column="5" Text="Real-Time Stick Position" TextColor="#94A3B8" FontSize="8" FontAttributes="Bold"/>
+                                        <Label Grid.Column="6" Text="Live PWM" TextColor="#94A3B8" FontSize="8" FontAttributes="Bold" HorizontalTextAlignment="End"/>
+                                    </Grid>
+
+                                    <BoxView HeightRequest="1" BackgroundColor="#334155"/>
+                                    <!-- RC1 (Roll) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC1 (Roll)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_1" Grid.Column="1" Text="X ▾" CommandParameter="1"
+                                                BackgroundColor="#1E293B" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#38BDF8" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_1" Grid.Column="4" Text="DETECT" CommandParameter="1"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc1" Grid.Column="5" Progress="0.5" ProgressColor="#38BDF8" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc1" Grid.Column="6" Text="1500 µs" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC2 (Pitch) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC2 (Pitch)" TextColor="#10B981" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_2" Grid.Column="1" Text="Y ▾" CommandParameter="2"
+                                                BackgroundColor="#1E293B" TextColor="#10B981" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#10B981" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_2" Grid.Column="4" Text="DETECT" CommandParameter="2"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc2" Grid.Column="5" Progress="0.5" ProgressColor="#10B981" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc2" Grid.Column="6" Text="1500 µs" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC3 (Throttle) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC3 (Throttle)" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_3" Grid.Column="1" Text="Z ▾" CommandParameter="3"
+                                                BackgroundColor="#1E293B" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#F59E0B" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_3" Grid.Column="4" Text="DETECT" CommandParameter="3"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc3" Grid.Column="5" Progress="0.0" ProgressColor="#F59E0B" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc3" Grid.Column="6" Text="1000 µs" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC4 (Yaw) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC4 (Yaw)" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_4" Grid.Column="1" Text="Rz ▾" CommandParameter="4"
+                                                BackgroundColor="#1E293B" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#A78BFA" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_4" Grid.Column="4" Text="DETECT" CommandParameter="4"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc4" Grid.Column="5" Progress="0.5" ProgressColor="#A78BFA" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc4" Grid.Column="6" Text="1500 µs" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC5 (Mode) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC5 (Mode)" TextColor="#EC4899" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_5" Grid.Column="1" Text="Slider1 ▾" CommandParameter="5"
+                                                BackgroundColor="#1E293B" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#EC4899" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_5" Grid.Column="4" Text="DETECT" CommandParameter="5"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc5" Grid.Column="5" Progress="0.5" ProgressColor="#EC4899" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc5" Grid.Column="6" Text="1500 µs" TextColor="#EC4899" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC6 (Aux 2) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC6 (Aux 2)" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_6" Grid.Column="1" Text="None ▾" CommandParameter="6"
+                                                BackgroundColor="#1E293B" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#06B6D4" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_6" Grid.Column="4" Text="DETECT" CommandParameter="6"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc6" Grid.Column="5" Progress="0.5" ProgressColor="#06B6D4" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc6" Grid.Column="6" Text="1500 µs" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC7 (Aux 3) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC7 (Aux 3)" TextColor="#84CC16" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_7" Grid.Column="1" Text="None ▾" CommandParameter="7"
+                                                BackgroundColor="#1E293B" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#84CC16" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_7" Grid.Column="4" Text="DETECT" CommandParameter="7"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc7" Grid.Column="5" Progress="0.5" ProgressColor="#84CC16" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc7" Grid.Column="6" Text="1500 µs" TextColor="#84CC16" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC8 (Aux 4) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC8 (Aux 4)" TextColor="#EAB308" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_8" Grid.Column="1" Text="None ▾" CommandParameter="8"
+                                                BackgroundColor="#1E293B" TextColor="#10B981" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#EAB308" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_8" Grid.Column="4" Text="DETECT" CommandParameter="8"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc8" Grid.Column="5" Progress="0.5" ProgressColor="#EAB308" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc8" Grid.Column="6" Text="1500 µs" TextColor="#EAB308" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC9 (Aux 5) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC9 (Aux 5)" TextColor="#6366F1" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_9" Grid.Column="1" Text="None ▾" CommandParameter="9"
+                                                BackgroundColor="#1E293B" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#6366F1" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_9" Grid.Column="4" Text="DETECT" CommandParameter="9"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc9" Grid.Column="5" Progress="0.5" ProgressColor="#6366F1" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc9" Grid.Column="6" Text="1500 µs" TextColor="#6366F1" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC10 (Aux 6) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC10 (Aux 6)" TextColor="#14B8A6" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_10" Grid.Column="1" Text="None ▾" CommandParameter="10"
+                                                BackgroundColor="#1E293B" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#14B8A6" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_10" Grid.Column="4" Text="DETECT" CommandParameter="10"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc10" Grid.Column="5" Progress="0.5" ProgressColor="#14B8A6" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc10" Grid.Column="6" Text="1500 µs" TextColor="#14B8A6" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC11 (Aux 7) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC11 (Aux 7)" TextColor="#F97316" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_11" Grid.Column="1" Text="None ▾" CommandParameter="11"
+                                                BackgroundColor="#1E293B" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#F97316" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_11" Grid.Column="4" Text="DETECT" CommandParameter="11"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc11" Grid.Column="5" Progress="0.5" ProgressColor="#F97316" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc11" Grid.Column="6" Text="1500 µs" TextColor="#F97316" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC12 (Aux 8) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC12 (Aux 8)" TextColor="#8B5CF6" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_12" Grid.Column="1" Text="None ▾" CommandParameter="12"
+                                                BackgroundColor="#1E293B" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#8B5CF6" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_12" Grid.Column="4" Text="DETECT" CommandParameter="12"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc12" Grid.Column="5" Progress="0.5" ProgressColor="#8B5CF6" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc12" Grid.Column="6" Text="1500 µs" TextColor="#8B5CF6" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC13 (Aux 9) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC13 (Aux 9)" TextColor="#0EA5E9" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_13" Grid.Column="1" Text="None ▾" CommandParameter="13"
+                                                BackgroundColor="#1E293B" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#0EA5E9" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_13" Grid.Column="4" Text="DETECT" CommandParameter="13"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc13" Grid.Column="5" Progress="0.5" ProgressColor="#0EA5E9" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc13" Grid.Column="6" Text="1500 µs" TextColor="#0EA5E9" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC14 (Aux 10) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC14 (Aux 10)" TextColor="#10B981" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_14" Grid.Column="1" Text="None ▾" CommandParameter="14"
+                                                BackgroundColor="#1E293B" TextColor="#10B981" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#10B981" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_14" Grid.Column="4" Text="DETECT" CommandParameter="14"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc14" Grid.Column="5" Progress="0.5" ProgressColor="#10B981" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc14" Grid.Column="6" Text="1500 µs" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC15 (Aux 11) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC15 (Aux 11)" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_15" Grid.Column="1" Text="None ▾" CommandParameter="15"
+                                                BackgroundColor="#1E293B" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#F59E0B" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_15" Grid.Column="4" Text="DETECT" CommandParameter="15"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc15" Grid.Column="5" Progress="0.5" ProgressColor="#F59E0B" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc15" Grid.Column="6" Text="1500 µs" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC16 (Aux 12) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC16 (Aux 12)" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_16" Grid.Column="1" Text="None ▾" CommandParameter="16"
+                                                BackgroundColor="#1E293B" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#A78BFA" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_16" Grid.Column="4" Text="DETECT" CommandParameter="16"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc16" Grid.Column="5" Progress="0.5" ProgressColor="#A78BFA" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc16" Grid.Column="6" Text="1500 µs" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC17 (Aux 13) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC17 (Aux 13)" TextColor="#EC4899" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_17" Grid.Column="1" Text="None ▾" CommandParameter="17"
+                                                BackgroundColor="#1E293B" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#EC4899" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_17" Grid.Column="4" Text="DETECT" CommandParameter="17"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc17" Grid.Column="5" Progress="0.5" ProgressColor="#EC4899" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc17" Grid.Column="6" Text="1500 µs" TextColor="#EC4899" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                    <!-- RC18 (Aux 14) -->
+                                    <Grid ColumnDefinitions="85,90,45,50,60,*,75" ColumnSpacing="6" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="RC18 (Aux 14)" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_RCAxis_18" Grid.Column="1" Text="None ▾" CommandParameter="18"
+                                                BackgroundColor="#1E293B" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold"
+                                                HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
+                                        <CheckBox Grid.Column="2" Color="#06B6D4" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <Button x:Name="Btn_Detect_18" Grid.Column="4" Text="DETECT" CommandParameter="18"
+                                                FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
+                                                HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
+                                        <ProgressBar x:Name="PB_joy_rc18" Grid.Column="5" Progress="0.5" ProgressColor="#06B6D4" HeightRequest="8" VerticalOptions="Center"/>
+                                        <Label x:Name="LBL_joy_rc18" Grid.Column="6" Text="1500 µs" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                    </Grid>
+                                </StackLayout>
+                            </Frame>
+
+                                                        
+
+                        </StackLayout>
+                    </ScrollView>
+
+                </Grid>
+            </Frame>
+        </Grid>
 
     </Grid>
 </ContentPage>
