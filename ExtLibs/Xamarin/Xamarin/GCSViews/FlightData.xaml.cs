@@ -172,8 +172,12 @@ namespace Xamarin
                 {
                     if (kvp.Value) // 押下中
                     {
-                        string pressedNorm = NormalizeAxisName(ConvertKeyCodeToName(kvp.Key));
-                        if (norm == pressedNorm)
+                        string pressedRaw = ConvertKeyCodeToName(kvp.Key);
+                        string pressedNorm = NormalizeAxisName(pressedRaw);
+                        if (norm == pressedNorm ||
+                            norm.IndexOf(pressedNorm, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            pressedNorm.IndexOf(norm, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                            norm.Contains($"Btn {kvp.Key}"))
                         {
                             return 2000;
                         }
@@ -277,6 +281,9 @@ namespace Xamarin
             {
                 hud1.hudcolor = Color.FromName(Settings.Instance["hudcolor"]);
             }
+
+            // 🎮 保存されたジョイスティック設定を起動時に自動読み込み
+            LoadJoystickSettings();
 
             List<string> list = new List<string>();
 
@@ -2583,19 +2590,8 @@ namespace Xamarin
                 }
                 catch { }
 
-                // 画面上のボタンテキストをデータ配列と同期
-                for (int ch = 1; ch <= 18; ch++)
-                {
-                    try
-                    {
-                        var btn = this.FindByName<Button>($"Btn_RCAxis_{ch}");
-                        if (btn != null && ch < ChannelAxisMapping.Length)
-                        {
-                            btn.Text = ChannelAxisMapping[ch] + " ▾";
-                        }
-                    }
-                    catch { }
-                }
+                // 画面上の全UI（軸割り当て・リバース・エクスポ・モード）を保存設定と同期
+                LoadJoystickSettings();
             }
         }
 
@@ -2642,14 +2638,143 @@ namespace Xamarin
             catch { }
         }
 
+        // 💾 ジョイスティック設定の完全永続化保存
+        public void SaveJoystickSettings()
+        {
+            try
+            {
+                for (int ch = 1; ch <= 18; ch++)
+                {
+                    // 1. 軸・キー割り当て
+                    var btn = this.FindByName<Button>($"Btn_RCAxis_{ch}");
+                    string mapping = (btn != null && !string.IsNullOrEmpty(btn.Text))
+                        ? NormalizeAxisName(btn.Text)
+                        : ((ch < ChannelAxisMapping.Length) ? ChannelAxisMapping[ch] : "None");
+
+                    if (ch < ChannelAxisMapping.Length)
+                    {
+                        ChannelAxisMapping[ch] = mapping;
+                    }
+                    global::Xamarin.Essentials.Preferences.Set($"MP_Joy_RC{ch}_Axis", mapping);
+
+                    // 2. リバース (Rev)
+                    var chkRev = this.FindByName<CheckBox>($"CHK_RCRev_{ch}");
+                    if (chkRev != null)
+                    {
+                        global::Xamarin.Essentials.Preferences.Set($"MP_Joy_RC{ch}_Rev", chkRev.IsChecked);
+                    }
+
+                    // 3. エクスポ (Expo)
+                    var entExpo = this.FindByName<Entry>($"ENT_RCExpo_{ch}");
+                    if (entExpo != null)
+                    {
+                        global::Xamarin.Essentials.Preferences.Set($"MP_Joy_RC{ch}_Expo", entExpo.Text ?? "0");
+                    }
+                }
+
+                // 4. スティックモード
+                if (Picker_StickMode != null && Picker_StickMode.SelectedIndex >= 0)
+                {
+                    global::Xamarin.Essentials.Preferences.Set("MP_Joy_StickMode", Picker_StickMode.SelectedIndex);
+                }
+
+                // 5. Elevons / ManualControl
+                if (CHK_elevons != null)
+                {
+                    global::Xamarin.Essentials.Preferences.Set("MP_Joy_Elevons", CHK_elevons.IsChecked);
+                }
+                if (CHK_manual_control != null)
+                {
+                    global::Xamarin.Essentials.Preferences.Set("MP_Joy_ManualControl", CHK_manual_control.IsChecked);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SaveJoystickSettings error: " + ex);
+            }
+        }
+
+        // 📂 ジョイスティック設定の完全復元読み込み
+        public void LoadJoystickSettings()
+        {
+            try
+            {
+                string[] defaults = new string[19]
+                {
+                    "", "X", "Y", "Z", "Rz", "Slider1", "None",
+                    "None", "None", "None", "None", "None", "None",
+                    "None", "None", "None", "None", "None", "None"
+                };
+
+                for (int ch = 1; ch <= 18; ch++)
+                {
+                    string def = (ch < defaults.Length) ? defaults[ch] : "None";
+                    string savedAxis = global::Xamarin.Essentials.Preferences.Get($"MP_Joy_RC{ch}_Axis", def);
+                    savedAxis = NormalizeAxisName(savedAxis);
+
+                    if (ch < ChannelAxisMapping.Length)
+                    {
+                        ChannelAxisMapping[ch] = savedAxis;
+                    }
+
+                    var btn = this.FindByName<Button>($"Btn_RCAxis_{ch}");
+                    if (btn != null)
+                    {
+                        btn.Text = savedAxis + " ▾";
+                        btn.TextColor = (savedAxis != "None")
+                            ? global::Xamarin.Forms.Color.FromHex("#10B981")
+                            : global::Xamarin.Forms.Color.FromHex("#64748B");
+                    }
+
+                    var chkRev = this.FindByName<CheckBox>($"CHK_RCRev_{ch}");
+                    if (chkRev != null)
+                    {
+                        chkRev.IsChecked = global::Xamarin.Essentials.Preferences.Get($"MP_Joy_RC{ch}_Rev", false);
+                    }
+
+                    var entExpo = this.FindByName<Entry>($"ENT_RCExpo_{ch}");
+                    if (entExpo != null)
+                    {
+                        entExpo.Text = global::Xamarin.Essentials.Preferences.Get($"MP_Joy_RC{ch}_Expo", "0");
+                    }
+                }
+
+                if (Picker_StickMode != null)
+                {
+                    int mode = global::Xamarin.Essentials.Preferences.Get("MP_Joy_StickMode", 0);
+                    if (mode >= 0 && mode < Picker_StickMode.Items.Count)
+                    {
+                        Picker_StickMode.SelectedIndex = mode;
+                    }
+                }
+
+                if (CHK_elevons != null)
+                {
+                    CHK_elevons.IsChecked = global::Xamarin.Essentials.Preferences.Get("MP_Joy_Elevons", false);
+                }
+                if (CHK_manual_control != null)
+                {
+                    CHK_manual_control.IsChecked = global::Xamarin.Essentials.Preferences.Get("MP_Joy_ManualControl", true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("LoadJoystickSettings error: " + ex);
+            }
+        }
+
         public async void OnJoystickSaveClicked(object sender, EventArgs e)
         {
             try
             {
-                await DisplayAlert("ジョイスティック設定", "設定を正常に保存しました！", "OK");
+                SaveJoystickSettings();
+                await DisplayAlert("ジョイスティック設定", "設定を正常に保存しました！\n次回起動時もこの設定が維持されます。", "OK");
                 if (Pnl_JoystickModal != null) Pnl_JoystickModal.IsVisible = false;
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnJoystickSaveClicked error: " + ex);
+            }
         }
 
         // 🔘 軸・キーの手動選択 (同じキーの重複割り当ても完全許可！)

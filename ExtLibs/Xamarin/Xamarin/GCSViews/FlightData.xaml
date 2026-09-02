@@ -412,8 +412,8 @@
                                         <Button x:Name="Btn_RCAxis_1" Grid.Column="1" Text="X ▾" CommandParameter="1"
                                                 BackgroundColor="#1E293B" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#38BDF8" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_1" Grid.Column="2" Color="#38BDF8" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_1" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_1" Grid.Column="4" Text="DETECT" CommandParameter="1"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -426,8 +426,8 @@
                                         <Button x:Name="Btn_RCAxis_2" Grid.Column="1" Text="Y ▾" CommandParameter="2"
                                                 BackgroundColor="#1E293B" TextColor="#10B981" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#10B981" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_2" Grid.Column="2" Color="#10B981" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_2" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_2" Grid.Column="4" Text="DETECT" CommandParameter="2"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -440,8 +440,8 @@
                                         <Button x:Name="Btn_RCAxis_3" Grid.Column="1" Text="Z ▾" CommandParameter="3"
                                                 BackgroundColor="#1E293B" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#F59E0B" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_3" Grid.Column="2" Color="#F59E0B" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_3" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_3" Grid.Column="4" Text="DETECT" CommandParameter="3"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -454,8 +454,8 @@
                                         <Button x:Name="Btn_RCAxis_4" Grid.Column="1" Text="Rz ▾" CommandParameter="4"
                                                 BackgroundColor="#1E293B" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#A78BFA" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_4" Grid.Column="2" Color="#A78BFA" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_4" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_4" Grid.Column="4" Text="DETECT" CommandParameter="4"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -468,8 +468,8 @@
                                         <Button x:Name="Btn_RCAxis_5" Grid.Column="1" Text="Slider1 ▾" CommandParameter="5"
                                                 BackgroundColor="#1E293B" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#EC4899" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_5" Grid.Column="2" Color="#EC4899" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_5" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_5" Grid.Column="4" Text="DETECT" CommandParameter="5"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -482,8 +482,8 @@
                                         <Button x:Name="Btn_RCAxis_6" Grid.Column="1" Text="None ▾" CommandParameter="6"
                                                 BackgroundColor="#1E293B" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#06B6D4" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_6" Grid.Column="2" Color="#06B6D4" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_6" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_6" Grid.Column="4" Text="DETECT" CommandParameter="6"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -496,8 +496,8 @@
                                         <Button x:Name="Btn_RCAxis_7" Grid.Column="1" Text="None ▾" CommandParameter="7"
                                                 BackgroundColor="#1E293B" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#84CC16" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_7" Grid.Column="2" Color="#84CC16" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_7" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_7" Grid.Column="4" Text="DETECT" CommandParameter="7"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -510,8 +510,8 @@
                                         <Button x:Name="Btn_RCAxis_8" Grid.Column="1" Text="None ▾" CommandParameter="8"
                                                 BackgroundColor="#1E293B" TextColor="#10B981" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#EAB308" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_8" Grid.Column="2" Color="#EAB308" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_8" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_8" Grid.Column="4" Text="DETECT" CommandParameter="8"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -524,8 +524,8 @@
                                         <Button x:Name="Btn_RCAxis_9" Grid.Column="1" Text="None ▾" CommandParameter="9"
                                                 BackgroundColor="#1E293B" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#6366F1" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_9" Grid.Column="2" Color="#6366F1" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_9" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_9" Grid.Column="4" Text="DETECT" CommandParameter="9"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -538,8 +538,8 @@
                                         <Button x:Name="Btn_RCAxis_10" Grid.Column="1" Text="None ▾" CommandParameter="10"
                                                 BackgroundColor="#1E293B" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#14B8A6" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_10" Grid.Column="2" Color="#14B8A6" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_10" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_10" Grid.Column="4" Text="DETECT" CommandParameter="10"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -552,8 +552,8 @@
                                         <Button x:Name="Btn_RCAxis_11" Grid.Column="1" Text="None ▾" CommandParameter="11"
                                                 BackgroundColor="#1E293B" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#F97316" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_11" Grid.Column="2" Color="#F97316" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_11" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_11" Grid.Column="4" Text="DETECT" CommandParameter="11"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -566,8 +566,8 @@
                                         <Button x:Name="Btn_RCAxis_12" Grid.Column="1" Text="None ▾" CommandParameter="12"
                                                 BackgroundColor="#1E293B" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#8B5CF6" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_12" Grid.Column="2" Color="#8B5CF6" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_12" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_12" Grid.Column="4" Text="DETECT" CommandParameter="12"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -580,8 +580,8 @@
                                         <Button x:Name="Btn_RCAxis_13" Grid.Column="1" Text="None ▾" CommandParameter="13"
                                                 BackgroundColor="#1E293B" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#0EA5E9" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_13" Grid.Column="2" Color="#0EA5E9" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_13" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_13" Grid.Column="4" Text="DETECT" CommandParameter="13"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -594,8 +594,8 @@
                                         <Button x:Name="Btn_RCAxis_14" Grid.Column="1" Text="None ▾" CommandParameter="14"
                                                 BackgroundColor="#1E293B" TextColor="#10B981" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#10B981" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_14" Grid.Column="2" Color="#10B981" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_14" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_14" Grid.Column="4" Text="DETECT" CommandParameter="14"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -608,8 +608,8 @@
                                         <Button x:Name="Btn_RCAxis_15" Grid.Column="1" Text="None ▾" CommandParameter="15"
                                                 BackgroundColor="#1E293B" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#F59E0B" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_15" Grid.Column="2" Color="#F59E0B" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_15" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_15" Grid.Column="4" Text="DETECT" CommandParameter="15"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -622,8 +622,8 @@
                                         <Button x:Name="Btn_RCAxis_16" Grid.Column="1" Text="None ▾" CommandParameter="16"
                                                 BackgroundColor="#1E293B" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#A78BFA" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_16" Grid.Column="2" Color="#A78BFA" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_16" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_16" Grid.Column="4" Text="DETECT" CommandParameter="16"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -636,8 +636,8 @@
                                         <Button x:Name="Btn_RCAxis_17" Grid.Column="1" Text="None ▾" CommandParameter="17"
                                                 BackgroundColor="#1E293B" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#EC4899" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_17" Grid.Column="2" Color="#EC4899" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_17" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_17" Grid.Column="4" Text="DETECT" CommandParameter="17"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>
@@ -650,8 +650,8 @@
                                         <Button x:Name="Btn_RCAxis_18" Grid.Column="1" Text="None ▾" CommandParameter="18"
                                                 BackgroundColor="#1E293B" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold"
                                                 HeightRequest="26" Padding="4,0" CornerRadius="4" Clicked="OnSelectAxisClicked" VerticalOptions="Center"/>
-                                        <CheckBox Grid.Column="2" Color="#06B6D4" HorizontalOptions="Center" VerticalOptions="Center"/>
-                                        <Entry Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        <CheckBox x:Name="CHK_RCRev_18" Grid.Column="2" Color="#06B6D4" HorizontalOptions="Center" VerticalOptions="Center"/>
+                                        <Entry x:Name="ENT_RCExpo_18" Grid.Column="3" Text="0" TextColor="#F1F5F9" FontSize="10" HeightRequest="32" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
                                         <Button x:Name="Btn_Detect_18" Grid.Column="4" Text="DETECT" CommandParameter="18"
                                                 FontSize="8" BackgroundColor="#1E293B" TextColor="#94A3B8"
                                                 HeightRequest="26" CornerRadius="4" Padding="0" Clicked="OnJoystickDetectClicked"/>

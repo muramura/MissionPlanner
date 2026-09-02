@@ -494,17 +494,15 @@ namespace Xamarin.Droid
                 int keyCode = (int)e.KeyCode;
                 bool isDown = (e.Action == global::Android.Views.KeyEventActions.Down);
 
-                // 🎮 ゲームパッド・ジョイスティック・十字キー・各種ボタンの判定
+                // 🎮 ゲームパッド・ジョイスティック・十字キー・各種ボタンの判定 (PS4/PS5等のタッチパッド内蔵コントローラーも100%全ボタン受信)
                 bool isGamePadOrJoystick = false;
-                if (e.Device != null)
+                var evSrc = e.Source;
+                if (evSrc.HasFlag(global::Android.Views.InputSourceType.Gamepad) ||
+                    evSrc.HasFlag(global::Android.Views.InputSourceType.Joystick) ||
+                    evSrc.HasFlag(global::Android.Views.InputSourceType.Dpad) ||
+                    (e.Device != null && (e.Device.Sources.HasFlag(global::Android.Views.InputSourceType.Gamepad) || e.Device.Sources.HasFlag(global::Android.Views.InputSourceType.Joystick) || e.Device.Sources.HasFlag(global::Android.Views.InputSourceType.Dpad))))
                 {
-                    var src = e.Device.Sources;
-                    if (src.HasFlag(global::Android.Views.InputSourceType.Gamepad) ||
-                        src.HasFlag(global::Android.Views.InputSourceType.Joystick) ||
-                        src.HasFlag(global::Android.Views.InputSourceType.Dpad))
-                    {
-                        isGamePadOrJoystick = true;
-                    }
+                    isGamePadOrJoystick = true;
                 }
 
                 if (global::Android.Views.KeyEvent.IsGamepadButton(e.KeyCode) ||
@@ -528,7 +526,8 @@ namespace Xamarin.Droid
                     e.KeyCode == global::Android.Views.Keycode.ButtonStart ||
                     e.KeyCode == global::Android.Views.Keycode.ButtonSelect ||
                     e.KeyCode == global::Android.Views.Keycode.ButtonMode ||
-                    e.KeyCode == global::Android.Views.Keycode.Back)
+                    (keyCode >= 96 && keyCode <= 110) ||
+                    (keyCode >= 19 && keyCode <= 23))
                 {
                     isGamePadOrJoystick = true;
                 }
