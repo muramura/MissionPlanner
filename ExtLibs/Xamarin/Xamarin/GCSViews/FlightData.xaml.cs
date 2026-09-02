@@ -112,11 +112,11 @@ namespace Xamarin
             if (s.IndexOf("Btn Select", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Select";
             if (s.IndexOf("Btn Mode", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Mode";
 
-            // 4. 十字キー (Dpad)
-            if (s.IndexOf("Dpad Up", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("Up", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Up";
-            if (s.IndexOf("Dpad Down", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("Down", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Down";
-            if (s.IndexOf("Dpad Left", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("Left", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Left";
-            if (s.IndexOf("Dpad Right", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("Right", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Right";
+            // 4. 十字キー (Dpad) - 部分一致の順序を厳密化
+            if (s.IndexOf("Dpad Up", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字上", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Up";
+            if (s.IndexOf("Dpad Down", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字下", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Down";
+            if (s.IndexOf("Dpad Left", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字左", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Left";
+            if (s.IndexOf("Dpad Right", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字右", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Right";
 
             if (s.Equals("None", StringComparison.OrdinalIgnoreCase)) return "None";
             return s;

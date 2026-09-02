@@ -591,8 +591,8 @@ namespace Xamarin.Droid
                         float pitch = (y != 0) ? y : ry;
                         // Throttle (Ch3): Throttle, Z, または Gas (-1.0 〜 +1.0)
                         float thr = (throttle != 0) ? throttle : ((z != 0) ? z : ((gas != 0) ? gas : ((haty != 0) ? -haty : 0f)));
-                        // Yaw (Ch4): Rudder, Rz, または HatX
-                        float yaw = (rudder != 0) ? rudder : ((rz != 0) ? rz : hatx);
+                        // Yaw (Ch4): Rudder または Rz
+                        float yaw = (rudder != 0) ? rudder : rz;
 
                         FlightData.LastStickRoll = roll;
                         FlightData.LastStickPitch = pitch;
@@ -609,6 +609,23 @@ namespace Xamarin.Droid
                         FlightData.LastRawGas = gas;
                         FlightData.LastRawBrake = brake;
                         FlightData.IsJoystickActive = true;
+
+                        // 🕹️ 十字キー (HatX / HatY) を Dpad ボタンイベント (Keycode 19〜22) として完全連動！
+                        // (多くのBluetoothゲームパッドで十字キーがMotionEventとして送られる現象を100%解決)
+                        bool dpadLeft = (hatx < -0.5f);
+                        bool dpadRight = (hatx > 0.5f);
+                        bool dpadUp = (haty < -0.5f);
+                        bool dpadDown = (haty > 0.5f);
+
+                        FlightData.SetButtonState((int)global::Android.Views.Keycode.DpadLeft, dpadLeft);
+                        FlightData.SetButtonState((int)global::Android.Views.Keycode.DpadRight, dpadRight);
+                        FlightData.SetButtonState((int)global::Android.Views.Keycode.DpadUp, dpadUp);
+                        FlightData.SetButtonState((int)global::Android.Views.Keycode.DpadDown, dpadDown);
+
+                        if (dpadLeft) FlightData.LastPressedButtonCode = (int)global::Android.Views.Keycode.DpadLeft;
+                        else if (dpadRight) FlightData.LastPressedButtonCode = (int)global::Android.Views.Keycode.DpadRight;
+                        else if (dpadUp) FlightData.LastPressedButtonCode = (int)global::Android.Views.Keycode.DpadUp;
+                        else if (dpadDown) FlightData.LastPressedButtonCode = (int)global::Android.Views.Keycode.DpadDown;
 
                         // 🛡️ ジョイスティックからのモーション入力時のみUIフォーカス移動を遮断
                         return true;
