@@ -69,6 +69,8 @@ namespace Xamarin
             "None", "None", "None", "None", "None", "None",
             "None", "None", "None", "None", "None", "None"
         };
+        // 🎮 18チャンネルのリバース設定データ配列
+        public static bool[] ChannelReverseMapping = new bool[19];
 
         public static int LastPressedButtonCode = 0;
         public static Dictionary<int, bool> PressedButtonMap = new Dictionary<int, bool>();
@@ -120,8 +122,8 @@ namespace Xamarin
             return s;
         }
 
-        // 🎮 割り当てられた軸・ボタンからリアルタイムPWM値を算出 (1000〜2000µs)
-        public int CalculateChannelPWM(string axisSetting, int defaultPwm = 1500)
+        // 🎮 割り当てられた軸・ボタンからリアルタイムPWM値を算出 (1000〜2000µs / リバース反転完全連動)
+        public int CalculateChannelPWM(string axisSetting, int defaultPwm = 1500, bool isReverse = false)
         {
             try
             {
@@ -131,64 +133,86 @@ namespace Xamarin
                     return defaultPwm;
                 }
 
+                int rawPwm = defaultPwm;
+
                 // 1. スティック軸 (X, Y, Z, Rz, Rx, Ry: -1.0〜+1.0 -> 1000〜2000µs)
                 if (norm == "X")
                 {
                     float val = (LastStickRoll != 0f) ? LastStickRoll : LastRawAxisX;
-                    return (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
+                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
                 }
-                if (norm == "Y")
+                else if (norm == "Y")
                 {
                     float val = (LastStickPitch != 0f) ? LastStickPitch : LastRawAxisY;
-                    return (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
+                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
                 }
-                if (norm == "Z")
+                else if (norm == "Z")
                 {
                     float val = (LastRawAxisZ != 0f) ? LastRawAxisZ : ((LastStickThrottle != 0f) ? LastStickThrottle : LastRawThrottle);
-                    return (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
+                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
                 }
-                if (norm == "Rz")
+                else if (norm == "Rz")
                 {
                     float val = (LastRawAxisRz != 0f) ? LastRawAxisRz : ((LastStickYaw != 0f) ? LastStickYaw : LastRawRudder);
-                    return (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
+                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
                 }
-                if (norm == "Rx") return (int)Math.Max(1000, Math.Min(2000, 1500 + LastRawAxisRx * 500));
-                if (norm == "Ry") return (int)Math.Max(1000, Math.Min(2000, 1500 + LastRawAxisRy * 500));
-
+                else if (norm == "Rx")
+                {
+                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + LastRawAxisRx * 500));
+                }
+                else if (norm == "Ry")
+                {
+                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + LastRawAxisRy * 500));
+                }
                 // 2. スライダー・トリガー (Slider1, Slider2: 0.0〜1.0 または -1.0〜+1.0 -> 1000〜2000µs)
-                if (norm == "Slider1")
+                else if (norm == "Slider1")
                 {
                     float val = (LastRawBrake != 0) ? LastRawBrake : ((LastRawAxisZ != 0) ? LastRawAxisZ : LastRawThrottle);
-                    return (int)Math.Max(1000, Math.Min(2000, 1000 + Math.Max(0f, (val + 1f) / 2f) * 1000));
+                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1000 + Math.Max(0f, (val + 1f) / 2f) * 1000));
                 }
-                if (norm == "Slider2")
+                else if (norm == "Slider2")
                 {
                     float val = (LastRawGas != 0) ? LastRawGas : ((LastRawAxisRz != 0) ? LastRawAxisRz : LastRawRudder);
-                    return (int)Math.Max(1000, Math.Min(2000, 1000 + Math.Max(0f, (val + 1f) / 2f) * 1000));
+                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1000 + Math.Max(0f, (val + 1f) / 2f) * 1000));
                 }
-
                 // 3. ゲームパッドボタン (押下中 2000µs, 離すと 1000µs)
-                foreach (var kvp in PressedButtonMap)
+                else
                 {
-                    if (kvp.Value) // 押下中
+                    bool isPressed = false;
+                    foreach (var kvp in PressedButtonMap)
                     {
-                        string pressedRaw = ConvertKeyCodeToName(kvp.Key);
-                        string pressedNorm = NormalizeAxisName(pressedRaw);
-                        if (norm == pressedNorm ||
-                            norm.IndexOf(pressedNorm, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            pressedNorm.IndexOf(norm, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                            norm.Contains($"Btn {kvp.Key}"))
+                        if (kvp.Value) // 押下中
                         {
-                            return 2000;
+                            string pressedRaw = ConvertKeyCodeToName(kvp.Key);
+                            string pressedNorm = NormalizeAxisName(pressedRaw);
+                            if (norm == pressedNorm ||
+                                norm.IndexOf(pressedNorm, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                pressedNorm.IndexOf(norm, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                norm.Contains($"Btn {kvp.Key}"))
+                            {
+                                isPressed = true;
+                                break;
+                            }
                         }
+                    }
+
+                    if (isPressed)
+                    {
+                        rawPwm = 2000;
+                    }
+                    else if (norm.StartsWith("Btn") || norm.StartsWith("Dpad"))
+                    {
+                        rawPwm = 1000;
                     }
                 }
 
-                // ボタンまたはDpad割り当て済みだが離されている状態
-                if (norm.StartsWith("Btn") || norm.StartsWith("Dpad"))
+                // 🎯 リバース反転: 1500µsを中心に完全対称反転 (例: 2000 -> 1000, 1000 -> 2000, 1750 -> 1250)
+                if (isReverse)
                 {
-                    return 1000;
+                    rawPwm = 3000 - rawPwm;
                 }
+
+                return rawPwm;
             }
             catch { }
 
@@ -400,8 +424,16 @@ namespace Xamarin
                                     mapping = btn.Text.Replace(" ▾", "").Trim();
                                 }
 
-                                int defPwm = (ch == 3) ? 1000 : 1500;
-                                int pwm = CalculateChannelPWM(mapping, defPwm);
+                                bool isRev = (ch < ChannelReverseMapping.Length) ? ChannelReverseMapping[ch] : false;
+                                var chkRev = this.FindByName<CheckBox>($"CHK_RCRev_{ch}");
+                                if (chkRev != null)
+                                {
+                                    isRev = chkRev.IsChecked;
+                                    if (ch < ChannelReverseMapping.Length) ChannelReverseMapping[ch] = isRev;
+                                }
+
+                                int defPwm = (ch == 3) ? (isRev ? 2000 : 1000) : 1500;
+                                int pwm = CalculateChannelPWM(mapping, defPwm, isRev);
 
                                 // 🎯 ポジションバー更新 (0.0〜1.0)
                                 var pb = this.FindByName<ProgressBar>($"PB_joy_rc{ch}");
@@ -427,14 +459,14 @@ namespace Xamarin
                                     {
                                         target_system = 1,
                                         target_component = 1,
-                                        chan1_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[1], 1500),
-                                        chan2_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[2], 1500),
-                                        chan3_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[3], 1000),
-                                        chan4_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[4], 1500),
-                                        chan5_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[5], 1500),
-                                        chan6_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[6], 1500),
-                                        chan7_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[7], 1500),
-                                        chan8_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[8], 1500)
+                                        chan1_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[1], 1500, ChannelReverseMapping[1]),
+                                        chan2_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[2], 1500, ChannelReverseMapping[2]),
+                                        chan3_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[3], ChannelReverseMapping[3] ? 2000 : 1000, ChannelReverseMapping[3]),
+                                        chan4_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[4], 1500, ChannelReverseMapping[4]),
+                                        chan5_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[5], 1500, ChannelReverseMapping[5]),
+                                        chan6_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[6], 1500, ChannelReverseMapping[6]),
+                                        chan7_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[7], 1500, ChannelReverseMapping[7]),
+                                        chan8_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[8], 1500, ChannelReverseMapping[8])
                                     };
                                     MainV2.comPort.sendPacket(rcOverride, 1, 1);
                                 }
@@ -2661,6 +2693,7 @@ namespace Xamarin
                     var chkRev = this.FindByName<CheckBox>($"CHK_RCRev_{ch}");
                     if (chkRev != null)
                     {
+                        if (ch < ChannelReverseMapping.Length) ChannelReverseMapping[ch] = chkRev.IsChecked;
                         global::Xamarin.Essentials.Preferences.Set($"MP_Joy_RC{ch}_Rev", chkRev.IsChecked);
                     }
 
@@ -2726,10 +2759,12 @@ namespace Xamarin
                             : global::Xamarin.Forms.Color.FromHex("#64748B");
                     }
 
+                    bool isRev = global::Xamarin.Essentials.Preferences.Get($"MP_Joy_RC{ch}_Rev", false);
+                    if (ch < ChannelReverseMapping.Length) ChannelReverseMapping[ch] = isRev;
                     var chkRev = this.FindByName<CheckBox>($"CHK_RCRev_{ch}");
                     if (chkRev != null)
                     {
-                        chkRev.IsChecked = global::Xamarin.Essentials.Preferences.Get($"MP_Joy_RC{ch}_Rev", false);
+                        chkRev.IsChecked = isRev;
                     }
 
                     var entExpo = this.FindByName<Entry>($"ENT_RCExpo_{ch}");
