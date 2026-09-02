@@ -135,25 +135,27 @@ namespace Xamarin
 
                 int rawPwm = defaultPwm;
 
-                // 1. スティック軸 (X, Y, Z, Rz, Rx, Ry: -1.0〜+1.0 -> 1000〜2000µs)
+                // 1. スティック軸 (X, Y, Z, Rz, Rx, Ry: 各軸完全独立保持・干渉完全防止)
                 if (norm == "X")
                 {
-                    float val = (LastStickRoll != 0f) ? LastStickRoll : LastRawAxisX;
+                    float val = (LastRawAxisX != 0f) ? LastRawAxisX : LastStickRoll;
                     rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
                 }
                 else if (norm == "Y")
                 {
-                    float val = (LastStickPitch != 0f) ? LastStickPitch : LastRawAxisY;
+                    float val = (LastRawAxisY != 0f) ? LastRawAxisY : LastStickPitch;
                     rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
                 }
                 else if (norm == "Z")
                 {
-                    float val = (LastRawAxisZ != 0f) ? LastRawAxisZ : ((LastStickThrottle != 0f) ? LastStickThrottle : LastRawThrottle);
+                    // Z軸単独の値のみを参照 (Sliderや他の軸と完全分離)
+                    float val = LastRawAxisZ;
                     rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
                 }
                 else if (norm == "Rz")
                 {
-                    float val = (LastRawAxisRz != 0f) ? LastRawAxisRz : ((LastStickYaw != 0f) ? LastStickYaw : LastRawRudder);
+                    // Rz軸単独の値のみを参照 (Sliderや他の軸と完全分離)
+                    float val = LastRawAxisRz;
                     rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
                 }
                 else if (norm == "Rx")
@@ -164,16 +166,18 @@ namespace Xamarin
                 {
                     rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + LastRawAxisRy * 500));
                 }
-                // 2. スライダー・トリガー (Slider1, Slider2: 0.0〜1.0 または -1.0〜+1.0 -> 1000〜2000µs)
+                // 2. スライダー・トリガー (Slider1, Slider2: Z/Rz軸とは完全分離し、Brake/Gasまたは専用トリガー軸のみを参照)
                 else if (norm == "Slider1")
                 {
-                    float val = (LastRawBrake != 0) ? LastRawBrake : ((LastRawAxisZ != 0) ? LastRawAxisZ : LastRawThrottle);
-                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1000 + Math.Max(0f, (val + 1f) / 2f) * 1000));
+                    float val = (LastRawBrake != 0f) ? LastRawBrake : LastRawThrottle;
+                    float ratio = (val >= 0f) ? val : Math.Max(0f, (val + 1f) / 2f);
+                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1000 + ratio * 1000));
                 }
                 else if (norm == "Slider2")
                 {
-                    float val = (LastRawGas != 0) ? LastRawGas : ((LastRawAxisRz != 0) ? LastRawAxisRz : LastRawRudder);
-                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1000 + Math.Max(0f, (val + 1f) / 2f) * 1000));
+                    float val = (LastRawGas != 0f) ? LastRawGas : LastRawRudder;
+                    float ratio = (val >= 0f) ? val : Math.Max(0f, (val + 1f) / 2f);
+                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1000 + ratio * 1000));
                 }
                 // 3. ゲームパッドボタン (押下中 2000µs, 離すと 1000µs)
                 else
