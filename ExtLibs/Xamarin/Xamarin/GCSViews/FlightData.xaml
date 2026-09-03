@@ -66,6 +66,19 @@
                             <Label Text="MSG" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
+
+                    <BoxView WidthRequest="1" HeightRequest="12" BackgroundColor="#475569" VerticalOptions="Center"/>
+
+                    <!-- SETUP Suite Button (Left Toolbar) -->
+                    <Frame BackgroundColor="#0284C7" CornerRadius="5" Padding="8,2" HasShadow="False" VerticalOptions="Center" BorderColor="#38BDF8">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnOpenSetupModalClicked"/>
+                        </Frame.GestureRecognizers>
+                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                            <Label Text="🛠️" FontSize="11" VerticalOptions="Center"/>
+                            <Label Text="SETUP" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </StackLayout>
+                    </Frame>
                 </StackLayout>
 
                 <!-- Center: Flight Mode & Telemetry Link -->
@@ -105,7 +118,7 @@
                         </Frame.GestureRecognizers>
                         <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
                             <Label Text="🚨" FontSize="11" VerticalOptions="Center"/>
-                            <Label Text="緊急着陸" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Label Text="EMERGENCY" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
                 </StackLayout>
@@ -143,56 +156,56 @@
                             <!-- 1. 高度 -->
                             <Frame Grid.Row="0" Grid.Column="0" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
                                 <StackLayout Spacing="0">
-                                    <Label Text="高度 (Alt)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label Text="Altitude (Alt)" TextColor="#94A3B8" FontSize="8"/>
                                     <Label x:Name="LBL_quick_alt" Text="0.0 m" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
                             <!-- 2. 速度 -->
                             <Frame Grid.Row="0" Grid.Column="1" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
                                 <StackLayout Spacing="0">
-                                    <Label Text="速度 (Speed)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label Text="Speed" TextColor="#94A3B8" FontSize="8"/>
                                     <Label x:Name="LBL_quick_speed" Text="0.0 m/s" TextColor="#10B981" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
                             <!-- 3. 方位 -->
                             <Frame Grid.Row="1" Grid.Column="0" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
                                 <StackLayout Spacing="0">
-                                    <Label Text="方位 (Yaw)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label Text="Heading (Yaw)" TextColor="#94A3B8" FontSize="8"/>
                                     <Label x:Name="LBL_quick_yaw" Text="0° N" TextColor="#F59E0B" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
                             <!-- 4. 距離 -->
                             <Frame Grid.Row="1" Grid.Column="1" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
                                 <StackLayout Spacing="0">
-                                    <Label Text="距離 (Dist)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label Text="Distance (Dist)" TextColor="#94A3B8" FontSize="8"/>
                                     <Label x:Name="LBL_quick_dist" Text="0.0 m" TextColor="#A78BFA" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
                             <!-- 5. 昇降率 -->
                             <Frame Grid.Row="2" Grid.Column="0" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
                                 <StackLayout Spacing="0">
-                                    <Label Text="昇降率 (Climb)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label Text="Climb Rate" TextColor="#94A3B8" FontSize="8"/>
                                     <Label x:Name="LBL_quick_climb" Text="0.0 m/s" TextColor="#F472B6" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
                             <!-- 6. 電圧 -->
                             <Frame Grid.Row="2" Grid.Column="1" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
                                 <StackLayout Spacing="0">
-                                    <Label Text="電圧 (Volt)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label Text="Voltage (Volt)" TextColor="#94A3B8" FontSize="8"/>
                                     <Label x:Name="LBL_quick_volt" Text="-- V" TextColor="#10B981" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
                             <!-- 7. 電流 -->
                             <Frame Grid.Row="3" Grid.Column="0" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
                                 <StackLayout Spacing="0">
-                                    <Label Text="電流 (Current)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label Text="Current" TextColor="#94A3B8" FontSize="8"/>
                                     <Label x:Name="LBL_quick_curr" Text="0.0 A" TextColor="#FACC15" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
                             <!-- 8. 衛星数 -->
                             <Frame Grid.Row="3" Grid.Column="1" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
                                 <StackLayout Spacing="0">
-                                    <Label Text="衛星数 (Sats)" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label Text="Satellites" TextColor="#94A3B8" FontSize="8"/>
                                     <Label x:Name="LBL_quick_sats" Text="0 sats" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
@@ -203,15 +216,15 @@
                     <ScrollView x:Name="View_ActionsTab" IsVisible="False">
                         <StackLayout Spacing="4">
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="3">
-                                <Button Grid.Column="0" Text="🛬 着陸 (LAND)" FontSize="9" FontAttributes="Bold"
+                                <Button Grid.Column="0" Text="🛬 LAND" FontSize="9" FontAttributes="Bold"
                                         BackgroundColor="#D97706" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
                                         Clicked="OnQuickLandTapped"/>
-                                <Button Grid.Column="1" Text="🏠 帰還 (RTL)" FontSize="9" FontAttributes="Bold"
+                                <Button Grid.Column="1" Text="🏠 RTL" FontSize="9" FontAttributes="Bold"
                                         BackgroundColor="#7C3AED" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
                                         Clicked="OnQuickRTLTapped"/>
                             </Grid>
                             <Grid ColumnDefinitions="*,*" ColumnSpacing="3">
-                                <Button Grid.Column="0" Text="🛫 離陸 (1.0m)" FontSize="9" FontAttributes="Bold"
+                                <Button Grid.Column="0" Text="🛫 TAKEOFF (1m)" FontSize="9" FontAttributes="Bold"
                                         BackgroundColor="#0284C7" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
                                         Clicked="Takeoff_1m_OnClicked"/>
                                 <Button Grid.Column="1" Text="🕹️ STABILIZE" FontSize="9" FontAttributes="Bold"
@@ -228,15 +241,20 @@
                             </Grid>
                             <!-- 🎮 JOYSTICK & KEY SETUP ボタン -->
                             <Button Text="🎮 JOYSTICK &amp; KEY SETUP" FontSize="9" FontAttributes="Bold"
-                                    BackgroundColor="#2563EB" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="30"
+                                    BackgroundColor="#2563EB" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="26"
                                     Clicked="OnOpenJoystickModalClicked"/>
+
+                            <!-- 🛠️ 機体初期設定 (CALIBRATION) ボタン -->
+                            <Button Text="🛠️ SETUP &amp; CALIBRATION" FontSize="9" FontAttributes="Bold"
+                                    BackgroundColor="#0284C7" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="26"
+                                    Clicked="OnOpenSetupModalClicked"/>
                         </StackLayout>
                     </ScrollView>
 
                     <!-- Status タブ (全テレメトリ変数一覧) -->
                     <ScrollView x:Name="View_StatusTab" IsVisible="False">
                         <StackLayout Spacing="2">
-                            <Label x:Name="LBL_status_list" Text="テレメトリ受信待機中..." TextColor="#CBD5E1" FontSize="9" FontFamily="Monospace"/>
+                            <Label x:Name="LBL_status_list" Text="Waiting for telemetry..." TextColor="#CBD5E1" FontSize="9" FontFamily="Monospace"/>
                         </StackLayout>
                     </ScrollView>
                 </Grid>
@@ -262,7 +280,7 @@
                 </Frame.GestureRecognizers>
                 <StackLayout Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
                     <Label Text="🧭" FontSize="14" VerticalOptions="Center"/>
-                    <Label Text="展開 ▶" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                    <Label Text="OPEN ▶" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
                 </StackLayout>
             </Frame>
 
@@ -274,7 +292,7 @@
                 <StackLayout Orientation="Horizontal" Spacing="8" VerticalOptions="Center">
                     <Label Text="🛬" FontSize="16" VerticalOptions="Center"/>
                     <StackLayout Spacing="0" VerticalOptions="Center">
-                        <Label Text="着陸" TextColor="#FDE68A" FontSize="12" FontAttributes="Bold"/>
+                        <Label Text="LAND" TextColor="#FDE68A" FontSize="12" FontAttributes="Bold"/>
                         <Label Text="LAND" TextColor="#94A3B8" FontSize="9"/>
                     </StackLayout>
                 </StackLayout>
@@ -288,7 +306,7 @@
                 <StackLayout Orientation="Horizontal" Spacing="8" VerticalOptions="Center">
                     <Label Text="🏠" FontSize="16" VerticalOptions="Center"/>
                     <StackLayout Spacing="0" VerticalOptions="Center">
-                        <Label Text="帰還" TextColor="#DDD6FE" FontSize="12" FontAttributes="Bold"/>
+                        <Label Text="RTL" TextColor="#DDD6FE" FontSize="12" FontAttributes="Bold"/>
                         <Label Text="RTL" TextColor="#94A3B8" FontSize="9"/>
                     </StackLayout>
                 </StackLayout>
@@ -302,7 +320,7 @@
                 <StackLayout Orientation="Horizontal" Spacing="8" VerticalOptions="Center">
                     <Label Text="🛫" FontSize="16" VerticalOptions="Center"/>
                     <StackLayout Spacing="0" VerticalOptions="Center">
-                        <Label Text="離陸" TextColor="#BAE6FD" FontSize="12" FontAttributes="Bold"/>
+                        <Label Text="TAKEOFF" TextColor="#BAE6FD" FontSize="12" FontAttributes="Bold"/>
                         <Label Text="1.0m" TextColor="#94A3B8" FontSize="9"/>
                     </StackLayout>
                 </StackLayout>
@@ -666,6 +684,409 @@
                         </StackLayout>
                     </ScrollView>
 
+                </Grid>
+            </Frame>
+        </Grid>
+
+
+        <!-- ================= 6. ARDUPILOT CALIBRATION & SETUP SUITE MODAL ================= -->
+        <Grid x:Name="Pnl_SetupModal" Margin="0" Padding="0" BackgroundColor="#E60B1120" IsVisible="False">
+            <Frame Margin="12,18" Padding="12,10" CornerRadius="12" HasShadow="True"
+                   BackgroundColor="#0F172A" BorderColor="#0284C7"
+                   VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                    <!-- Row 0: Title Bar with Close Button -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                        <StackLayout Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                            <Label Text="🛠️" FontSize="16" VerticalOptions="Center"/>
+                            <Label Text="ArduPilot Setup &amp; Calibration" TextColor="#38BDF8" FontSize="14" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Label Text="(SETUP SUITE)" TextColor="#64748B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </StackLayout>
+                        <Button Grid.Column="1" Text="✕ Close" BackgroundColor="#334155" TextColor="#F1F5F9" FontSize="11" FontAttributes="Bold"
+                                HeightRequest="28" Padding="10,0" CornerRadius="6" Clicked="OnCloseSetupModalClicked"/>
+                    </Grid>
+
+                    <!-- Row 1: Sub-tabs (Accel / Compass / Gyro / Radio) -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+                        <Button x:Name="Btn_SetupTab_Accel" Grid.Column="0" Text="📐 Accel"
+                                BackgroundColor="#0284C7" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnSetupTabAccelClicked"/>
+                        <Button x:Name="Btn_SetupTab_Compass" Grid.Column="1" Text="🧭 Compass"
+                                BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
+                                HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnSetupTabCompassClicked"/>
+                        <Button x:Name="Btn_SetupTab_Gyro" Grid.Column="2" Text="🔄 Gyro / Level"
+                                BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
+                                HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnSetupTabGyroClicked"/>
+                        <Button x:Name="Btn_SetupTab_Radio" Grid.Column="3" Text="🎮 Radio (RC)"
+                                BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
+                                HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnSetupTabRadioClicked"/>
+                    </Grid>
+
+                    <!-- Row 2: Tab Contents Container -->
+                    <Grid Grid.Row="2">
+                        <!-- ================= A. 加速度センサーキャリブレーション (Accel) ================= -->
+                        <Grid x:Name="View_Setup_Accel" IsVisible="True" RowDefinitions="Auto,*,Auto" RowSpacing="6">
+                            <!-- 6-Orientation Indicator Bar (QGC Style) -->
+                            <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*,*,*" ColumnSpacing="4">
+                                <!-- 1. Level -->
+                                <Frame x:Name="Frame_Pos_Level" Grid.Column="0" BackgroundColor="#1E293B" BorderColor="#0284C7" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
+                                        <Label x:Name="Icon_Pos_Level" Text="① 🛩️" FontSize="10" TextColor="#38BDF8" HorizontalTextAlignment="Center"/>
+                                        <Label Text="Level" FontSize="9" TextColor="#F1F5F9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                    </StackLayout>
+                                </Frame>
+                                <!-- 2. Left -->
+                                <Frame x:Name="Frame_Pos_Left" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
+                                        <Label x:Name="Icon_Pos_Left" Text="② ⬅️" FontSize="10" TextColor="#94A3B8" HorizontalTextAlignment="Center"/>
+                                        <Label Text="Left" FontSize="9" TextColor="#94A3B8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                    </StackLayout>
+                                </Frame>
+                                <!-- 3. Right -->
+                                <Frame x:Name="Frame_Pos_Right" Grid.Column="2" BackgroundColor="#1E293B" BorderColor="#334155" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
+                                        <Label x:Name="Icon_Pos_Right" Text="③ ➡️" FontSize="10" TextColor="#94A3B8" HorizontalTextAlignment="Center"/>
+                                        <Label Text="Right" FontSize="9" TextColor="#94A3B8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                    </StackLayout>
+                                </Frame>
+                                <!-- 4. NoseDown -->
+                                <Frame x:Name="Frame_Pos_NoseDown" Grid.Column="3" BackgroundColor="#1E293B" BorderColor="#334155" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
+                                        <Label x:Name="Icon_Pos_NoseDown" Text="④ ⬇️" FontSize="10" TextColor="#94A3B8" HorizontalTextAlignment="Center"/>
+                                        <Label Text="Nose Down" FontSize="9" TextColor="#94A3B8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                    </StackLayout>
+                                </Frame>
+                                <!-- 5. NoseUp -->
+                                <Frame x:Name="Frame_Pos_NoseUp" Grid.Column="4" BackgroundColor="#1E293B" BorderColor="#334155" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
+                                        <Label x:Name="Icon_Pos_NoseUp" Text="⑤ ⬆️" FontSize="10" TextColor="#94A3B8" HorizontalTextAlignment="Center"/>
+                                        <Label Text="Nose Up" FontSize="9" TextColor="#94A3B8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                    </StackLayout>
+                                </Frame>
+                                <!-- 6. Back -->
+                                <Frame x:Name="Frame_Pos_Back" Grid.Column="5" BackgroundColor="#1E293B" BorderColor="#334155" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
+                                        <Label x:Name="Icon_Pos_Back" Text="⑥ 🔄" FontSize="10" TextColor="#94A3B8" HorizontalTextAlignment="Center"/>
+                                        <Label Text="Back" FontSize="9" TextColor="#94A3B8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                    </StackLayout>
+                                </Frame>
+                            </Grid>
+
+                            <!-- Center: Illustration and Guide Messages -->
+                            <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="12" VerticalOptions="CenterAndExpand">
+                                <Frame Grid.Column="0" BackgroundColor="#020617" BorderColor="#334155" Padding="4" CornerRadius="8" HasShadow="False"
+                                       WidthRequest="140" HeightRequest="110" HorizontalOptions="Center" VerticalOptions="Center">
+                                    <Image x:Name="IMG_accel_guide" Aspect="AspectFit" HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand"/>
+                                </Frame>
+                                <StackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
+                                    <Label x:Name="LBL_accel_title" Text="[1/6] Hold vehicle LEVEL and still" TextColor="#F59E0B" FontSize="13" FontAttributes="Bold"/>
+                                    <Label x:Name="LBL_accel_desc" Text="Place the vehicle level and stationary, then click [Position Done] below." TextColor="#94A3B8" FontSize="11"/>
+                                    <Label x:Name="LBL_accel_status_msg" Text="Waiting for calibration start..." TextColor="#38BDF8" FontSize="11" FontAttributes="Italic"/>
+                                </StackLayout>
+                            </Grid>
+
+                            <!-- Bottom Action Buttons -->
+                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                                <Button x:Name="Btn_AccelCal_Start" Grid.Column="0" Text="🚀 Start 6-Axis Cal" BackgroundColor="#0284C7" TextColor="#FFFFFF"
+                                        FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="12,0" Clicked="OnAccelCalStartClicked"/>
+                                <Button x:Name="Btn_AccelCal_Next" Grid.Column="1" Text="✅ Position Done" BackgroundColor="#10B981" TextColor="#FFFFFF"
+                                        FontSize="12" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="14,0" IsVisible="False" Clicked="OnAccelCalNextClicked"/>
+                                <Button x:Name="Btn_AccelCal_Cancel" Grid.Column="2" Text="✕ Cancel" BackgroundColor="#475569" TextColor="#F1F5F9"
+                                        FontSize="11" HeightRequest="34" CornerRadius="6" Padding="10,0" IsVisible="False" Clicked="OnAccelCalCancelClicked"/>
+                                <Button x:Name="Btn_AccelCal_Level" Grid.Column="3" Text="📐 Calibrate Level (Trim)" BackgroundColor="#334155" TextColor="#38BDF8"
+                                        FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="10,0" Clicked="OnAccelCalLevelOnlyClicked"/>
+                            </Grid>
+                        </Grid>
+
+                        <!-- ================= B. コンパスキャリブレーション (Compass) ================= -->
+                        <Grid x:Name="View_Setup_Compass" IsVisible="False" RowDefinitions="Auto,*,Auto" RowSpacing="8">
+                            <!-- Top: Progress Bars for Compass 1, 2, 3 -->
+                            <Grid Grid.Row="0" ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                                <!-- Compass 1 -->
+                                <Frame Grid.Column="0" BackgroundColor="#1E293B" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                    <StackLayout Spacing="3">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Label Text="🧭 Compass 1 (Primary)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                            <Label x:Name="LBL_compass1_pct" Grid.Column="1" Text="0%" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                        </Grid>
+                                        <ProgressBar x:Name="PB_compass1" Progress="0.0" ProgressColor="#0284C7" HeightRequest="8"/>
+                                    </StackLayout>
+                                </Frame>
+                                <!-- Compass 2 -->
+                                <Frame Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                    <StackLayout Spacing="3">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Label Text="🧭 Compass 2" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"/>
+                                            <Label x:Name="LBL_compass2_pct" Grid.Column="1" Text="0%" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"/>
+                                        </Grid>
+                                        <ProgressBar x:Name="PB_compass2" Progress="0.0" ProgressColor="#10B981" HeightRequest="8"/>
+                                    </StackLayout>
+                                </Frame>
+                                <!-- Compass 3 -->
+                                <Frame Grid.Column="2" BackgroundColor="#1E293B" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                    <StackLayout Spacing="3">
+                                        <Grid ColumnDefinitions="*,Auto">
+                                            <Label Text="🧭 Compass 3" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"/>
+                                            <Label x:Name="LBL_compass3_pct" Grid.Column="1" Text="0%" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"/>
+                                        </Grid>
+                                        <ProgressBar x:Name="PB_compass3" Progress="0.0" ProgressColor="#F59E0B" HeightRequest="8"/>
+                                    </StackLayout>
+                                </Frame>
+                            </Grid>
+
+                            <!-- Center: 3D Point Sampling / Status Card -->
+                            <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="12" VerticalOptions="CenterAndExpand">
+                                <!-- 80 Points Interactive 3D Sphere Point Cloud Canvas -->
+                                <Frame Grid.Column="0" BackgroundColor="#020617" BorderColor="#0284C7" Padding="6,4" CornerRadius="8" HasShadow="False"
+                                       WidthRequest="240" HeightRequest="210" HorizontalOptions="Center" VerticalOptions="Center">
+                                    <Grid RowDefinitions="18,*,18" RowSpacing="2">
+                                        <!-- Header: Title and Tip -->
+                                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,0,2,0">
+                                            <Label Text="🌐 3D SPHERE SAMPLES" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label Text="Drag to Rotate" TextColor="#64748B" FontSize="8" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- Interactive 3D Canvas -->
+                                        <forms:SKCanvasView x:Name="Canvas_Compass3D" Grid.Row="1"
+                                                            PaintSurface="OnCompass3DPaintSurface"
+                                                            HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand">
+                                            <forms:SKCanvasView.GestureRecognizers>
+                                                <PanGestureRecognizer PanUpdated="OnCompass3DPanUpdated"/>
+                                            </forms:SKCanvasView.GestureRecognizers>
+                                        </forms:SKCanvasView>
+                                        <!-- Footer: Legend and Progress -->
+                                        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="6" Margin="2,0,2,0" VerticalOptions="Center">
+                                            <Label Text="● Ready" TextColor="#10B981" FontSize="8" VerticalOptions="Center"/>
+                                            <Label Grid.Column="1" Text="● Missing" TextColor="#EF4444" FontSize="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_compass_points" Grid.Column="2" Text="0 / 80 pts (0%)" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                        </Grid>
+                                    </Grid>
+                                </Frame>
+
+                                <!-- Compass Result Status & Sphere Quality Card -->
+                                <Frame Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" Padding="12,8" CornerRadius="8" HasShadow="False" VerticalOptions="FillAndExpand">
+                                    <StackLayout Spacing="5" VerticalOptions="Center">
+                                        <Label Text="Rotate vehicle slowly in all directions (Roll, Pitch, Yaw)." TextColor="#F59E0B" FontSize="11" FontAttributes="Bold"/>
+                                        <Label x:Name="LBL_compass_guide_msg" Text="Calibration results will be calculated automatically when bars reach 100%." TextColor="#94A3B8" FontSize="10"/>
+                                        <BoxView HeightRequest="1" BackgroundColor="#334155" Margin="0,2"/>
+                                        
+                                        <!-- Sphere Quality Rating Badge -->
+                                        <Frame x:Name="Frm_compass_quality" BackgroundColor="#0F172A" BorderColor="#38BDF8" Padding="8,4" CornerRadius="6" HasShadow="False" HorizontalOptions="Start" IsVisible="False">
+                                            <Label x:Name="LBL_compass_quality" Text="🟢 Sphere Quality: Good (Fit: 0.0)" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold"/>
+                                        </Frame>
+
+                                        <!-- Detailed Offsets and Status -->
+                                        <Label x:Name="LBL_compass_result_text" Text="Waiting (Press Start to begin)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                    </StackLayout>
+                                </Frame>
+                            </Grid>
+
+                            <!-- Bottom Actions -->
+                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                                <Button x:Name="Btn_Compass_Start" Grid.Column="0" Text="🚀 Start Mag Cal" BackgroundColor="#0284C7" TextColor="#FFFFFF"
+                                        FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="12,0" Clicked="OnCompassStartClicked"/>
+                                <Label Grid.Column="1"/>
+                                <Button x:Name="Btn_Compass_Accept" Grid.Column="2" Text="✅ Accept &amp; Save" BackgroundColor="#10B981" TextColor="#FFFFFF"
+                                        FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="12,0" IsVisible="False" Clicked="OnCompassAcceptClicked"/>
+                                <Button x:Name="Btn_Compass_Cancel" Grid.Column="3" Text="✕ Cancel" BackgroundColor="#475569" TextColor="#F1F5F9"
+                                        FontSize="11" HeightRequest="34" CornerRadius="6" Padding="10,0" IsVisible="False" Clicked="OnCompassCancelClicked"/>
+                            </Grid>
+                        </Grid>
+
+                        <!-- ================= C. ジャイロ & 水平校正 (Gyro & Level) ================= -->
+                        <Grid x:Name="View_Setup_Gyro" IsVisible="False" RowDefinitions="*,Auto" RowSpacing="8">
+                            <Frame Grid.Row="0" BackgroundColor="#1E293B" BorderColor="#334155" Padding="14" CornerRadius="8" HasShadow="False" VerticalOptions="CenterAndExpand">
+                                <StackLayout Spacing="8" HorizontalOptions="Center" VerticalOptions="Center">
+                                    <Label Text="🔄" FontSize="32" HorizontalTextAlignment="Center"/>
+                                    <Label Text="Gyroscope &amp; Horizon Level Calibration" TextColor="#38BDF8" FontSize="14" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                    <Label Text="Place vehicle on a level, stationary surface. Do not move the vehicle during calibration." TextColor="#94A3B8" FontSize="11" HorizontalTextAlignment="Center"/>
+                                    <BoxView HeightRequest="1" BackgroundColor="#334155" Margin="0,4"/>
+                                    <Label x:Name="LBL_gyro_attitude_live" Text="Attitude: Roll 0.0° | Pitch 0.0° | Yaw 0.0°" TextColor="#F59E0B" FontSize="12" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                    <Label x:Name="LBL_gyro_status_msg" Text="Ready" TextColor="#10B981" FontSize="11" HorizontalTextAlignment="Center"/>
+                                </StackLayout>
+                            </Frame>
+
+                            <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="10" VerticalOptions="Center">
+                                <Button Grid.Column="0" Text="🔄 Calibrate Gyro Bias" BackgroundColor="#0284C7" TextColor="#FFFFFF"
+                                        FontSize="12" FontAttributes="Bold" HeightRequest="36" CornerRadius="6" Clicked="OnGyroCalibrateClicked"/>
+                                <Button Grid.Column="1" Text="📐 Calibrate Level (Trim)" BackgroundColor="#10B981" TextColor="#FFFFFF"
+                                        FontSize="12" FontAttributes="Bold" HeightRequest="36" CornerRadius="6" Clicked="OnLevelCalibrateClicked"/>
+                            </Grid>
+                        </Grid>
+
+                        <!-- ================= D. RCプロポキャリブレーション (Radio Calib) ================= -->
+                        <Grid x:Name="View_Setup_Radio" IsVisible="False" RowDefinitions="*,Auto" RowSpacing="8">
+                            <Frame Grid.Row="0" BackgroundColor="#1E293B" BorderColor="#334155" Padding="10,6" CornerRadius="8" HasShadow="False">
+                                <ScrollView VerticalScrollBarVisibility="Always">
+                                    <StackLayout Spacing="5">
+                                        <!-- Header Row -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" Margin="0,0,0,2">
+                                            <Label Grid.Column="0" Text="CH" TextColor="#64748B" FontSize="9" FontAttributes="Bold"/>
+                                            <Label Grid.Column="1" Text="Current PWM" TextColor="#64748B" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                            <Label Grid.Column="2" Text="Range (Min / Trim / Max)" TextColor="#64748B" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                            <Label Grid.Column="3" Text="Min" TextColor="#64748B" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                            <Label Grid.Column="4" Text="Max" TextColor="#64748B" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                        </Grid>
+                                        <!-- RC1 (Roll) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC1 (Roll)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc1_val" Grid.Column="1" Text="1500" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc1" Grid.Column="2" Progress="0.5" ProgressColor="#38BDF8" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc1_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc1_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC2 (Ptch) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC2 (Ptch)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc2_val" Grid.Column="1" Text="1500" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc2" Grid.Column="2" Progress="0.5" ProgressColor="#38BDF8" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc2_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc2_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC3 (Thro) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC3 (Thro)" TextColor="#10B981" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc3_val" Grid.Column="1" Text="1000" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc3" Grid.Column="2" Progress="0.0" ProgressColor="#10B981" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc3_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc3_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC4 (Yaw) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC4 (Yaw)" TextColor="#10B981" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc4_val" Grid.Column="1" Text="1500" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc4" Grid.Column="2" Progress="0.5" ProgressColor="#10B981" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc4_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc4_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC5 (Mode) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC5 (Mode)" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc5_val" Grid.Column="1" Text="1500" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc5" Grid.Column="2" Progress="0.5" ProgressColor="#F59E0B" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc5_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc5_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC6 (Aux2) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC6 (Aux2)" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc6_val" Grid.Column="1" Text="1500" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc6" Grid.Column="2" Progress="0.5" ProgressColor="#F59E0B" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc6_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc6_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC7 (Aux3) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC7 (Aux3)" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc7_val" Grid.Column="1" Text="1500" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc7" Grid.Column="2" Progress="0.5" ProgressColor="#A78BFA" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc7_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc7_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC8 (Aux4) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC8 (Aux4)" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc8_val" Grid.Column="1" Text="1500" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc8" Grid.Column="2" Progress="0.5" ProgressColor="#A78BFA" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc8_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc8_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC9 (Aux5) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC9 (Aux5)" TextColor="#EC4899" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc9_val" Grid.Column="1" Text="1500" TextColor="#EC4899" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc9" Grid.Column="2" Progress="0.5" ProgressColor="#EC4899" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc9_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc9_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC10 (Aux6) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC10 (Aux6)" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc10_val" Grid.Column="1" Text="1500" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc10" Grid.Column="2" Progress="0.5" ProgressColor="#06B6D4" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc10_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc10_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC11 (Aux7) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC11 (Aux7)" TextColor="#10B981" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc11_val" Grid.Column="1" Text="1500" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc11" Grid.Column="2" Progress="0.5" ProgressColor="#10B981" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc11_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc11_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC12 (Aux8) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC12 (Aux8)" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc12_val" Grid.Column="1" Text="1500" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc12" Grid.Column="2" Progress="0.5" ProgressColor="#F59E0B" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc12_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc12_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC13 (Aux9) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC13 (Aux9)" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc13_val" Grid.Column="1" Text="1500" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc13" Grid.Column="2" Progress="0.5" ProgressColor="#A78BFA" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc13_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc13_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC14 (Ax10) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC14 (Ax10)" TextColor="#EC4899" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc14_val" Grid.Column="1" Text="1500" TextColor="#EC4899" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc14" Grid.Column="2" Progress="0.5" ProgressColor="#EC4899" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc14_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc14_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC15 (Ax11) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC15 (Ax11)" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc15_val" Grid.Column="1" Text="1500" TextColor="#06B6D4" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc15" Grid.Column="2" Progress="0.5" ProgressColor="#06B6D4" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc15_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc15_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC16 (Ax12) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC16 (Ax12)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc16_val" Grid.Column="1" Text="1500" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc16" Grid.Column="2" Progress="0.5" ProgressColor="#38BDF8" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc16_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc16_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC17 (Ax13) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC17 (Ax13)" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc17_val" Grid.Column="1" Text="1500" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc17" Grid.Column="2" Progress="0.5" ProgressColor="#F59E0B" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc17_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc17_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- RC18 (Ax14) -->
+                                        <Grid ColumnDefinitions="68,65,*,75,75" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="RC18 (Ax14)" TextColor="#10B981" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc18_val" Grid.Column="1" Text="1500" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_cal_rc18" Grid.Column="2" Progress="0.5" ProgressColor="#10B981" HeightRequest="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc18_min" Grid.Column="3" Text="1000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_cal_rc18_max" Grid.Column="4" Text="2000" TextColor="#94A3B8" FontSize="10" HorizontalTextAlignment="Center" VerticalOptions="Center"/>
+                                        </Grid>
+                                    </StackLayout>
+                                </ScrollView>
+                            </Frame>
+
+                            <!-- Radio Cal Actions -->
+                            <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                                <Button x:Name="Btn_RadioCal_Start" Grid.Column="0" Text="🚀 Start RC Calibration" BackgroundColor="#0284C7" TextColor="#FFFFFF"
+                                        FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="12,0" Clicked="OnRadioCalStartClicked"/>
+                                <Label Grid.Column="1"/>
+                                <Button x:Name="Btn_RadioCal_Save" Grid.Column="2" Text="✅ Save to FC (Center Sticks)" BackgroundColor="#10B981" TextColor="#FFFFFF"
+                                        FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="12,0" IsVisible="False" Clicked="OnRadioCalSaveClicked"/>
+                                <Button x:Name="Btn_RadioCal_Cancel" Grid.Column="3" Text="✕ Cancel" BackgroundColor="#475569" TextColor="#F1F5F9"
+                                        FontSize="11" HeightRequest="34" CornerRadius="6" Padding="10,0" IsVisible="False" Clicked="OnRadioCalCancelClicked"/>
+                            </Grid>
+                        </Grid>
+
+                    </Grid>
                 </Grid>
             </Frame>
         </Grid>

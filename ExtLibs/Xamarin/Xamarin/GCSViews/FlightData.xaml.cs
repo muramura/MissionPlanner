@@ -483,6 +483,55 @@ namespace Xamarin
                         Console.WriteLine("Joystick modal timer error: " + ex);
                     }
 
+                    // 🛠️ 2. SETUP (キャリブレーション) モーダル用リアルタイム更新
+                    try
+                    {
+                        if (Pnl_SetupModal != null && Pnl_SetupModal.IsVisible)
+                        {
+                            var cs = MainV2.comPort.MAV.cs;
+
+                            // A. ジャイロ姿勢更新
+                            if (View_Setup_Gyro != null && View_Setup_Gyro.IsVisible && LBL_gyro_attitude_live != null)
+                            {
+                                LBL_gyro_attitude_live.Text = string.Format("Attitude: Roll {0:F1}° | Pitch {1:F1}° | Yaw {2:F1}°", cs.roll, cs.pitch, cs.yaw);
+                            }
+
+                            // B. RCプロポバー更新 (全18チャンネル)
+                            if (View_Setup_Radio != null && View_Setup_Radio.IsVisible)
+                            {
+                                for (int ch = 1; ch <= 18; ch++)
+                                {
+                                    int i = ch - 1;
+                                    int val = (int)GetRCChannelInputValue(cs, ch);
+                                    if (val > 800 && val < 2200)
+                                    {
+                                        if (_isRadioCalibrating)
+                                        {
+                                            _radioMin[i] = Math.Min(_radioMin[i], val);
+                                            _radioMax[i] = Math.Max(_radioMax[i], val);
+                                        }
+
+                                        var lblVal = this.FindByName<Label>($"LBL_cal_rc{ch}_val");
+                                        if (lblVal != null) lblVal.Text = val.ToString();
+
+                                        var pb = this.FindByName<ProgressBar>($"PB_cal_rc{ch}");
+                                        if (pb != null) pb.Progress = Math.Max(0.0, Math.Min(1.0, (val - 1000) / 1000.0));
+
+                                        var lblMin = this.FindByName<Label>($"LBL_cal_rc{ch}_min");
+                                        if (lblMin != null) lblMin.Text = (_radioMin[i] <= 2200) ? _radioMin[i].ToString() : "1000";
+
+                                        var lblMax = this.FindByName<Label>($"LBL_cal_rc{ch}_max");
+                                        if (lblMax != null) lblMax.Text = (_radioMax[i] >= 800) ? _radioMax[i].ToString() : "2000";
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        Console.WriteLine("Setup modal timer error: " + ex);
+                    }
+
                     if (MainV2.comPort != null)
                     {
                         var mav = MainV2.comPort.MAV;
@@ -2989,8 +3038,820 @@ namespace Xamarin
             }
         }
 
-}
+        #region ================= ARDUPILOT SETUP & CALIBRATION SUITE =================
 
+        private int _accelSub1 = -1;
+        private int _accelSub2 = -1;
+        private MAVLink.ACCELCAL_VEHICLE_POS _currentAccelPos = MAVLink.ACCELCAL_VEHICLE_POS.LEVEL;
+        private bool _isAccelCalibrating = false;
+
+        private int _compassSub1 = -1;
+        private int _compassSub2 = -1;
+        private bool _isCompassCalibrating = false;
+        private int _compassPointsSampled = 0;
+
+        #region --- 3D COMPASS SPHERE POINT CLOUD ENGINE ---
+        private struct SpherePoint { public float X, Y, Z; }
+        private static readonly SpherePoint[] _magCalSpherePoints = GenerateFibonacciSpherePoints(80);
+        private readonly bool[] _compassMaskBits = new bool[80];
+        private float _compassDirX = 0f, _compassDirY = 0f, _compassDirZ = 1f;
+        private float _sphereRotYaw = 25f, _sphereRotPitch = -15f;
+        private double _panLastX = 0, _panLastY = 0;
+
+        private static SpherePoint[] GenerateFibonacciSpherePoints(int count)
+        {
+            var pts = new SpherePoint[count];
+            float phi = (1f + (float)Math.Sqrt(5)) / 2f;
+            float goldenAngle = (2f - phi) * 2f * (float)Math.PI;
+
+            for (int i = 0; i < count; i++)
+            {
+                float y = 1f - (i / (float)(count - 1)) * 2f;
+                float radius = (float)Math.Sqrt(Math.Max(0, 1f - y * y));
+                float theta = goldenAngle * i;
+
+                float x = (float)Math.Cos(theta) * radius;
+                float z = (float)Math.Sin(theta) * radius;
+                pts[i] = new SpherePoint { X = x, Y = y, Z = z };
+            }
+            return pts;
+        }
+
+        private void OnCompass3DPanUpdated(object sender, PanUpdatedEventArgs e)
+        {
+            try
+            {
+                if (e.StatusType == GestureStatus.Running)
+                {
+                    float dx = (float)(e.TotalX - _panLastX);
+                    float dy = (float)(e.TotalY - _panLastY);
+                    _sphereRotYaw += dx * 0.6f;
+                    _sphereRotPitch -= dy * 0.6f;
+                    _panLastX = e.TotalX;
+                    _panLastY = e.TotalY;
+
+                    _sphereRotPitch = Math.Max(-85f, Math.Min(85f, _sphereRotPitch));
+                    Canvas_Compass3D?.InvalidateSurface();
+                }
+                else if (e.StatusType == GestureStatus.Completed || e.StatusType == GestureStatus.Canceled)
+                {
+                    _panLastX = 0;
+                    _panLastY = 0;
+                }
+            }
+            catch { }
+        }
+
+        private void OnCompass3DPaintSurface(object sender, SkiaSharp.Views.Forms.SKPaintSurfaceEventArgs e)
+        {
+            var canvas = e.Surface.Canvas;
+            var info = e.Info;
+            canvas.Clear(SkiaSharp.SKColors.Transparent);
+
+            float cx = info.Width / 2f;
+            float cy = info.Height / 2f;
+            float R = Math.Min(info.Width, info.Height) * 0.40f;
+
+            if (R <= 10) return;
+
+            // 1. 球体背景（ダークネイビー）と外周リング
+            using (var bgPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#0B132B"), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            {
+                canvas.DrawCircle(cx, cy, R, bgPaint);
+            }
+
+            using (var ringPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#0284C7"), Style = SkiaSharp.SKPaintStyle.Stroke, StrokeWidth = 2f, IsAntialias = true })
+            {
+                canvas.DrawCircle(cx, cy, R, ringPaint);
+            }
+
+            // 2. 緯度・経度ワイヤーフレーム（点線/半透明）
+            using (var wirePaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#1E3A8A").WithAlpha(120), Style = SkiaSharp.SKPaintStyle.Stroke, StrokeWidth = 1f, IsAntialias = true })
+            {
+                canvas.DrawOval(cx, cy, R, R * 0.4f, wirePaint); // 赤道
+                canvas.DrawOval(cx, cy, R * 0.4f, R, wirePaint); // 本初子午線
+            }
+
+            // 3. 3D 回転変換マトリクス準備
+            float radYaw = _sphereRotYaw * (float)Math.PI / 180f;
+            float radPitch = _sphereRotPitch * (float)Math.PI / 180f;
+            float cosY = (float)Math.Cos(radYaw), sinY = (float)Math.Sin(radYaw);
+            float cosP = (float)Math.Cos(radPitch), sinP = (float)Math.Sin(radPitch);
+
+            // 80ポイントの投影計算
+            var projected = new List<(float sx, float sy, float depth, bool sampled)>(80);
+            for (int i = 0; i < _magCalSpherePoints.Length; i++)
+            {
+                var pt = _magCalSpherePoints[i];
+                // Yaw 回転 (around Y)
+                float x1 = pt.X * cosY + pt.Z * sinY;
+                float y1 = pt.Y;
+                float z1 = -pt.X * sinY + pt.Z * cosY;
+
+                // Pitch 回転 (around X)
+                float x2 = x1;
+                float y2 = y1 * cosP - z1 * sinP;
+                float z2 = y1 * sinP + z1 * cosP;
+
+                float sx = cx + x2 * R;
+                float sy = cy - y2 * R;
+                bool isSampled = (i < _compassMaskBits.Length) && _compassMaskBits[i];
+                projected.Add((sx, sy, z2, isSampled));
+            }
+
+            // 深度ソート（奥 z2 < 0 から手前 z2 >= 0 へ）
+            projected.Sort((a, b) => a.depth.CompareTo(b.depth));
+
+            // 描画用ペイント
+            using (var pSampledFront = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#10B981"), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            using (var pSampledBack = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#064E3B").WithAlpha(140), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            using (var pMissingFront = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#EF4444"), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            using (var pMissingBack = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#475569").WithAlpha(90), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            using (var pGlow = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#10B981").WithAlpha(60), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            {
+                foreach (var p in projected)
+                {
+                    bool isFront = p.depth >= 0;
+                    if (p.sampled)
+                    {
+                        if (isFront)
+                        {
+                            canvas.DrawCircle(p.sx, p.sy, 7f, pGlow);
+                            canvas.DrawCircle(p.sx, p.sy, 4.5f, pSampledFront);
+                        }
+                        else
+                        {
+                            canvas.DrawCircle(p.sx, p.sy, 3f, pSampledBack);
+                        }
+                    }
+                    else
+                    {
+                        if (isFront)
+                        {
+                            canvas.DrawCircle(p.sx, p.sy, 4.2f, pMissingFront);
+                        }
+                        else
+                        {
+                            canvas.DrawCircle(p.sx, p.sy, 2.5f, pMissingBack);
+                        }
+                    }
+                }
+            }
+
+            // 4. 現在の機体磁気ベクトル（方向ターゲットカーソル）
+            float dirLen = (float)Math.Sqrt(_compassDirX * _compassDirX + _compassDirY * _compassDirY + _compassDirZ * _compassDirZ);
+            if (dirLen > 0.001f)
+            {
+                float dx = _compassDirX / dirLen;
+                float dy = _compassDirY / dirLen;
+                float dz = _compassDirZ / dirLen;
+
+                // 回転変換
+                float dx1 = dx * cosY + dz * sinY;
+                float dy1 = dy;
+                float dz1 = -dx * sinY + dz * cosY;
+
+                float dx2 = dx1;
+                float dy2 = dy1 * cosP - dz1 * sinP;
+                float dz2 = dy1 * sinP + dz1 * cosP;
+
+                float targetX = cx + dx2 * R;
+                float targetY = cy - dy2 * R;
+
+                if (dz2 >= -0.2f)
+                {
+                    using (var targetPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#F59E0B"), Style = SkiaSharp.SKPaintStyle.Stroke, StrokeWidth = 2.5f, IsAntialias = true })
+                    using (var crossPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#FBBF24"), Style = SkiaSharp.SKPaintStyle.Stroke, StrokeWidth = 1.5f, IsAntialias = true })
+                    {
+                        canvas.DrawCircle(targetX, targetY, 8f, targetPaint);
+                        canvas.DrawLine(targetX - 12f, targetY, targetX + 12f, targetY, crossPaint);
+                        canvas.DrawLine(targetX, targetY - 12f, targetX, targetY + 12f, crossPaint);
+                    }
+                }
+            }
+        }
+        #endregion
+
+        private bool _isRadioCalibrating = false;
+        private readonly int[] _radioMin = new int[18] { 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000, 3000 };
+        private readonly int[] _radioMax = new int[18] { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+        private readonly int[] _radioTrim = new int[18] { 1500, 1500, 1000, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500, 1500 };
+
+        private float GetRCChannelInputValue(CurrentState cs, int ch)
+        {
+            switch (ch)
+            {
+                case 1: return cs.ch1in;
+                case 2: return cs.ch2in;
+                case 3: return cs.ch3in;
+                case 4: return cs.ch4in;
+                case 5: return cs.ch5in;
+                case 6: return cs.ch6in;
+                case 7: return cs.ch7in;
+                case 8: return cs.ch8in;
+                case 9: return cs.ch9in;
+                case 10: return cs.ch10in;
+                case 11: return cs.ch11in;
+                case 12: return cs.ch12in;
+                case 13: return cs.ch13in;
+                case 14: return cs.ch14in;
+                case 15: return cs.ch15in;
+                case 16: return cs.ch16in;
+                case 17: return (cs.rcoverridech17 > 0) ? (float)cs.rcoverridech17 : (IsJoystickActive ? (float)CalculateChannelPWM(ChannelAxisMapping.Length > 17 ? ChannelAxisMapping[17] : "None", 1500, ChannelReverseMapping.Length > 17 ? ChannelReverseMapping[17] : false) : 1500f);
+                case 18: return (cs.rcoverridech18 > 0) ? (float)cs.rcoverridech18 : (IsJoystickActive ? (float)CalculateChannelPWM(ChannelAxisMapping.Length > 18 ? ChannelAxisMapping[18] : "None", 1500, ChannelReverseMapping.Length > 18 ? ChannelReverseMapping[18] : false) : 1500f);
+                default: return 1500f;
+            }
+        }
+
+        private void OnOpenSetupModalClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                Pnl_SetupModal.IsVisible = true;
+                SwitchSetupTab("accel");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnOpenSetupModalClicked error: " + ex);
+            }
+        }
+
+        private void OnCloseSetupModalClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                Pnl_SetupModal.IsVisible = false;
+                CleanupCalibrationSubscriptions();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnCloseSetupModalClicked error: " + ex);
+            }
+        }
+
+        private void CleanupCalibrationSubscriptions()
+        {
+            try
+            {
+                if (_accelSub1 != -1) { MainV2.comPort.UnSubscribeToPacketType(_accelSub1); _accelSub1 = -1; }
+                if (_accelSub2 != -1) { MainV2.comPort.UnSubscribeToPacketType(_accelSub2); _accelSub2 = -1; }
+                if (_compassSub1 != -1) { MainV2.comPort.UnSubscribeToPacketType(_compassSub1); _compassSub1 = -1; }
+                if (_compassSub2 != -1) { MainV2.comPort.UnSubscribeToPacketType(_compassSub2); _compassSub2 = -1; }
+                _isAccelCalibrating = false;
+                _isCompassCalibrating = false;
+                _isRadioCalibrating = false;
+            }
+            catch { }
+        }
+
+        private void SwitchSetupTab(string tab)
+        {
+            try
+            {
+                View_Setup_Accel.IsVisible = (tab == "accel");
+                View_Setup_Compass.IsVisible = (tab == "compass");
+                View_Setup_Gyro.IsVisible = (tab == "gyro");
+                View_Setup_Radio.IsVisible = (tab == "radio");
+
+                Btn_SetupTab_Accel.BackgroundColor = (tab == "accel") ? global::Xamarin.Forms.Color.FromHex("#0284C7") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_SetupTab_Accel.TextColor = (tab == "accel") ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+
+                Btn_SetupTab_Compass.BackgroundColor = (tab == "compass") ? global::Xamarin.Forms.Color.FromHex("#0284C7") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_SetupTab_Compass.TextColor = (tab == "compass") ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+
+                Btn_SetupTab_Gyro.BackgroundColor = (tab == "gyro") ? global::Xamarin.Forms.Color.FromHex("#0284C7") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_SetupTab_Gyro.TextColor = (tab == "gyro") ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+
+                Btn_SetupTab_Radio.BackgroundColor = (tab == "radio") ? global::Xamarin.Forms.Color.FromHex("#0284C7") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_SetupTab_Radio.TextColor = (tab == "radio") ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+
+                if (tab == "accel")
+                {
+                    UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.LEVEL);
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SwitchSetupTab error: " + ex);
+            }
+        }
+
+        private void OnSetupTabAccelClicked(object sender, EventArgs e) => SwitchSetupTab("accel");
+        private void OnSetupTabCompassClicked(object sender, EventArgs e) => SwitchSetupTab("compass");
+        private void OnSetupTabGyroClicked(object sender, EventArgs e) => SwitchSetupTab("gyro");
+        private void OnSetupTabRadioClicked(object sender, EventArgs e) => SwitchSetupTab("radio");
+
+        #region --- 1. ACCELEROMETER CALIBRATION ---
+
+        private void UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS pos)
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    _currentAccelPos = pos;
+                    byte[] imgBytes = MissionPlanner.Properties.ResourcesX.calibration01;
+
+                    // 6方向インジケーターカードのハイライト更新
+                    Frame_Pos_Level.BorderColor = (pos == MAVLink.ACCELCAL_VEHICLE_POS.LEVEL) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
+                    Frame_Pos_Left.BorderColor = (pos == MAVLink.ACCELCAL_VEHICLE_POS.LEFT) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
+                    Frame_Pos_Right.BorderColor = (pos == MAVLink.ACCELCAL_VEHICLE_POS.RIGHT) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
+                    Frame_Pos_NoseDown.BorderColor = (pos == MAVLink.ACCELCAL_VEHICLE_POS.NOSEDOWN) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
+                    Frame_Pos_NoseUp.BorderColor = (pos == MAVLink.ACCELCAL_VEHICLE_POS.NOSEUP) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
+                    Frame_Pos_Back.BorderColor = (pos == MAVLink.ACCELCAL_VEHICLE_POS.BACK) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
+
+                    switch (pos)
+                    {
+                        case MAVLink.ACCELCAL_VEHICLE_POS.LEVEL:
+                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration01;
+                            LBL_accel_title.Text = "[1/6] Hold vehicle LEVEL and still";
+                            LBL_accel_desc.Text = "Place vehicle level and stationary, then press [Position Done] below.";
+                            break;
+                        case MAVLink.ACCELCAL_VEHICLE_POS.LEFT:
+                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration02;
+                            LBL_accel_title.Text = "[2/6] Place vehicle on its LEFT side and hold still";
+                            LBL_accel_desc.Text = "Roll vehicle 90° to the left, then press [Position Done] below.";
+                            break;
+                        case MAVLink.ACCELCAL_VEHICLE_POS.RIGHT:
+                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration03;
+                            LBL_accel_title.Text = "[3/6] Place vehicle on its RIGHT side and hold still";
+                            LBL_accel_desc.Text = "Roll vehicle 90° to the right, then press [Position Done] below.";
+                            break;
+                        case MAVLink.ACCELCAL_VEHICLE_POS.NOSEDOWN:
+                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration04;
+                            LBL_accel_title.Text = "[4/6] Place vehicle NOSE DOWN and hold still";
+                            LBL_accel_desc.Text = "Pitch vehicle 90° nose down, then press [Position Done] below.";
+                            break;
+                        case MAVLink.ACCELCAL_VEHICLE_POS.NOSEUP:
+                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration05;
+                            LBL_accel_title.Text = "[5/6] Place vehicle NOSE UP and hold still";
+                            LBL_accel_desc.Text = "Pitch vehicle 90° nose up, then press [Position Done] below.";
+                            break;
+                        case MAVLink.ACCELCAL_VEHICLE_POS.BACK:
+                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration06;
+                            LBL_accel_title.Text = "[6/6] Place vehicle on its BACK (Inverted) and hold still";
+                            LBL_accel_desc.Text = "Turn vehicle completely upside down, then press [Position Done] below.";
+                            break;
+                    }
+
+                    if (imgBytes != null && imgBytes.Length > 0)
+                    {
+                        IMG_accel_guide.Source = ImageSource.FromStream(() => new System.IO.MemoryStream(imgBytes));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Console.WriteLine("UpdateAccelOrientationUI error: " + ex);
+                }
+            });
+        }
+
+        private void OnAccelCalStartClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!MainV2.comPort.BaseStream.IsOpen)
+                {
+                    DisplayAlert("Not Connected", "Flight controller is not connected.", "OK");
+                    return;
+                }
+
+                _isAccelCalibrating = true;
+                Btn_AccelCal_Start.IsVisible = false;
+                Btn_AccelCal_Next.IsVisible = true;
+                Btn_AccelCal_Cancel.IsVisible = true;
+                LBL_accel_status_msg.Text = "キャリブレーション開始... 指示に従ってください";
+
+                // PREFLIGHT_CALIBRATION (param5 = 1 : Accel Calib)
+                MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent,
+                    MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION, 0, 0, 0, 0, 1, 0, 0);
+
+                _accelSub1 = MainV2.comPort.SubscribeToPacketType(MAVLink.MAVLINK_MSG_ID.STATUSTEXT, HandleAccelPacket, (byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent);
+                _accelSub2 = MainV2.comPort.SubscribeToPacketType(MAVLink.MAVLINK_MSG_ID.COMMAND_LONG, HandleAccelPacket, (byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent);
+
+                UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.LEVEL);
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("エラー", "キャリブレーション開始に失敗しました: " + ex.Message, "OK");
+            }
+        }
+
+        private bool HandleAccelPacket(MAVLink.MAVLinkMessage arg)
+        {
+            try
+            {
+                if (arg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.COMMAND_LONG)
+                {
+                    var msg = arg.ToStructure<MAVLink.mavlink_command_long_t>();
+                    if (msg.command == (ushort)MAVLink.MAV_CMD.ACCELCAL_VEHICLE_POS)
+                    {
+                        var pos = (MAVLink.ACCELCAL_VEHICLE_POS)(int)msg.param1;
+                        UpdateAccelOrientationUI(pos);
+                    }
+                }
+                else if (arg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.STATUSTEXT)
+                {
+                    var stat = arg.ToStructure<MAVLink.mavlink_statustext_t>();
+                    string text = System.Text.Encoding.ASCII.GetString(stat.text).Trim('\0', ' ', '\r', '\n');
+                    Device.BeginInvokeOnMainThread(() =>
+                    {
+                        LBL_accel_status_msg.Text = text;
+                        string lower = text.ToLowerInvariant();
+                        if (lower.Contains("calibration successful"))
+                        {
+                            DisplayAlert("校正完了", "加速度センサーの6方向キャリブレーションが正常に完了しました！", "OK");
+                            OnAccelCalCancelClicked(null, null);
+                        }
+                        else if (lower.Contains("calibration failed"))
+                        {
+                            DisplayAlert("失敗", "キャリブレーションに失敗しました。振動のない場所でやり直してください。", "OK");
+                            OnAccelCalCancelClicked(null, null);
+                        }
+                    });
+                }
+            }
+            catch { }
+            return true;
+        }
+
+        private void OnAccelCalNextClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                // FCに現在の姿勢完了を送信
+                MainV2.comPort.sendPacket(new MAVLink.mavlink_command_long_t
+                {
+                    command = (ushort)MAVLink.MAV_CMD.ACCELCAL_VEHICLE_POS,
+                    param1 = (float)_currentAccelPos,
+                    target_system = (byte)MainV2.comPort.sysidcurrent,
+                    target_component = (byte)MainV2.comPort.compidcurrent
+                }, (byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent);
+
+                LBL_accel_status_msg.Text = "Position sent. Waiting for next step...";
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Error", "Failed to send position: " + ex.Message, "OK");
+            }
+        }
+
+        private void OnAccelCalCancelClicked(object sender, EventArgs e)
+        {
+            _isAccelCalibrating = false;
+            Btn_AccelCal_Start.IsVisible = true;
+            Btn_AccelCal_Next.IsVisible = false;
+            Btn_AccelCal_Cancel.IsVisible = false;
+            LBL_accel_status_msg.Text = "Waiting";
+            CleanupCalibrationSubscriptions();
+        }
+
+        private void OnAccelCalLevelOnlyClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!MainV2.comPort.BaseStream.IsOpen)
+                {
+                    DisplayAlert("Not Connected", "Flight controller is not connected.", "OK");
+                    return;
+                }
+
+                // param5 = 2 : Level Only
+                MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent,
+                    MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION, 0, 0, 0, 0, 2, 0, 0);
+
+                DisplayAlert("Level Calibration", "Level trim calibration command sent. Keep vehicle level and still.", "OK");
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Error", "Level calibration failed: " + ex.Message, "OK");
+            }
+        }
+
+        #endregion
+
+        #region --- 2. COMPASS CALIBRATION ---
+
+        private void OnCompassStartClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!MainV2.comPort.BaseStream.IsOpen)
+                {
+                    DisplayAlert("Not Connected", "Flight controller is not connected.", "OK");
+                    return;
+                }
+
+                _isCompassCalibrating = true;
+                _compassPointsSampled = 0;
+                for (int i = 0; i < _compassMaskBits.Length; i++) _compassMaskBits[i] = false;
+                _compassDirX = 0; _compassDirY = 0; _compassDirZ = 1;
+                Canvas_Compass3D?.InvalidateSurface();
+
+                Btn_Compass_Start.IsVisible = false;
+                Btn_Compass_Accept.IsVisible = true;
+                Btn_Compass_Cancel.IsVisible = true;
+                Frm_compass_quality.IsVisible = false;
+                LBL_compass_guide_msg.Text = "Rotate vehicle slowly in all directions (Roll, Pitch, Yaw). Aim at RED dots!";
+                LBL_compass_guide_msg.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                LBL_compass_result_text.Text = "Sampling 3D points...";
+                LBL_compass_points.Text = "0 / 80 pts (0%)";
+
+                PB_compass1.Progress = 0;
+                PB_compass2.Progress = 0;
+                PB_compass3.Progress = 0;
+                LBL_compass1_pct.Text = "0%";
+                LBL_compass2_pct.Text = "0%";
+                LBL_compass3_pct.Text = "0%";
+
+                // DO_START_MAG_CAL
+                MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent,
+                    MAVLink.MAV_CMD.DO_START_MAG_CAL, 0, 1, 1, 0, 0, 0, 0);
+
+                _compassSub1 = MainV2.comPort.SubscribeToPacketType(MAVLink.MAVLINK_MSG_ID.MAG_CAL_PROGRESS, HandleCompassPacket, (byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent);
+                _compassSub2 = MainV2.comPort.SubscribeToPacketType(MAVLink.MAVLINK_MSG_ID.MAG_CAL_REPORT, HandleCompassPacket, (byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent);
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Error", "Failed to start mag calibration: " + ex.Message, "OK");
+            }
+        }
+
+        private bool HandleCompassPacket(MAVLink.MAVLinkMessage arg)
+        {
+            try
+            {
+                if (arg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MAG_CAL_PROGRESS)
+                {
+                    var prog = arg.ToStructure<MAVLink.mavlink_mag_cal_progress_t>();
+                    Device.BeginInvokeOnMainThread(() =>
+                    {
+                        float p = prog.completion_pct / 100f;
+                        if (prog.compass_id == 0)
+                        {
+                            PB_compass1.Progress = p;
+                            LBL_compass1_pct.Text = prog.completion_pct + "%";
+                        }
+                        else if (prog.compass_id == 1)
+                        {
+                            PB_compass2.Progress = p;
+                            LBL_compass2_pct.Text = prog.completion_pct + "%";
+                        }
+                        else if (prog.compass_id == 2)
+                        {
+                            PB_compass3.Progress = p;
+                            LBL_compass3_pct.Text = prog.completion_pct + "%";
+                        }
+
+                        if (prog.completion_mask != null)
+                        {
+                            for (int b = 0; b < prog.completion_mask.Length && b < 10; b++)
+                            {
+                                byte byteVal = prog.completion_mask[b];
+                                for (int bit = 0; bit < 8; bit++)
+                                {
+                                    int idx = b * 8 + bit;
+                                    if (idx < _compassMaskBits.Length)
+                                    {
+                                        _compassMaskBits[idx] = ((byteVal & (1 << bit)) != 0);
+                                    }
+                                }
+                            }
+                        }
+                        _compassDirX = prog.direction_x;
+                        _compassDirY = prog.direction_y;
+                        _compassDirZ = prog.direction_z;
+
+                        int sampledCount = _compassMaskBits.Count(x => x);
+                        _compassPointsSampled = sampledCount;
+                        LBL_compass_points.Text = string.Format("{0} / 80 pts ({1}%)", sampledCount, sampledCount * 100 / 80);
+
+                        Canvas_Compass3D?.InvalidateSurface();
+
+                        if (prog.completion_pct >= 100 || sampledCount >= 78)
+                        {
+                            LBL_compass_result_text.Text = "Sampling complete! Press [Accept & Save] to apply.";
+                        }
+                    });
+                }
+                else if (arg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.MAG_CAL_REPORT)
+                {
+                    var rep = arg.ToStructure<MAVLink.mavlink_mag_cal_report_t>();
+                    Device.BeginInvokeOnMainThread(() =>
+                    {
+                        var status = (MAVLink.MAG_CAL_STATUS)rep.cal_status;
+                        
+                        // 1. Sphere Quality & Fitness Rating Badge
+                        Frm_compass_quality.IsVisible = true;
+                        if (rep.fitness < 16.0f)
+                        {
+                            LBL_compass_quality.Text = string.Format("🌟 Sphere Quality: Excellent (Fit: {0:F2})", rep.fitness);
+                            LBL_compass_quality.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                            Frm_compass_quality.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                        }
+                        else if (rep.fitness < 25.0f)
+                        {
+                            LBL_compass_quality.Text = string.Format("🟢 Sphere Quality: Good (Fit: {0:F2})", rep.fitness);
+                            LBL_compass_quality.TextColor = global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                            Frm_compass_quality.BorderColor = global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                        }
+                        else if (rep.fitness < 35.0f)
+                        {
+                            LBL_compass_quality.Text = string.Format("🟡 Sphere Quality: Acceptable (Fit: {0:F2})", rep.fitness);
+                            LBL_compass_quality.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                            Frm_compass_quality.BorderColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                        }
+                        else
+                        {
+                            LBL_compass_quality.Text = string.Format("🔴 Sphere Quality: High Noise (Fit: {0:F2})", rep.fitness);
+                            LBL_compass_quality.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                            Frm_compass_quality.BorderColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                        }
+
+                        // 2. Offsets Details
+                        LBL_compass_result_text.Text = string.Format("Compass #{0} Offsets: X={1:F1}, Y={2:F1}, Z={3:F1} ({4})",
+                            rep.compass_id + 1, rep.ofs_x, rep.ofs_y, rep.ofs_z, status);
+
+                        if (status == MAVLink.MAG_CAL_STATUS.MAG_CAL_SUCCESS)
+                        {
+                            // 完了時は 100% / 80pts を表示
+                            if (rep.compass_id == 0) { PB_compass1.Progress = 1.0; LBL_compass1_pct.Text = "100%"; }
+                            else if (rep.compass_id == 1) { PB_compass2.Progress = 1.0; LBL_compass2_pct.Text = "100%"; }
+                            else if (rep.compass_id == 2) { PB_compass3.Progress = 1.0; LBL_compass3_pct.Text = "100%"; }
+
+                            for (int i = 0; i < _compassMaskBits.Length; i++) _compassMaskBits[i] = true;
+                            _compassPointsSampled = 80;
+                            LBL_compass_points.Text = "80 / 80 pts (100%)";
+                            Canvas_Compass3D?.InvalidateSurface();
+                            LBL_compass_guide_msg.Text = "🎉 Calibration Successful! Please press [Accept & Save] below.";
+                            LBL_compass_guide_msg.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+
+                            Btn_Compass_Start.IsVisible = false;
+                            Btn_Compass_Accept.IsVisible = true;
+                            Btn_Compass_Cancel.IsVisible = true;
+                        }
+                    });
+                }
+            }
+            catch { }
+            return true;
+        }
+
+        private void OnCompassAcceptClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent,
+                    MAVLink.MAV_CMD.DO_ACCEPT_MAG_CAL, 0, 0, 1, 0, 0, 0, 0);
+
+                DisplayAlert("Compass Complete", "Compass calibration results saved to flight controller!", "OK");
+                OnCompassCancelClicked(null, null);
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Error", "Save failed: " + ex.Message, "OK");
+            }
+        }
+
+        private void OnCompassCancelClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent,
+                    MAVLink.MAV_CMD.DO_CANCEL_MAG_CAL, 0, 0, 0, 0, 0, 0, 0);
+            }
+            catch { }
+
+            _isCompassCalibrating = false;
+            Btn_Compass_Start.IsVisible = true;
+            Btn_Compass_Accept.IsVisible = false;
+            Btn_Compass_Cancel.IsVisible = false;
+            CleanupCalibrationSubscriptions();
+        }
+
+        #endregion
+
+        #region --- 3. GYRO & HORIZON LEVEL CALIBRATION ---
+
+        private void OnGyroCalibrateClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!MainV2.comPort.BaseStream.IsOpen)
+                {
+                    DisplayAlert("Not Connected", "Flight controller is not connected.", "OK");
+                    return;
+                }
+
+                // param1 = 1 : Gyro
+                MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent,
+                    MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION, 1, 0, 0, 0, 0, 0, 0);
+
+                LBL_gyro_status_msg.Text = "Gyro calibration sent. Keep vehicle stationary.";
+                DisplayAlert("Gyro Calibration", "Gyro bias calibration initiated. Keep vehicle still for a few seconds.", "OK");
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Error", "Gyro calibration failed: " + ex.Message, "OK");
+            }
+        }
+
+        private void OnLevelCalibrateClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!MainV2.comPort.BaseStream.IsOpen)
+                {
+                    DisplayAlert("Not Connected", "Flight controller is not connected.", "OK");
+                    return;
+                }
+
+                // param5 = 2 : Level
+                MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent,
+                    MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION, 0, 0, 0, 0, 2, 0, 0);
+
+                LBL_gyro_status_msg.Text = "Level trim calibration sent.";
+                DisplayAlert("水平トリム校正", "水平トリム（Level）校正を実行しました。機体を水平に維持してください。", "OK");
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Error", "Level calibration failed: " + ex.Message, "OK");
+            }
+        }
+
+        #endregion
+
+        #region --- 4. RC RADIO CALIBRATION ---
+
+        private void OnRadioCalStartClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!MainV2.comPort.BaseStream.IsOpen)
+                {
+                    DisplayAlert("Not Connected", "Flight controller is not connected.", "OK");
+                    return;
+                }
+
+                _isRadioCalibrating = true;
+                for (int i = 0; i < 18; i++)
+                {
+                    _radioMin[i] = 3000;
+                    _radioMax[i] = 0;
+                }
+
+                Btn_RadioCal_Start.IsVisible = false;
+                Btn_RadioCal_Save.IsVisible = true;
+                Btn_RadioCal_Cancel.IsVisible = true;
+
+                DisplayAlert("RC Calibration (CH1-18)", "Move all transmitter sticks and switches across their full ranges.\nWhen finished, return sticks to center and press [Save to FC].", "OK");
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Error", "Failed to start RC calibration: " + ex.Message, "OK");
+            }
+        }
+
+        private void OnRadioCalSaveClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                var cs = MainV2.comPort.MAV.cs;
+
+                for (int ch = 1; ch <= 18; ch++)
+                {
+                    int i = ch - 1;
+                    int cur = (int)GetRCChannelInputValue(cs, ch);
+                    _radioTrim[i] = (cur > 800 && cur < 2200) ? cur : 1500;
+                    if (_radioMin[i] < 800 || _radioMin[i] > 2200) _radioMin[i] = 1000;
+                    if (_radioMax[i] < 800 || _radioMax[i] > 2200) _radioMax[i] = 2000;
+
+                    // ArduPilot パラメータへ書き込み
+                    MainV2.comPort.setParam("RC" + ch + "_MIN", _radioMin[i]);
+                    MainV2.comPort.setParam("RC" + ch + "_MAX", _radioMax[i]);
+                    MainV2.comPort.setParam("RC" + ch + "_TRIM", _radioTrim[i]);
+                }
+
+                DisplayAlert("Save Complete", "RC1-18 calibration parameters (Min/Max/Trim) saved to flight controller successfully!", "OK");
+                OnRadioCalCancelClicked(null, null);
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Error", "Failed to save parameters: " + ex.Message, "OK");
+            }
+        }
+
+        private void OnRadioCalCancelClicked(object sender, EventArgs e)
+        {
+            _isRadioCalibrating = false;
+            Btn_RadioCal_Start.IsVisible = true;
+            Btn_RadioCal_Save.IsVisible = false;
+            Btn_RadioCal_Cancel.IsVisible = false;
+        }
+
+        #endregion
+
+        #endregion
     }
 
     internal class InputBox
@@ -3003,7 +3864,6 @@ namespace Xamarin
 
         public static Task<string> InputBox1(string title, string description, INavigation navigation)
         {
-            // wait in this proc, until user did his input 
             var tcs = new TaskCompletionSource<string>();
 
             var lblTitle = new Label
@@ -3015,14 +3875,11 @@ namespace Xamarin
             {
                 Text = "Ok",
                 WidthRequest = 100,
-                //BackgroundColor = Color.FromRgb(0.8, 0.8, 0.8),
             };
             btnOk.Clicked += async (s, e) =>
             {
-                // close page
                 var result = txtInput.Text;
                 await navigation.PopModalAsync();
-                // pass result
                 tcs.SetResult(result);
             };
 
@@ -3030,13 +3887,10 @@ namespace Xamarin
             {
                 Text = "Cancel",
                 WidthRequest = 100,
-                //BackgroundColor = Color.FromRgb(0.8, 0.8, 0.8)
             };
             btnCancel.Clicked += async (s, e) =>
             {
-                // close page
                 await navigation.PopModalAsync();
-                // pass empty result
                 tcs.SetResult(null);
             };
 
@@ -3055,17 +3909,12 @@ namespace Xamarin
                 Children = {lblTitle, lblMessage, txtInput, slButtons},
             };
 
-            // create and show page
             var page = new ContentPage();
             page.Content = layout;
             navigation.PushModalAsync(page);
-            // open keyboard
             txtInput.Focus();
 
-            // code is waiting her, until result is passed with tcs.SetResult() in btn-Clicked
-            // then proc returns the result
             return tcs.Task;
         }
-    
-
+    }
 }
