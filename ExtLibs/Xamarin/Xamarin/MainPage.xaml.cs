@@ -27,6 +27,10 @@ namespace Xamarin
             if (ret)
                 return ret;
 
+            // 🎮 ジョイスティックモーダル表示中はモーダルを閉じるだけで終了ダイアログは出さない
+            if (FlightData.IsJoystickActive)
+                return true;
+
             Device.BeginInvokeOnMainThread(async () =>
             {
                 var result = await DisplayAlert("", "Would you like to exit from application?", "Yes", "No");
