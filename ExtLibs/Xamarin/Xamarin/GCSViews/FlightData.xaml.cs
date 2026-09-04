@@ -454,28 +454,39 @@ namespace Xamarin
                                 }
                             }
 
-                            // 🕹️ ジョイスティック有効時: MAVLink RC Override パケットを機体へ送信 (Ch1〜Ch8)
-                            if (IsJoystickActive && MainV2.comPort != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
+                        }
+
+                        // 🕹️ ジョイスティック有効時: 画面開閉状態に関わらずバックグラウンドで常時 FC へ RC Override パケットを送信 (Ch1〜Ch18)
+                        if (IsJoystickActive && MainV2.comPort != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
+                        {
+                            try
                             {
-                                try
+                                var rcOverride = new MAVLink.mavlink_rc_channels_override_t
                                 {
-                                    var rcOverride = new MAVLink.mavlink_rc_channels_override_t
-                                    {
-                                        target_system = 1,
-                                        target_component = 1,
-                                        chan1_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[1], 1500, ChannelReverseMapping[1]),
-                                        chan2_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[2], 1500, ChannelReverseMapping[2]),
-                                        chan3_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[3], ChannelReverseMapping[3] ? 2000 : 1000, ChannelReverseMapping[3]),
-                                        chan4_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[4], 1500, ChannelReverseMapping[4]),
-                                        chan5_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[5], 1500, ChannelReverseMapping[5]),
-                                        chan6_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[6], 1500, ChannelReverseMapping[6]),
-                                        chan7_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[7], 1500, ChannelReverseMapping[7]),
-                                        chan8_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[8], 1500, ChannelReverseMapping[8])
-                                    };
-                                    MainV2.comPort.sendPacket(rcOverride, 1, 1);
-                                }
-                                catch { }
+                                    target_system = 1,
+                                    target_component = 1,
+                                    chan1_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[1], 1500, ChannelReverseMapping[1]),
+                                    chan2_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[2], 1500, ChannelReverseMapping[2]),
+                                    chan3_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[3], ChannelReverseMapping[3] ? 2000 : 1000, ChannelReverseMapping[3]),
+                                    chan4_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[4], 1500, ChannelReverseMapping[4]),
+                                    chan5_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[5], 1500, ChannelReverseMapping[5]),
+                                    chan6_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[6], 1500, ChannelReverseMapping[6]),
+                                    chan7_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[7], 1500, ChannelReverseMapping[7]),
+                                    chan8_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[8], 1500, ChannelReverseMapping[8]),
+                                    chan9_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[9], 1500, ChannelReverseMapping[9]),
+                                    chan10_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[10], 1500, ChannelReverseMapping[10]),
+                                    chan11_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[11], 1500, ChannelReverseMapping[11]),
+                                    chan12_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[12], 1500, ChannelReverseMapping[12]),
+                                    chan13_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[13], 1500, ChannelReverseMapping[13]),
+                                    chan14_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[14], 1500, ChannelReverseMapping[14]),
+                                    chan15_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[15], 1500, ChannelReverseMapping[15]),
+                                    chan16_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[16], 1500, ChannelReverseMapping[16]),
+                                    chan17_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[17], 1500, ChannelReverseMapping[17]),
+                                    chan18_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[18], 1500, ChannelReverseMapping[18])
+                                };
+                                MainV2.comPort.sendPacket(rcOverride, 1, 1);
                             }
+                            catch { }
                         }
                     }
                     catch (Exception ex)
@@ -564,6 +575,7 @@ namespace Xamarin
                                     MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 10, 1, 1);
                                     MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 5, 1, 1);
                                     MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, 2, 1, 1);
+                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 10, 1, 1);
                                     _ = MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL, 30, 50000, 0, 0, 0, 0, 0, false);
                                 }
                                 catch { }
@@ -3794,6 +3806,7 @@ namespace Xamarin
                 }
 
                 _isRadioCalibrating = true;
+                try { MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 10, 1, 1); } catch { }
                 for (int i = 0; i < 18; i++)
                 {
                     _radioMin[i] = 3000;
