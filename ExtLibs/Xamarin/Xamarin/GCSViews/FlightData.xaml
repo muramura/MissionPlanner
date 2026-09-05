@@ -744,6 +744,9 @@
                             <Grid Grid.Row="0" ColumnDefinitions="*,*,*,*,*,*" ColumnSpacing="4">
                                 <!-- 1. Level -->
                                 <Frame x:Name="Frame_Pos_Level" Grid.Column="0" BackgroundColor="#1E293B" BorderColor="#0284C7" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <Frame.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnPosCardClicked"/>
+                                    </Frame.GestureRecognizers>
                                     <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
                                         <Label x:Name="Icon_Pos_Level" Text="① 🛩️" FontSize="10" TextColor="#38BDF8" HorizontalTextAlignment="Center"/>
                                         <Label Text="Level" FontSize="9" TextColor="#F1F5F9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
@@ -751,6 +754,9 @@
                                 </Frame>
                                 <!-- 2. Left -->
                                 <Frame x:Name="Frame_Pos_Left" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <Frame.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnPosCardClicked"/>
+                                    </Frame.GestureRecognizers>
                                     <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
                                         <Label x:Name="Icon_Pos_Left" Text="② ⬅️" FontSize="10" TextColor="#94A3B8" HorizontalTextAlignment="Center"/>
                                         <Label Text="Left" FontSize="9" TextColor="#94A3B8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
@@ -758,6 +764,9 @@
                                 </Frame>
                                 <!-- 3. Right -->
                                 <Frame x:Name="Frame_Pos_Right" Grid.Column="2" BackgroundColor="#1E293B" BorderColor="#334155" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <Frame.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnPosCardClicked"/>
+                                    </Frame.GestureRecognizers>
                                     <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
                                         <Label x:Name="Icon_Pos_Right" Text="③ ➡️" FontSize="10" TextColor="#94A3B8" HorizontalTextAlignment="Center"/>
                                         <Label Text="Right" FontSize="9" TextColor="#94A3B8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
@@ -765,6 +774,9 @@
                                 </Frame>
                                 <!-- 4. NoseDown -->
                                 <Frame x:Name="Frame_Pos_NoseDown" Grid.Column="3" BackgroundColor="#1E293B" BorderColor="#334155" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <Frame.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnPosCardClicked"/>
+                                    </Frame.GestureRecognizers>
                                     <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
                                         <Label x:Name="Icon_Pos_NoseDown" Text="④ ⬇️" FontSize="10" TextColor="#94A3B8" HorizontalTextAlignment="Center"/>
                                         <Label Text="Nose Down" FontSize="9" TextColor="#94A3B8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
@@ -772,6 +784,9 @@
                                 </Frame>
                                 <!-- 5. NoseUp -->
                                 <Frame x:Name="Frame_Pos_NoseUp" Grid.Column="4" BackgroundColor="#1E293B" BorderColor="#334155" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <Frame.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnPosCardClicked"/>
+                                    </Frame.GestureRecognizers>
                                     <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
                                         <Label x:Name="Icon_Pos_NoseUp" Text="⑤ ⬆️" FontSize="10" TextColor="#94A3B8" HorizontalTextAlignment="Center"/>
                                         <Label Text="Nose Up" FontSize="9" TextColor="#94A3B8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
@@ -779,6 +794,9 @@
                                 </Frame>
                                 <!-- 6. Back -->
                                 <Frame x:Name="Frame_Pos_Back" Grid.Column="5" BackgroundColor="#1E293B" BorderColor="#334155" Padding="4,4" CornerRadius="6" HasShadow="False">
+                                    <Frame.GestureRecognizers>
+                                        <TapGestureRecognizer Tapped="OnPosCardClicked"/>
+                                    </Frame.GestureRecognizers>
                                     <StackLayout Spacing="2" HorizontalOptions="Center" VerticalOptions="Center">
                                         <Label x:Name="Icon_Pos_Back" Text="⑥ 🔄" FontSize="10" TextColor="#94A3B8" HorizontalTextAlignment="Center"/>
                                         <Label Text="Back" FontSize="9" TextColor="#94A3B8" FontAttributes="Bold" HorizontalTextAlignment="Center"/>

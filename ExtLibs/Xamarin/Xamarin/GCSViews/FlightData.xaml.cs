@@ -3771,12 +3771,12 @@ namespace Xamarin
                             LBL_accel_desc.Text = "Place vehicle level and stationary, then press [Position Done] below.";
                             break;
                         case MAVLink.ACCELCAL_VEHICLE_POS.LEFT:
-                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration02;
+                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration07;
                             LBL_accel_title.Text = "[2/6] Place vehicle on its LEFT side and hold still";
                             LBL_accel_desc.Text = "Roll vehicle 90° to the left, then press [Position Done] below.";
                             break;
                         case MAVLink.ACCELCAL_VEHICLE_POS.RIGHT:
-                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration03;
+                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration05;
                             LBL_accel_title.Text = "[3/6] Place vehicle on its RIGHT side and hold still";
                             LBL_accel_desc.Text = "Roll vehicle 90° to the right, then press [Position Done] below.";
                             break;
@@ -3786,12 +3786,12 @@ namespace Xamarin
                             LBL_accel_desc.Text = "Pitch vehicle 90° nose down, then press [Position Done] below.";
                             break;
                         case MAVLink.ACCELCAL_VEHICLE_POS.NOSEUP:
-                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration05;
+                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration06;
                             LBL_accel_title.Text = "[5/6] Place vehicle NOSE UP and hold still";
                             LBL_accel_desc.Text = "Pitch vehicle 90° nose up, then press [Position Done] below.";
                             break;
                         case MAVLink.ACCELCAL_VEHICLE_POS.BACK:
-                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration06;
+                            imgBytes = MissionPlanner.Properties.ResourcesX.calibration03;
                             LBL_accel_title.Text = "[6/6] Place vehicle on its BACK (Inverted) and hold still";
                             LBL_accel_desc.Text = "Turn vehicle completely upside down, then press [Position Done] below.";
                             break;
@@ -3823,7 +3823,7 @@ namespace Xamarin
                 Btn_AccelCal_Start.IsVisible = false;
                 Btn_AccelCal_Next.IsVisible = true;
                 Btn_AccelCal_Cancel.IsVisible = true;
-                LBL_accel_status_msg.Text = "キャリブレーション開始... 指示に従ってください";
+                LBL_accel_status_msg.Text = "Calibration started... Follow orientation instructions";
 
                 // PREFLIGHT_CALIBRATION (param5 = 1 : Accel Calib)
                 MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent,
@@ -3836,7 +3836,7 @@ namespace Xamarin
             }
             catch (Exception ex)
             {
-                DisplayAlert("エラー", "キャリブレーション開始に失敗しました: " + ex.Message, "OK");
+                DisplayAlert("Error", "Failed to start calibration: " + ex.Message, "OK");
             }
         }
 
@@ -3861,14 +3861,23 @@ namespace Xamarin
                     {
                         LBL_accel_status_msg.Text = text;
                         string lower = text.ToLowerInvariant();
-                        if (lower.Contains("calibration successful"))
+                        if (lower.Contains("place vehicle"))
                         {
-                            DisplayAlert("校正完了", "加速度センサーの6方向キャリブレーションが正常に完了しました！", "OK");
+                            if (lower.Contains("level")) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.LEVEL);
+                            else if (lower.Contains("left")) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.LEFT);
+                            else if (lower.Contains("right")) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.RIGHT);
+                            else if (lower.Contains("nose down") || lower.Contains("down")) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.NOSEDOWN);
+                            else if (lower.Contains("nose up") || lower.Contains("up")) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.NOSEUP);
+                            else if (lower.Contains("back")) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.BACK);
+                        }
+                        else if (lower.Contains("calibration successful"))
+                        {
+                            DisplayAlert("Calibration Complete", "6-Axis accelerometer calibration completed successfully!", "OK");
                             OnAccelCalCancelClicked(null, null);
                         }
                         else if (lower.Contains("calibration failed"))
                         {
-                            DisplayAlert("失敗", "キャリブレーションに失敗しました。振動のない場所でやり直してください。", "OK");
+                            DisplayAlert("Calibration Failed", "Calibration failed. Please retry on an undisturbed surface.", "OK");
                             OnAccelCalCancelClicked(null, null);
                         }
                     });
@@ -3907,6 +3916,23 @@ namespace Xamarin
             Btn_AccelCal_Cancel.IsVisible = false;
             LBL_accel_status_msg.Text = "Waiting";
             CleanupCalibrationSubscriptions();
+        }
+
+        private void OnPosCardClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (sender == Frame_Pos_Level) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.LEVEL);
+                else if (sender == Frame_Pos_Left) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.LEFT);
+                else if (sender == Frame_Pos_Right) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.RIGHT);
+                else if (sender == Frame_Pos_NoseDown) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.NOSEDOWN);
+                else if (sender == Frame_Pos_NoseUp) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.NOSEUP);
+                else if (sender == Frame_Pos_Back) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.BACK);
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnPosCardClicked error: " + ex);
+            }
         }
 
         private void OnAccelCalLevelOnlyClicked(object sender, EventArgs e)
@@ -4174,7 +4200,7 @@ namespace Xamarin
                     MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION, 0, 0, 0, 0, 2, 0, 0);
 
                 LBL_gyro_status_msg.Text = "Level trim calibration sent.";
-                DisplayAlert("水平トリム校正", "水平トリム（Level）校正を実行しました。機体を水平に維持してください。", "OK");
+                DisplayAlert("Level Trim Calibration", "Level trim calibration command sent. Please keep the vehicle level and stationary.", "OK");
             }
             catch (Exception ex)
             {
