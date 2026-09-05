@@ -106,6 +106,58 @@ namespace Xamarin.Droid
 
         public TaskCompletionSource<string> PickImageTaskCompletionSource { set; get; }
 
+        private global::Android.Net.Wifi.WifiManager.WifiLock _wifiLock;
+
+        private void AcquireLowLatencyWifiLock()
+        {
+            try
+            {
+                if (_wifiLock != null && _wifiLock.IsHeld)
+                {
+                    return;
+                }
+
+                var wifiManager = (global::Android.Net.Wifi.WifiManager)GetSystemService(Context.WifiService);
+                if (wifiManager != null)
+                {
+                    global::Android.Net.WifiMode mode;
+                    if (Build.VERSION.SdkInt >= BuildVersionCodes.Q) // API 29+ (Android 10+)
+                    {
+                        mode = global::Android.Net.WifiMode.FullLowLatency;
+                    }
+                    else
+                    {
+                        mode = global::Android.Net.WifiMode.FullHighPerf;
+                    }
+
+                    _wifiLock = wifiManager.CreateWifiLock(mode, "MP_LowLatency_WifiLock");
+                    _wifiLock.SetReferenceCounted(false);
+                    _wifiLock.Acquire();
+                    Log.Info("MP", $"[WIFI-PERF] Acquired Low-Latency WifiLock (Mode: {mode})");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("MP", $"[WIFI-PERF] Failed to acquire WifiLock: {ex.Message}");
+            }
+        }
+
+        private void ReleaseWifiLock()
+        {
+            try
+            {
+                if (_wifiLock != null && _wifiLock.IsHeld)
+                {
+                    _wifiLock.Release();
+                    Log.Info("MP", "[WIFI-PERF] Released WifiLock");
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Warn("MP", $"[WIFI-PERF] Failed to release WifiLock: {ex.Message}");
+            }
+        }
+
         protected override void OnActivityResult(int requestCode, Result resultCode, Intent data)
         {
             base.OnActivityResult(requestCode, resultCode, data);
@@ -861,6 +913,8 @@ namespace Xamarin.Droid
         {
             base.OnResume();
 
+            AcquireLowLatencyWifiLock();
+
             this.Window.DecorView.SystemUiVisibility =
                 (StatusBarVisibility) (SystemUiFlags.LowProfile
                                        | SystemUiFlags.Fullscreen
@@ -885,11 +939,19 @@ namespace Xamarin.Droid
         {
             base.OnPause();
 
+            ReleaseWifiLock();
+
             StopD2DInfo();
 
             UnregisterReceiver(UsbBroadcastReceiver);
 
             UnregisterReceiver(BTBroadcastReceiver);
+        }
+
+        protected override void OnDestroy()
+        {
+            ReleaseWifiLock();
+            base.OnDestroy();
         }
 
         public void StopD2DInfo()

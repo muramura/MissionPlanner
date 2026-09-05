@@ -270,13 +270,43 @@
                     </ScrollView>
                 </Grid>
 
-                <!-- 下部: コンパクト丸型HUD (QUICKタブ選択時のみ表示) -->
-                <Frame x:Name="Frame_HUD" Grid.Row="2" Margin="0,2,0,0" Padding="0" CornerRadius="65" HasShadow="False"
-                       WidthRequest="130" HeightRequest="130" IsClippedToBounds="True"
-                       HorizontalOptions="Center" VerticalOptions="Center"
-                       BackgroundColor="#590F172A" BorderColor="#475569" IsVisible="True">
-                    <controls:HUD x:Name="hud1" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
-                </Frame>
+                <!-- 下部: コンパクト丸型HUD & EKF/VIBEクイックバッジ (QUICKタブ選択時のみ表示) -->
+                <StackLayout Grid.Row="2" Orientation="Vertical" Spacing="3" HorizontalOptions="Center">
+                    <Frame x:Name="Frame_HUD" Margin="0,1,0,0" Padding="0" HasShadow="False"
+                           WidthRequest="120" HeightRequest="120" CornerRadius="60" IsClippedToBounds="True"
+                           HorizontalOptions="Center" VerticalOptions="Center"
+                           BackgroundColor="#590F172A" BorderColor="#475569" IsVisible="True">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnHudTapped"/>
+                        </Frame.GestureRecognizers>
+                        <controls:HUD x:Name="hud1" EnableTouchEvents="True" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
+                    </Frame>
+
+                    <!-- 🧭 EKF & 📳 VIBE Quick Badges (タップで詳細表示) -->
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="4" WidthRequest="190" HorizontalOptions="Center">
+                        <!-- EKF Badge -->
+                        <Frame Grid.Column="0" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,3" HasShadow="False">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnEkfBadgeTapped"/>
+                            </Frame.GestureRecognizers>
+                            <StackLayout Orientation="Horizontal" Spacing="3" HorizontalOptions="Center">
+                                <Label x:Name="LBL_dock_ekf_dot" Text="🟢" FontSize="8" VerticalOptions="Center"/>
+                                <Label x:Name="LBL_dock_ekf_text" Text="EKF: OK" TextColor="#10B981" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
+                            </StackLayout>
+                        </Frame>
+
+                        <!-- VIBE Badge -->
+                        <Frame Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,3" HasShadow="False">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnVibeBadgeTapped"/>
+                            </Frame.GestureRecognizers>
+                            <StackLayout Orientation="Horizontal" Spacing="3" HorizontalOptions="Center">
+                                <Label x:Name="LBL_dock_vibe_dot" Text="🟢" FontSize="8" VerticalOptions="Center"/>
+                                <Label x:Name="LBL_dock_vibe_text" Text="VIBE: 0" TextColor="#10B981" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
+                            </StackLayout>
+                        </Frame>
+                    </Grid>
+                </StackLayout>
             </Grid>
         </Frame>
 
@@ -804,28 +834,77 @@
                                 </Frame>
                             </Grid>
 
-                            <!-- Center: Illustration and Guide Messages -->
+                            <!-- Center: 3D Gravity Sphere + Illustration and Guide Messages -->
                             <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="12" VerticalOptions="CenterAndExpand">
-                                <Frame Grid.Column="0" BackgroundColor="#020617" BorderColor="#334155" Padding="4" CornerRadius="8" HasShadow="False"
-                                       WidthRequest="140" HeightRequest="110" HorizontalOptions="Center" VerticalOptions="Center">
-                                    <Image x:Name="IMG_accel_guide" Aspect="AspectFit" HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand"/>
+                                <!-- 3D Gravity Sphere (1.0G Surface & 6 Orthogonal Positions) -->
+                                <Frame Grid.Column="0" BackgroundColor="#020617" BorderColor="#0284C7" Padding="6,4" CornerRadius="8" HasShadow="False"
+                                       WidthRequest="240" HeightRequest="210" HorizontalOptions="Center" VerticalOptions="Center">
+                                    <Grid RowDefinitions="18,*,18" RowSpacing="2">
+                                        <!-- Header: Title and Tip -->
+                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="2,0,2,0">
+                                            <Label Grid.Column="0" Text="🌐 3D SPHERE (1.0G)" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label Grid.Column="1" Text="Drag to Rotate" TextColor="#64748B" FontSize="8" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                        </Grid>
+                                        <!-- Interactive 3D Canvas -->
+                                        <forms:SKCanvasView x:Name="Canvas_Accel3D" Grid.Row="1"
+                                                            PaintSurface="OnAccel3DPaintSurface"
+                                                            HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand">
+                                            <forms:SKCanvasView.GestureRecognizers>
+                                                <PanGestureRecognizer PanUpdated="OnAccel3DPanUpdated"/>
+                                            </forms:SKCanvasView.GestureRecognizers>
+                                        </forms:SKCanvasView>
+                                        <!-- Footer: Legend and Progress -->
+                                        <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*" ColumnSpacing="6" Margin="2,0,2,0" VerticalOptions="Center">
+                                            <Label Text="● Done" TextColor="#10B981" FontSize="8" VerticalOptions="Center"/>
+                                            <Label Grid.Column="1" Text="● Target" TextColor="#F59E0B" FontSize="8" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_accel_progress" Grid.Column="2" Text="0 / 6 Done (0%)" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                        </Grid>
+                                    </Grid>
                                 </Frame>
-                                <StackLayout Grid.Column="1" Spacing="6" VerticalOptions="Center">
-                                    <Label x:Name="LBL_accel_title" Text="[1/6] Hold vehicle LEVEL and still" TextColor="#F59E0B" FontSize="13" FontAttributes="Bold"/>
-                                    <Label x:Name="LBL_accel_desc" Text="Place the vehicle level and stationary, then click [Position Done] below." TextColor="#94A3B8" FontSize="11"/>
-                                    <Label x:Name="LBL_accel_status_msg" Text="Waiting for calibration start..." TextColor="#38BDF8" FontSize="11" FontAttributes="Italic"/>
-                                </StackLayout>
+
+                                <!-- Right Card: Illustration, Step Instructions, and Live Accelerometer Metrics -->
+                                <Frame Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" Padding="10,8" CornerRadius="8" HasShadow="False" VerticalOptions="FillAndExpand">
+                                    <Grid RowDefinitions="*,Auto" RowSpacing="6">
+                                        <!-- Top part: 2D Photo Guide + Title & Instructions -->
+                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" ColumnSpacing="10" VerticalOptions="Center">
+                                            <Frame Grid.Column="0" BackgroundColor="#020617" BorderColor="#334155" Padding="3" CornerRadius="6" HasShadow="False"
+                                                   WidthRequest="120" HeightRequest="95" VerticalOptions="Center">
+                                                <Image x:Name="IMG_accel_guide" Aspect="AspectFit" HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand"/>
+                                            </Frame>
+                                            <StackLayout Grid.Column="1" Spacing="4" VerticalOptions="Center">
+                                                <Label x:Name="LBL_accel_title" Text="[1/6] Hold vehicle LEVEL and still" TextColor="#F59E0B" FontSize="12" FontAttributes="Bold"/>
+                                                <Label x:Name="LBL_accel_desc" Text="Place the vehicle level and stationary, then click [Position Done] below." TextColor="#94A3B8" FontSize="10"/>
+                                                <Label x:Name="LBL_accel_status_msg" Text="Waiting for calibration start..." TextColor="#38BDF8" FontSize="10" FontAttributes="Italic"/>
+                                            </StackLayout>
+                                        </Grid>
+
+                                        <!-- Bottom part: Live Vector Components & Stability Badge -->
+                                        <Frame Grid.Row="1" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,4" CornerRadius="6" HasShadow="False">
+                                            <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                                                <StackLayout Orientation="Horizontal" Spacing="8" VerticalOptions="Center">
+                                                    <Label x:Name="LBL_accel_live_xyz" Text="Live: X: +0.00G  Y: +0.00G  Z: +1.00G" TextColor="#CBD5E1" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                    <Label x:Name="LBL_accel_live_mag" Text="|a|: 1.00G" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                </StackLayout>
+                                                <Frame x:Name="Frm_accel_stability" Grid.Column="1" BackgroundColor="#022C22" BorderColor="#10B981" Padding="6,2" CornerRadius="4" HasShadow="False" VerticalOptions="Center">
+                                                    <Label x:Name="LBL_accel_stability" Text="🟢 STABLE" TextColor="#10B981" FontSize="9" FontAttributes="Bold"/>
+                                                </Frame>
+                                            </Grid>
+                                        </Frame>
+                                    </Grid>
+                                </Frame>
                             </Grid>
 
                             <!-- Bottom Action Buttons -->
-                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center">
-                                <Button x:Name="Btn_AccelCal_Start" Grid.Column="0" Text="🚀 Start 6-Axis Cal" BackgroundColor="#0284C7" TextColor="#FFFFFF"
-                                        FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="12,0" Clicked="OnAccelCalStartClicked"/>
-                                <Button x:Name="Btn_AccelCal_Next" Grid.Column="1" Text="✅ Position Done" BackgroundColor="#10B981" TextColor="#FFFFFF"
+                            <Grid Grid.Row="2" ColumnDefinitions="Auto,Auto,*,Auto,Auto" ColumnSpacing="6" VerticalOptions="Center">
+                                <Button x:Name="Btn_AccelCal_Simple" Grid.Column="0" Text="⚡ 1-Touch Cal" BackgroundColor="#0D9488" TextColor="#FFFFFF"
+                                        FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="10,0" Clicked="OnAccelCalSimpleClicked"/>
+                                <Button x:Name="Btn_AccelCal_Start" Grid.Column="1" Text="🚀 6-Axis Cal" BackgroundColor="#0284C7" TextColor="#FFFFFF"
+                                        FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="10,0" Clicked="OnAccelCalStartClicked"/>
+                                <Button x:Name="Btn_AccelCal_Next" Grid.Column="2" Text="✅ Position Done" BackgroundColor="#10B981" TextColor="#FFFFFF"
                                         FontSize="12" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="14,0" IsVisible="False" Clicked="OnAccelCalNextClicked"/>
-                                <Button x:Name="Btn_AccelCal_Cancel" Grid.Column="2" Text="✕ Cancel" BackgroundColor="#475569" TextColor="#F1F5F9"
+                                <Button x:Name="Btn_AccelCal_Cancel" Grid.Column="3" Text="✕ Cancel" BackgroundColor="#475569" TextColor="#F1F5F9"
                                         FontSize="11" HeightRequest="34" CornerRadius="6" Padding="10,0" IsVisible="False" Clicked="OnAccelCalCancelClicked"/>
-                                <Button x:Name="Btn_AccelCal_Level" Grid.Column="3" Text="📐 Calibrate Level (Trim)" BackgroundColor="#334155" TextColor="#38BDF8"
+                                <Button x:Name="Btn_AccelCal_Level" Grid.Column="4" Text="📐 Level Trim" BackgroundColor="#334155" TextColor="#38BDF8"
                                         FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="10,0" Clicked="OnAccelCalLevelOnlyClicked"/>
                             </Grid>
                         </Grid>
@@ -873,9 +952,9 @@
                                        WidthRequest="240" HeightRequest="210" HorizontalOptions="Center" VerticalOptions="Center">
                                     <Grid RowDefinitions="18,*,18" RowSpacing="2">
                                         <!-- Header: Title and Tip -->
-                                        <Grid Grid.Row="0" ColumnDefinitions="*,Auto" Margin="2,0,2,0">
-                                            <Label Text="🌐 3D SPHERE SAMPLES" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
-                                            <Label Text="Drag to Rotate" TextColor="#64748B" FontSize="8" VerticalOptions="Center"/>
+                                        <Grid Grid.Row="0" ColumnDefinitions="Auto,*" Margin="2,0,2,0">
+                                            <Label Grid.Column="0" Text="🌐 3D SPHERE SAMPLES" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label Grid.Column="1" Text="Drag to Rotate" TextColor="#64748B" FontSize="8" HorizontalTextAlignment="End" VerticalOptions="Center"/>
                                         </Grid>
                                         <!-- Interactive 3D Canvas -->
                                         <forms:SKCanvasView x:Name="Canvas_Compass3D" Grid.Row="1"
@@ -1118,6 +1197,196 @@
                             </Grid>
                         </Grid>
 
+                    </Grid>
+                </Grid>
+            </Frame>
+        </Grid>
+
+        <!-- ================= 7. TELEMETRY DIAGNOSTICS (EKF & VIBE) MODAL ================= -->
+        <Grid x:Name="Pnl_DiagModal" Margin="0" Padding="0" BackgroundColor="#E60B1120" IsVisible="False">
+            <Frame Margin="16,14" Padding="14,12" CornerRadius="12" HasShadow="True"
+                   BackgroundColor="#0F172A" BorderColor="#38BDF8"
+                   VerticalOptions="CenterAndExpand" HorizontalOptions="CenterAndExpand"
+                   WidthRequest="620">
+                <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
+                    <!-- Row 0: Title Bar with Close Button -->
+                    <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                        <StackLayout Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                            <Label Text="📊" FontSize="16" VerticalOptions="Center"/>
+                            <Label Text="Telemetry Diagnostics" TextColor="#38BDF8" FontSize="14" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Label Text="(EKF &amp; VIBE)" TextColor="#64748B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </StackLayout>
+                        <Button Grid.Column="1" Text="✕ Close" BackgroundColor="#334155" TextColor="#F1F5F9" FontSize="11" FontAttributes="Bold"
+                                HeightRequest="28" Padding="10,0" CornerRadius="6" Clicked="OnCloseDiagModalClicked"/>
+                    </Grid>
+
+                    <!-- Row 1: Sub-tabs (EKF Status / Vibration & Clipping) -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button x:Name="Btn_DiagTab_Ekf" Grid.Column="0" Text="🧭 EKF Status"
+                                BackgroundColor="#0284C7" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnDiagTabEkfClicked"/>
+                        <Button x:Name="Btn_DiagTab_Vibe" Grid.Column="1" Text="📳 Vibration &amp; Clipping"
+                                BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
+                                HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnDiagTabVibeClicked"/>
+                    </Grid>
+
+                    <!-- Row 2: Tab Content Area -->
+                    <Grid Grid.Row="2">
+                        <!-- ================= EKF Status View ================= -->
+                        <ScrollView x:Name="View_Diag_Ekf" IsVisible="True">
+                            <StackLayout Spacing="8">
+                                <!-- Overall Health Card -->
+                                <Frame BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="8" Padding="10,8" HasShadow="False">
+                                    <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                                        <StackLayout Orientation="Vertical" Spacing="2">
+                                            <Label Text="OVERALL EKF ESTIMATOR HEALTH" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold"/>
+                                            <Label x:Name="LBL_ekf_health_desc" Text="Attitude &amp; Position variance within safe limits" TextColor="#CBD5E1" FontSize="10"/>
+                                        </StackLayout>
+                                        <Frame Grid.Column="1" x:Name="Frame_ekf_health_badge" BackgroundColor="#064E3B" BorderColor="#10B981" CornerRadius="6" Padding="8,3" HasShadow="False" VerticalOptions="Center">
+                                            <Label x:Name="LBL_ekf_health_badge" Text="🟢 OPTIMAL (0.00)" TextColor="#10B981" FontSize="11" FontAttributes="Bold"/>
+                                        </Frame>
+                                    </Grid>
+                                </Frame>
+
+                                <!-- Variances Card (5 Items) -->
+                                <Frame BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="8" Padding="10,8" HasShadow="False">
+                                    <StackLayout Spacing="6">
+                                        <Label Text="ESTIMATOR VARIANCES (0.00 ~ 1.00)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                        
+                                        <!-- Velocity Variance -->
+                                        <Grid ColumnDefinitions="140,50,*" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Text="Velocity Horiz" TextColor="#E2E8F0" FontSize="10" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_ekf_vel" Grid.Column="1" Text="0.00" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_ekf_vel" Grid.Column="2" Progress="0.0" ProgressColor="#10B981" HeightRequest="6" VerticalOptions="Center"/>
+                                        </Grid>
+
+                                        <!-- Pos Horiz Variance -->
+                                        <Grid ColumnDefinitions="140,50,*" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Text="Pos Horiz" TextColor="#E2E8F0" FontSize="10" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_ekf_posh" Grid.Column="1" Text="0.00" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_ekf_posh" Grid.Column="2" Progress="0.0" ProgressColor="#10B981" HeightRequest="6" VerticalOptions="Center"/>
+                                        </Grid>
+
+                                        <!-- Pos Vert Variance -->
+                                        <Grid ColumnDefinitions="140,50,*" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Text="Pos Vert" TextColor="#E2E8F0" FontSize="10" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_ekf_posv" Grid.Column="1" Text="0.00" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_ekf_posv" Grid.Column="2" Progress="0.0" ProgressColor="#10B981" HeightRequest="6" VerticalOptions="Center"/>
+                                        </Grid>
+
+                                        <!-- Compass Variance -->
+                                        <Grid ColumnDefinitions="140,50,*" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Text="Compass Heading" TextColor="#E2E8F0" FontSize="10" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_ekf_comp" Grid.Column="1" Text="0.00" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_ekf_comp" Grid.Column="2" Progress="0.0" ProgressColor="#10B981" HeightRequest="6" VerticalOptions="Center"/>
+                                        </Grid>
+
+                                        <!-- Terrain Alt Variance -->
+                                        <Grid ColumnDefinitions="140,50,*" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Text="Terrain Altitude" TextColor="#E2E8F0" FontSize="10" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_ekf_terrain" Grid.Column="1" Text="0.00" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_ekf_terrain" Grid.Column="2" Progress="0.0" ProgressColor="#10B981" HeightRequest="6" VerticalOptions="Center"/>
+                                        </Grid>
+                                    </StackLayout>
+                                </Frame>
+
+                                <!-- EKF Flags Card -->
+                                <Frame BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="8" Padding="10,8" HasShadow="False">
+                                    <StackLayout Spacing="4">
+                                        <Label Text="ESTIMATOR STATUS FLAGS" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                        <Grid ColumnDefinitions="*,*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="4" RowSpacing="3">
+                                            <Label x:Name="LBL_ekfflag_0" Grid.Row="0" Grid.Column="0" Text="Attitude: OFF" TextColor="#94A3B8" FontSize="9"/>
+                                            <Label x:Name="LBL_ekfflag_1" Grid.Row="0" Grid.Column="1" Text="Vel Horiz: OFF" TextColor="#94A3B8" FontSize="9"/>
+                                            <Label x:Name="LBL_ekfflag_2" Grid.Row="0" Grid.Column="2" Text="Pos Horiz Rel: OFF" TextColor="#94A3B8" FontSize="9"/>
+                                            <Label x:Name="LBL_ekfflag_3" Grid.Row="1" Grid.Column="0" Text="Pos Horiz Abs: OFF" TextColor="#94A3B8" FontSize="9"/>
+                                            <Label x:Name="LBL_ekfflag_4" Grid.Row="1" Grid.Column="1" Text="Pos Vert Abs: OFF" TextColor="#94A3B8" FontSize="9"/>
+                                            <Label x:Name="LBL_ekfflag_5" Grid.Row="1" Grid.Column="2" Text="Pos Vert AGL: OFF" TextColor="#94A3B8" FontSize="9"/>
+                                            <Label x:Name="LBL_ekfflag_6" Grid.Row="2" Grid.Column="0" Text="Const Pos: OFF" TextColor="#94A3B8" FontSize="9"/>
+                                            <Label x:Name="LBL_ekfflag_7" Grid.Row="2" Grid.Column="1" Text="Pred Horiz Rel: OFF" TextColor="#94A3B8" FontSize="9"/>
+                                            <Label x:Name="LBL_ekfflag_8" Grid.Row="2" Grid.Column="2" Text="Pred Horiz Abs: OFF" TextColor="#94A3B8" FontSize="9"/>
+                                            <Label x:Name="LBL_ekfflag_9" Grid.Row="3" Grid.Column="0" Text="GPS Glitch: NO" TextColor="#94A3B8" FontSize="9"/>
+                                            <Label x:Name="LBL_ekfflag_10" Grid.Row="3" Grid.Column="1" Text="Accel Error: NO" TextColor="#94A3B8" FontSize="9"/>
+                                        </Grid>
+                                    </StackLayout>
+                                </Frame>
+                            </StackLayout>
+                        </ScrollView>
+
+                        <!-- ================= Vibration & Clipping View ================= -->
+                        <ScrollView x:Name="View_Diag_Vibe" IsVisible="False">
+                            <StackLayout Spacing="8">
+                                <!-- Vibration Levels Card (3 Axes) -->
+                                <Frame BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="8" Padding="10,8" HasShadow="False">
+                                    <StackLayout Spacing="6">
+                                        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                                            <Label Grid.Column="0" Text="IMU VIBRATION ACCELERATION (m/s²)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label Grid.Column="1" Text="Norm: &lt;30 | Warn: 30-60 | Crit: &gt;60" TextColor="#64748B" FontSize="8" VerticalOptions="Center"/>
+                                        </Grid>
+
+                                        <!-- Vibe X -->
+                                        <Grid ColumnDefinitions="90,50,*" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Text="Vibe X (Pitch)" TextColor="#E2E8F0" FontSize="10" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_vibe_x" Grid.Column="1" Text="0 m/s²" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_vibe_x" Grid.Column="2" Progress="0.0" ProgressColor="#10B981" HeightRequest="6" VerticalOptions="Center"/>
+                                        </Grid>
+
+                                        <!-- Vibe Y -->
+                                        <Grid ColumnDefinitions="90,50,*" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Text="Vibe Y (Roll)" TextColor="#E2E8F0" FontSize="10" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_vibe_y" Grid.Column="1" Text="0 m/s²" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_vibe_y" Grid.Column="2" Progress="0.0" ProgressColor="#10B981" HeightRequest="6" VerticalOptions="Center"/>
+                                        </Grid>
+
+                                        <!-- Vibe Z -->
+                                        <Grid ColumnDefinitions="90,50,*" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Text="Vibe Z (Yaw)" TextColor="#E2E8F0" FontSize="10" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_vibe_z" Grid.Column="1" Text="0 m/s²" TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End" VerticalOptions="Center"/>
+                                            <ProgressBar x:Name="PB_vibe_z" Grid.Column="2" Progress="0.0" ProgressColor="#10B981" HeightRequest="6" VerticalOptions="Center"/>
+                                        </Grid>
+                                    </StackLayout>
+                                </Frame>
+
+                                <!-- Clipping Counters Card -->
+                                <Frame BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="8" Padding="10,8" HasShadow="False">
+                                    <StackLayout Spacing="6">
+                                        <Label Text="IMU CLIPPING COUNTERS (SENSOR SATURATION)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                                            <!-- Clip 0 (IMU 1) -->
+                                            <Frame Grid.Column="0" BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="6,4" HasShadow="False">
+                                                <StackLayout Spacing="1" HorizontalOptions="Center">
+                                                    <Label Text="IMU 1 (Clip 0)" TextColor="#94A3B8" FontSize="8" HorizontalTextAlignment="Center"/>
+                                                    <Label x:Name="LBL_vibe_clip0" Text="0" TextColor="#10B981" FontSize="12" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                                </StackLayout>
+                                            </Frame>
+                                            <!-- Clip 1 (IMU 2) -->
+                                            <Frame Grid.Column="1" BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="6,4" HasShadow="False">
+                                                <StackLayout Spacing="1" HorizontalOptions="Center">
+                                                    <Label Text="IMU 2 (Clip 1)" TextColor="#94A3B8" FontSize="8" HorizontalTextAlignment="Center"/>
+                                                    <Label x:Name="LBL_vibe_clip1" Text="0" TextColor="#10B981" FontSize="12" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                                </StackLayout>
+                                            </Frame>
+                                            <!-- Clip 2 (IMU 3) -->
+                                            <Frame Grid.Column="2" BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="6,4" HasShadow="False">
+                                                <StackLayout Spacing="1" HorizontalOptions="Center">
+                                                    <Label Text="IMU 3 (Clip 2)" TextColor="#94A3B8" FontSize="8" HorizontalTextAlignment="Center"/>
+                                                    <Label x:Name="LBL_vibe_clip2" Text="0" TextColor="#10B981" FontSize="12" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                                </StackLayout>
+                                            </Frame>
+                                        </Grid>
+                                    </StackLayout>
+                                </Frame>
+
+                                <!-- Guidance / Tips Card -->
+                                <Frame BackgroundColor="#0F172A" BorderColor="#1E293B" CornerRadius="8" Padding="10,6" HasShadow="False">
+                                    <StackLayout Spacing="2">
+                                        <Label Text="💡 VIBRATION GUIDELINES:" TextColor="#CBD5E1" FontSize="9" FontAttributes="Bold"/>
+                                        <Label Text="• X / Y 振動: 30 m/s² 以下が安全基準です。プロペラの変形・バランス崩れを確認してください。" TextColor="#94A3B8" FontSize="8"/>
+                                        <Label Text="• Z 振動: 60 m/s² 以下が安全基準です。モーター軸のブレやフレームの緩みを確認してください。" TextColor="#94A3B8" FontSize="8"/>
+                                        <Label Text="• クリッピング: センサ測定限界(±16G等)超過です。クリッピングが増加するとEKF姿勢推定が発散します。" TextColor="#94A3B8" FontSize="8"/>
+                                    </StackLayout>
+                                </Frame>
+                            </StackLayout>
+                        </ScrollView>
                     </Grid>
                 </Grid>
             </Frame>

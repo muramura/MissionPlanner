@@ -203,7 +203,7 @@ namespace MissionPlanner
             ratepositionbackup = 2;
             ratestatusbackup = 2;
             ratesensorsbackup = 2;
-            ratercbackup = 2;
+            ratercbackup = 20;
             //Init dictionary for storing names for customfields
             custom_field_names = new Dictionary<string, string>();
         }
@@ -754,6 +754,7 @@ namespace MissionPlanner
         public ushort hygrohumi2 { get; set; }
 
         //radio
+        [GroupText("RadioIn")] public ulong rcChannelsPacketCount { get; set; } = 0;
         [GroupText("RadioIn")] public float ch1in { get; set; }
 
         [GroupText("RadioIn")] public float ch2in { get; set; }
@@ -3480,6 +3481,7 @@ namespace MissionPlanner
 
                         {
                             var rcin = mavLinkMessage.ToStructure<MAVLink.mavlink_rc_channels_raw_t>();
+                            rcChannelsPacketCount++;
 
                             ch1in = rcin.chan1_raw;
                             ch2in = rcin.chan2_raw;
@@ -3501,6 +3503,7 @@ namespace MissionPlanner
 
                         {
                             var rcin = mavLinkMessage.ToStructure<MAVLink.mavlink_rc_channels_t>();
+                            rcChannelsPacketCount++;
 
                             ch1in = rcin.chan1_raw;
                             ch2in = rcin.chan2_raw;

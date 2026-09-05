@@ -106,12 +106,15 @@ namespace MissionPlanner.Utilities
                 {
                     try
                     {
-                        var client = new UdpClient(connectionInfo.Port);
+                        var client = new UdpClient();
+                        client.Client.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
+                        client.Client.Bind(new IPEndPoint(IPAddress.Any, connectionInfo.Port));
                         client.BeginReceive(clientdataMAVLink, client);
+                        log.Info($"AutoConnect UDP Inbound successfully bound to IPv4 port {connectionInfo.Port} with ReuseAddress");
                     }
                     catch (Exception ex)
                     {
-                        log.Error(ex);
+                        log.Error($"AutoConnect UDP Inbound error on port {connectionInfo.Port}: " + ex);
                     }
 
                     return;

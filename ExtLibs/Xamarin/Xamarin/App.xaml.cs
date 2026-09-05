@@ -95,6 +95,7 @@ namespace Xamarin
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA1, 10);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 10);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 3);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 20);
                         }
                         catch { }
                     }

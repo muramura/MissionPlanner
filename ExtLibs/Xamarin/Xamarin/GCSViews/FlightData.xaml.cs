@@ -396,6 +396,10 @@ namespace Xamarin
             mymap = gMapControl1;
             myhud = hud1;
 
+            // 🧭 HUD上のEKF & VIBE タップハンドラー
+            hud1.ekfclick += (s, e) => OpenDiagModal(isEkf: true);
+            hud1.vibeclick += (s, e) => OpenDiagModal(isEkf: false);
+
             switch (Forms.Device.RuntimePlatform)
             {
                 case Device.Android:
@@ -593,7 +597,80 @@ namespace Xamarin
                         {
                             var cs = MainV2.comPort.MAV.cs;
 
-                            // A. ジャイロ姿勢更新
+                            // A. 加速度センサー 3D グラフィック & リアルタイム測定値更新
+                            if (View_Setup_Accel != null && View_Setup_Accel.IsVisible)
+                            {
+                                float rawAx = cs.ax;
+                                float rawAy = cs.ay;
+                                float rawAz = cs.az;
+                                float norm = (float)Math.Sqrt(rawAx * rawAx + rawAy * rawAy + rawAz * rawAz);
+
+                                float gX = 0f, gY = 0f, gZ = 1f;
+                                float magG = 1.0f;
+
+                                if (norm > 50f)
+                                {
+                                    gX = rawAx / 1000f;
+                                    gY = rawAy / 1000f;
+                                    gZ = rawAz / 1000f;
+                                    magG = norm / 1000f;
+                                }
+                                else if (norm > 1.5f)
+                                {
+                                    gX = rawAx / 9.80665f;
+                                    gY = rawAy / 9.80665f;
+                                    gZ = rawAz / 9.80665f;
+                                    magG = norm / 9.80665f;
+                                }
+                                else
+                                {
+                                    float rRad = (float)(cs.roll * Math.PI / 180.0);
+                                    float pRad = (float)(cs.pitch * Math.PI / 180.0);
+                                    gX = -(float)Math.Sin(pRad);
+                                    gY = (float)(Math.Sin(rRad) * Math.Cos(pRad));
+                                    gZ = (float)(Math.Cos(rRad) * Math.Cos(pRad));
+                                    magG = 1.0f;
+                                }
+
+                                _accelLiveX = gX;
+                                _accelLiveY = gY;
+                                _accelLiveZ = gZ;
+                                _accelLiveMag = magG;
+
+                                float deltaMag = Math.Abs(magG - _accelPrevMag);
+                                _accelPrevMag = magG;
+                                _accelIsStable = (deltaMag < 0.08f);
+
+                                if (LBL_accel_live_xyz != null)
+                                {
+                                    LBL_accel_live_xyz.Text = string.Format("Live: X:{0}{1:F2}G Y:{2}{3:F2}G Z:{4}{5:F2}G", (gX >= 0 ? "+" : "-"), Math.Abs(gX), (gY >= 0 ? "+" : "-"), Math.Abs(gY), (gZ >= 0 ? "+" : "-"), Math.Abs(gZ));
+                                }
+                                if (LBL_accel_live_mag != null)
+                                {
+                                    LBL_accel_live_mag.Text = string.Format("|a|: {0:F2}G", magG);
+                                }
+                                if (Frm_accel_stability != null && LBL_accel_stability != null)
+                                {
+                                    if (_accelIsStable)
+                                    {
+                                        Frm_accel_stability.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#022C22");
+                                        Frm_accel_stability.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                                        LBL_accel_stability.Text = "🟢 STABLE";
+                                        LBL_accel_stability.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                                    }
+                                    else
+                                    {
+                                        Frm_accel_stability.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#451A03");
+                                        Frm_accel_stability.BorderColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                                        LBL_accel_stability.Text = "🟡 MOVING";
+                                        LBL_accel_stability.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                                    }
+                                }
+
+                                Canvas_Accel3D?.InvalidateSurface();
+                            }
+
+                            // B. ジャイロ姿勢更新
                             if (View_Setup_Gyro != null && View_Setup_Gyro.IsVisible && LBL_gyro_attitude_live != null)
                             {
                                 LBL_gyro_attitude_live.Text = string.Format("Attitude: Roll {0:F1}° | Pitch {1:F1}° | Yaw {2:F1}°", cs.roll, cs.pitch, cs.yaw);
@@ -748,6 +825,57 @@ namespace Xamarin
                             {
                                 LBL_arm_val.Text = "🔴 DISARMED ▾";
                                 LBL_arm_val.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                            }
+
+                            // EKF & VIBE Dock Badges Update
+                            try
+                            {
+                                float ekf = cs.ekfstatus;
+                                if (ekf > 0.8f)
+                                {
+                                    LBL_dock_ekf_dot.Text = "🔴";
+                                    LBL_dock_ekf_text.Text = $"EKF: {ekf:0.00}";
+                                    LBL_dock_ekf_text.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                                }
+                                else if (ekf > 0.5f)
+                                {
+                                    LBL_dock_ekf_dot.Text = "🟠";
+                                    LBL_dock_ekf_text.Text = $"EKF: {ekf:0.00}";
+                                    LBL_dock_ekf_text.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                                }
+                                else
+                                {
+                                    LBL_dock_ekf_dot.Text = "🟢";
+                                    LBL_dock_ekf_text.Text = ekf > 0.01f ? $"EKF: {ekf:0.00}" : "EKF: OK";
+                                    LBL_dock_ekf_text.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                                }
+
+                                float maxVibe = Math.Max(cs.vibex, Math.Max(cs.vibey, cs.vibez));
+                                if (maxVibe > 60f)
+                                {
+                                    LBL_dock_vibe_dot.Text = "🔴";
+                                    LBL_dock_vibe_text.Text = $"VIBE: {maxVibe:0}";
+                                    LBL_dock_vibe_text.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                                }
+                                else if (maxVibe > 30f)
+                                {
+                                    LBL_dock_vibe_dot.Text = "🟠";
+                                    LBL_dock_vibe_text.Text = $"VIBE: {maxVibe:0}";
+                                    LBL_dock_vibe_text.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                                }
+                                else
+                                {
+                                    LBL_dock_vibe_dot.Text = "🟢";
+                                    LBL_dock_vibe_text.Text = $"VIBE: {maxVibe:0}";
+                                    LBL_dock_vibe_text.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                                }
+                            }
+                            catch { }
+
+                            // Diagnostics Modal Real-Time Updates
+                            if (Pnl_DiagModal != null && Pnl_DiagModal.IsVisible)
+                            {
+                                UpdateDiagModal(cs);
                             }
 
                             if (cs.lat != 0 && cs.lng != 0 && Math.Abs(cs.lat) > 0.001)
@@ -3448,6 +3576,244 @@ namespace Xamarin
         private MAVLink.ACCELCAL_VEHICLE_POS _currentAccelPos = MAVLink.ACCELCAL_VEHICLE_POS.LEVEL;
         private bool _isAccelCalibrating = false;
 
+        #region --- 3D ACCELEROMETER GRAVITY SPHERE ENGINE ---
+        private struct AccelTargetPoint
+        {
+            public string Name;
+            public string Label;
+            public float X, Y, Z;
+            public MAVLink.ACCELCAL_VEHICLE_POS Pos;
+        }
+
+        private static readonly AccelTargetPoint[] _accelTargets = new AccelTargetPoint[]
+        {
+            new AccelTargetPoint { Name = "Level", Label = "① Level", X = 0f, Y = 0f, Z = 1f, Pos = MAVLink.ACCELCAL_VEHICLE_POS.LEVEL },
+            new AccelTargetPoint { Name = "Left", Label = "② Left", X = 0f, Y = -1f, Z = 0f, Pos = MAVLink.ACCELCAL_VEHICLE_POS.LEFT },
+            new AccelTargetPoint { Name = "Right", Label = "③ Right", X = 0f, Y = 1f, Z = 0f, Pos = MAVLink.ACCELCAL_VEHICLE_POS.RIGHT },
+            new AccelTargetPoint { Name = "Nose Down", Label = "④ Down", X = 1f, Y = 0f, Z = 0f, Pos = MAVLink.ACCELCAL_VEHICLE_POS.NOSEDOWN },
+            new AccelTargetPoint { Name = "Nose Up", Label = "⑤ Up", X = -1f, Y = 0f, Z = 0f, Pos = MAVLink.ACCELCAL_VEHICLE_POS.NOSEUP },
+            new AccelTargetPoint { Name = "Back", Label = "⑥ Back", X = 0f, Y = 0f, Z = -1f, Pos = MAVLink.ACCELCAL_VEHICLE_POS.BACK },
+        };
+
+        private readonly bool[] _accelPosCompleted = new bool[6];
+        private float _accelSphereRotYaw = 28f;
+        private float _accelSphereRotPitch = -20f;
+        private double _accelPanLastX = 0;
+        private double _accelPanLastY = 0;
+        private float _accelLiveX = 0f;
+        private float _accelLiveY = 0f;
+        private float _accelLiveZ = 1f;
+        private float _accelLiveMag = 1f;
+        private float _accelPrevMag = 1f;
+        private bool _accelIsStable = true;
+
+        private void OnAccel3DPanUpdated(object sender, PanUpdatedEventArgs e)
+        {
+            try
+            {
+                if (e.StatusType == GestureStatus.Running)
+                {
+                    float dx = (float)(e.TotalX - _accelPanLastX);
+                    float dy = (float)(e.TotalY - _accelPanLastY);
+                    _accelSphereRotYaw += dx * 0.6f;
+                    _accelSphereRotPitch -= dy * 0.6f;
+                    _accelPanLastX = e.TotalX;
+                    _accelPanLastY = e.TotalY;
+
+                    _accelSphereRotPitch = Math.Max(-85f, Math.Min(85f, _accelSphereRotPitch));
+                    Canvas_Accel3D?.InvalidateSurface();
+                }
+                else if (e.StatusType == GestureStatus.Completed || e.StatusType == GestureStatus.Canceled)
+                {
+                    _accelPanLastX = 0;
+                    _accelPanLastY = 0;
+                }
+            }
+            catch { }
+        }
+
+        private void OnAccel3DPaintSurface(object sender, SkiaSharp.Views.Forms.SKPaintSurfaceEventArgs e)
+        {
+            var canvas = e.Surface.Canvas;
+            var info = e.Info;
+            canvas.Clear(SkiaSharp.SKColors.Transparent);
+
+            float cx = info.Width / 2f;
+            float cy = info.Height / 2f;
+            float R = Math.Min(info.Width, info.Height) * 0.38f;
+
+            if (R <= 10) return;
+
+            // 1. 球体背景（ディープネイビー）と外周リング
+            using (var bgPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#0B132B"), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            {
+                canvas.DrawCircle(cx, cy, R, bgPaint);
+            }
+
+            using (var ringPaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#0284C7"), Style = SkiaSharp.SKPaintStyle.Stroke, StrokeWidth = 2f, IsAntialias = true })
+            {
+                canvas.DrawCircle(cx, cy, R, ringPaint);
+            }
+
+            // 2. 緯度・経度ワイヤーフレーム（点線/半透明）
+            using (var wirePaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#1E3A8A").WithAlpha(120), Style = SkiaSharp.SKPaintStyle.Stroke, StrokeWidth = 1f, IsAntialias = true })
+            {
+                canvas.DrawOval(cx, cy, R, R * 0.38f, wirePaint);
+                canvas.DrawOval(cx, cy, R * 0.38f, R, wirePaint);
+            }
+
+            // 3. 3D 回転変換マトリクス準備
+            float radYaw = _accelSphereRotYaw * (float)Math.PI / 180f;
+            float radPitch = _accelSphereRotPitch * (float)Math.PI / 180f;
+            float cosY = (float)Math.Cos(radYaw), sinY = (float)Math.Sin(radYaw);
+            float cosP = (float)Math.Cos(radPitch), sinP = (float)Math.Sin(radPitch);
+
+            (float sx, float sy, float z2) Project3D(float x, float y, float z)
+            {
+                float x1 = x * cosY + z * sinY;
+                float y1 = y;
+                float z1 = -x * sinY + z * cosY;
+
+                float x2 = x1;
+                float y2 = y1 * cosP - z1 * sinP;
+                float z2 = y1 * sinP + z1 * cosP;
+
+                float sx = cx + x2 * R;
+                float sy = cy - y2 * R;
+                return (sx, sy, z2);
+            }
+
+            // 4. 3D 座標軸の描画 (+X: Fwd/Red, +Y: Right/Green, +Z: Down/Blue)
+            var axisX = Project3D(1.18f, 0f, 0f);
+            var axisY = Project3D(0f, 1.18f, 0f);
+            var axisZ = Project3D(0f, 0f, 1.18f);
+
+            using (var pAxisX = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#EF4444").WithAlpha(180), Style = SkiaSharp.SKPaintStyle.Stroke, StrokeWidth = 1.5f, IsAntialias = true })
+            using (var pAxisY = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#10B981").WithAlpha(180), Style = SkiaSharp.SKPaintStyle.Stroke, StrokeWidth = 1.5f, IsAntialias = true })
+            using (var pAxisZ = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#38BDF8").WithAlpha(180), Style = SkiaSharp.SKPaintStyle.Stroke, StrokeWidth = 1.5f, IsAntialias = true })
+            using (var pAxisFont = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#94A3B8"), TextSize = 9f, IsAntialias = true })
+            {
+                canvas.DrawLine(cx, cy, axisX.sx, axisX.sy, pAxisX);
+                canvas.DrawText("+X", axisX.sx + 2, axisX.sy - 2, pAxisFont);
+
+                canvas.DrawLine(cx, cy, axisY.sx, axisY.sy, pAxisY);
+                canvas.DrawText("+Y", axisY.sx + 2, axisY.sy - 2, pAxisFont);
+
+                canvas.DrawLine(cx, cy, axisZ.sx, axisZ.sy, pAxisZ);
+                canvas.DrawText("+Z", axisZ.sx + 2, axisZ.sy - 2, pAxisFont);
+            }
+
+            // 5. 6方向のターゲットノード投影とソート
+            var projectedNodes = new List<(int idx, float sx, float sy, float z2, AccelTargetPoint target, bool isCurrent, bool isDone)>(6);
+            for (int i = 0; i < _accelTargets.Length; i++)
+            {
+                var target = _accelTargets[i];
+                var p = Project3D(target.X, target.Y, target.Z);
+                bool isCurrent = (target.Pos == _currentAccelPos);
+                bool isDone = (i < _accelPosCompleted.Length && _accelPosCompleted[i]);
+                projectedNodes.Add((i, p.sx, p.sy, p.z2, target, isCurrent, isDone));
+            }
+
+            projectedNodes.Sort((a, b) => a.z2.CompareTo(b.z2));
+
+            // 6. ノード描画
+            using (var pDoneGlow = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#10B981").WithAlpha(80), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            using (var pDone = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#10B981"), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            using (var pCurrGlow = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#F59E0B").WithAlpha(90), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            using (var pCurrRing = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#FBBF24"), Style = SkiaSharp.SKPaintStyle.Stroke, StrokeWidth = 2.5f, IsAntialias = true })
+            using (var pCurr = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#F59E0B"), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            using (var pPendingFront = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#475569"), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            using (var pPendingBack = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#334155").WithAlpha(120), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+            using (var pTextFront = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColors.White, TextSize = 10f, FakeBoldText = true, IsAntialias = true, TextAlign = SkiaSharp.SKTextAlign.Center })
+            using (var pTextBack = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#94A3B8").WithAlpha(140), TextSize = 8.5f, IsAntialias = true, TextAlign = SkiaSharp.SKTextAlign.Center })
+            {
+                foreach (var node in projectedNodes)
+                {
+                    bool isFront = node.z2 >= 0;
+                    float nodeR = isFront ? 10f : 7f;
+
+                    if (node.isDone)
+                    {
+                        if (isFront) canvas.DrawCircle(node.sx, node.sy, nodeR + 5f, pDoneGlow);
+                        canvas.DrawCircle(node.sx, node.sy, nodeR, pDone);
+                        canvas.DrawText("✓", node.sx, node.sy + 3.5f, isFront ? pTextFront : pTextBack);
+                    }
+                    else if (node.isCurrent)
+                    {
+                        canvas.DrawCircle(node.sx, node.sy, nodeR + 6f, pCurrGlow);
+                        canvas.DrawCircle(node.sx, node.sy, nodeR + 3f, pCurrRing);
+                        canvas.DrawCircle(node.sx, node.sy, nodeR, pCurr);
+                        canvas.DrawText((node.idx + 1).ToString(), node.sx, node.sy + 3.5f, pTextFront);
+                    }
+                    else
+                    {
+                        canvas.DrawCircle(node.sx, node.sy, nodeR, isFront ? pPendingFront : pPendingBack);
+                        canvas.DrawText((node.idx + 1).ToString(), node.sx, node.sy + 3f, isFront ? pTextFront : pTextBack);
+                    }
+
+                    if (isFront && node.isCurrent)
+                    {
+                        using (var pLabel = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#FDE047"), TextSize = 9.5f, FakeBoldText = true, IsAntialias = true, TextAlign = SkiaSharp.SKTextAlign.Center })
+                        {
+                            canvas.DrawText(node.target.Name, node.sx, node.sy - nodeR - 4f, pLabel);
+                        }
+                    }
+                }
+            }
+
+            // 7. 現在のリアルタイム加速度ベクトル（重力ベクトル）の描画
+            float vlen = (float)Math.Sqrt(_accelLiveX * _accelLiveX + _accelLiveY * _accelLiveY + _accelLiveZ * _accelLiveZ);
+            if (vlen > 0.001f)
+            {
+                float nx = _accelLiveX / vlen;
+                float ny = _accelLiveY / vlen;
+                float nz = _accelLiveZ / vlen;
+
+                var liveProj = Project3D(nx, ny, nz);
+
+                var currTarget = _accelTargets.FirstOrDefault(t => t.Pos == _currentAccelPos);
+                float dot = nx * currTarget.X + ny * currTarget.Y + nz * currTarget.Z;
+                bool isAligned = (dot > 0.92f);
+
+                using (var pVecLine = new SkiaSharp.SKPaint
+                {
+                    Color = isAligned ? SkiaSharp.SKColor.Parse("#10B981") : SkiaSharp.SKColor.Parse("#38BDF8"),
+                    Style = SkiaSharp.SKPaintStyle.Stroke,
+                    StrokeWidth = isAligned ? 2.5f : 2f,
+                    IsAntialias = true
+                })
+                using (var pCursor = new SkiaSharp.SKPaint
+                {
+                    Color = isAligned ? SkiaSharp.SKColor.Parse("#10B981") : SkiaSharp.SKColor.Parse("#38BDF8"),
+                    Style = SkiaSharp.SKPaintStyle.Stroke,
+                    StrokeWidth = 2f,
+                    IsAntialias = true
+                })
+                using (var pCross = new SkiaSharp.SKPaint
+                {
+                    Color = isAligned ? SkiaSharp.SKColor.Parse("#34D399") : SkiaSharp.SKColor.Parse("#7DD3FC"),
+                    Style = SkiaSharp.SKPaintStyle.Stroke,
+                    StrokeWidth = 1.5f,
+                    IsAntialias = true
+                })
+                {
+                    canvas.DrawLine(cx, cy, liveProj.sx, liveProj.sy, pVecLine);
+                    canvas.DrawCircle(liveProj.sx, liveProj.sy, 8f, pCursor);
+                    canvas.DrawLine(liveProj.sx - 11f, liveProj.sy, liveProj.sx + 11f, liveProj.sy, pCross);
+                    canvas.DrawLine(liveProj.sx, liveProj.sy - 11f, liveProj.sx, liveProj.sy + 11f, pCross);
+
+                    if (isAligned)
+                    {
+                        using (var pAlignFill = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#10B981").WithAlpha(90), Style = SkiaSharp.SKPaintStyle.Fill, IsAntialias = true })
+                        {
+                            canvas.DrawCircle(liveProj.sx, liveProj.sy, 5f, pAlignFill);
+                        }
+                    }
+                }
+            }
+        }
+        #endregion
+
         private int _compassSub1 = -1;
         private int _compassSub2 = -1;
         private bool _isCompassCalibrating = false;
@@ -3692,6 +4058,198 @@ namespace Xamarin
             }
         }
 
+        #region Telemetry Diagnostics (EKF & VIBE) Modal Handlers
+
+        private void OpenDiagModal(bool isEkf)
+        {
+            Invoke((Action)delegate
+            {
+                Pnl_DiagModal.IsVisible = true;
+                if (isEkf)
+                    OnDiagTabEkfClicked(null, null);
+                else
+                    OnDiagTabVibeClicked(null, null);
+            });
+        }
+
+        private void OnHudTapped(object sender, EventArgs e)
+        {
+            OpenDiagModal(isEkf: true);
+        }
+
+        private void OnEkfBadgeTapped(object sender, EventArgs e)
+        {
+            OpenDiagModal(isEkf: true);
+        }
+
+        private void OnVibeBadgeTapped(object sender, EventArgs e)
+        {
+            OpenDiagModal(isEkf: false);
+        }
+
+        private void OnCloseDiagModalClicked(object sender, EventArgs e)
+        {
+            Pnl_DiagModal.IsVisible = false;
+        }
+
+        private void OnDiagTabEkfClicked(object sender, EventArgs e)
+        {
+            View_Diag_Ekf.IsVisible = true;
+            View_Diag_Vibe.IsVisible = false;
+            Btn_DiagTab_Ekf.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#0284C7");
+            Btn_DiagTab_Ekf.TextColor = global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+            Btn_DiagTab_Vibe.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_DiagTab_Vibe.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+        }
+
+        private void OnDiagTabVibeClicked(object sender, EventArgs e)
+        {
+            View_Diag_Ekf.IsVisible = false;
+            View_Diag_Vibe.IsVisible = true;
+            Btn_DiagTab_Ekf.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_DiagTab_Ekf.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            Btn_DiagTab_Vibe.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#0284C7");
+            Btn_DiagTab_Vibe.TextColor = global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+        }
+
+        private void UpdateDiagModal(CurrentState cs)
+        {
+            try
+            {
+                if (View_Diag_Ekf.IsVisible)
+                {
+                    float ekf = cs.ekfstatus;
+                    if (ekf > 0.8f)
+                    {
+                        LBL_ekf_health_badge.Text = $"🔴 CRITICAL ({ekf:0.00})";
+                        LBL_ekf_health_badge.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                        Frame_ekf_health_badge.BorderColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                        Frame_ekf_health_badge.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#450A0A");
+                        LBL_ekf_health_desc.Text = "High estimator variance detected! Attitude/Position risk.";
+                    }
+                    else if (ekf > 0.5f)
+                    {
+                        LBL_ekf_health_badge.Text = $"🟠 WARNING ({ekf:0.00})";
+                        LBL_ekf_health_badge.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                        Frame_ekf_health_badge.BorderColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                        Frame_ekf_health_badge.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#451A03");
+                        LBL_ekf_health_desc.Text = "Elevated variance. Ensure good sensor calibration.";
+                    }
+                    else
+                    {
+                        LBL_ekf_health_badge.Text = $"🟢 OPTIMAL ({ekf:0.00})";
+                        LBL_ekf_health_badge.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                        Frame_ekf_health_badge.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                        Frame_ekf_health_badge.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#064E3B");
+                        LBL_ekf_health_desc.Text = "Attitude & Position variance within safe limits.";
+                    }
+
+                    // 5 Variances
+                    UpdateVarianceBar(LBL_ekf_vel, PB_ekf_vel, cs.ekfvelv);
+                    UpdateVarianceBar(LBL_ekf_posh, PB_ekf_posh, cs.ekfposhor);
+                    UpdateVarianceBar(LBL_ekf_posv, PB_ekf_posv, cs.ekfposvert);
+                    UpdateVarianceBar(LBL_ekf_comp, PB_ekf_comp, cs.ekfcompv);
+                    UpdateVarianceBar(LBL_ekf_terrain, PB_ekf_terrain, cs.ekfteralt);
+
+                    // EKF Flags
+                    int flags = cs.ekfflags;
+                    UpdateFlagLabel(LBL_ekfflag_0, "Attitude", (flags & 1) != 0, isError: false);
+                    UpdateFlagLabel(LBL_ekfflag_1, "Vel Horiz", (flags & 2) != 0, isError: false);
+                    UpdateFlagLabel(LBL_ekfflag_2, "Pos Horiz Rel", (flags & 4) != 0, isError: false);
+                    UpdateFlagLabel(LBL_ekfflag_3, "Pos Horiz Abs", (flags & 8) != 0, isError: false);
+                    UpdateFlagLabel(LBL_ekfflag_4, "Pos Vert Abs", (flags & 16) != 0, isError: false);
+                    UpdateFlagLabel(LBL_ekfflag_5, "Pos Vert AGL", (flags & 32) != 0, isError: false);
+                    UpdateFlagLabel(LBL_ekfflag_6, "Const Pos", (flags & 64) != 0, isError: false);
+                    UpdateFlagLabel(LBL_ekfflag_7, "Pred Horiz Rel", (flags & 128) != 0, isError: false);
+                    UpdateFlagLabel(LBL_ekfflag_8, "Pred Horiz Abs", (flags & 256) != 0, isError: false);
+                    UpdateFlagLabel(LBL_ekfflag_9, "GPS Glitch", (flags & 512) != 0, isError: true);
+                    UpdateFlagLabel(LBL_ekfflag_10, "Accel Error", (flags & 1024) != 0, isError: true);
+                }
+                else if (View_Diag_Vibe.IsVisible)
+                {
+                    // 3-Axis Vibe
+                    UpdateVibeBar(LBL_vibe_x, PB_vibe_x, cs.vibex);
+                    UpdateVibeBar(LBL_vibe_y, PB_vibe_y, cs.vibey);
+                    UpdateVibeBar(LBL_vibe_z, PB_vibe_z, cs.vibez);
+
+                    // Clipping counters
+                    UpdateClipLabel(LBL_vibe_clip0, cs.vibeclip0);
+                    UpdateClipLabel(LBL_vibe_clip1, cs.vibeclip1);
+                    UpdateClipLabel(LBL_vibe_clip2, cs.vibeclip2);
+                }
+            }
+            catch { }
+        }
+
+        private void UpdateVarianceBar(Label lbl, ProgressBar pb, float val)
+        {
+            lbl.Text = $"{val:0.00}";
+            pb.Progress = Math.Min(1.0, Math.Max(0.0, (double)val));
+            if (val > 0.8f)
+            {
+                lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                pb.ProgressColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+            }
+            else if (val > 0.5f)
+            {
+                lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                pb.ProgressColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+            }
+            else
+            {
+                lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                pb.ProgressColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+            }
+        }
+
+        private void UpdateVibeBar(Label lbl, ProgressBar pb, float val)
+        {
+            lbl.Text = $"{val:0.0} m/s²";
+            pb.Progress = Math.Min(1.0, Math.Max(0.0, (double)(val / 60.0f)));
+            if (val > 60f)
+            {
+                lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                pb.ProgressColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+            }
+            else if (val > 30f)
+            {
+                lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                pb.ProgressColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+            }
+            else
+            {
+                lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                pb.ProgressColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+            }
+        }
+
+        private void UpdateClipLabel(Label lbl, uint count)
+        {
+            lbl.Text = count.ToString();
+            if (count > 50)
+                lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+            else if (count > 0)
+                lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+            else
+                lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+        }
+
+        private void UpdateFlagLabel(Label lbl, string name, bool isOn, bool isError)
+        {
+            if (isError)
+            {
+                lbl.Text = $"{name}: {(isOn ? "YES" : "NO")}";
+                lbl.TextColor = isOn ? global::Xamarin.Forms.Color.FromHex("#EF4444") : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            }
+            else
+            {
+                lbl.Text = $"{name}: {(isOn ? "ON" : "OFF")}";
+                lbl.TextColor = isOn ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#64748B");
+            }
+        }
+
+        #endregion
+
         private void CleanupCalibrationSubscriptions()
         {
             try
@@ -3763,6 +4321,14 @@ namespace Xamarin
                     Frame_Pos_NoseUp.BorderColor = (pos == MAVLink.ACCELCAL_VEHICLE_POS.NOSEUP) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
                     Frame_Pos_Back.BorderColor = (pos == MAVLink.ACCELCAL_VEHICLE_POS.BACK) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
 
+                    int doneCount = _accelPosCompleted.Count(x => x);
+                    if (LBL_accel_progress != null)
+                    {
+                        LBL_accel_progress.Text = string.Format("{0} / 6 Done ({1}%)", doneCount, doneCount * 100 / 6);
+                    }
+
+                    Canvas_Accel3D?.InvalidateSurface();
+
                     switch (pos)
                     {
                         case MAVLink.ACCELCAL_VEHICLE_POS.LEVEL:
@@ -3809,7 +4375,7 @@ namespace Xamarin
             });
         }
 
-        private void OnAccelCalStartClicked(object sender, EventArgs e)
+        private async void OnAccelCalSimpleClicked(object sender, EventArgs e)
         {
             try
             {
@@ -3819,11 +4385,63 @@ namespace Xamarin
                     return;
                 }
 
+                bool confirm = await DisplayAlert("1-Touch Quick Calibration",
+                    "Place StampFly level and completely still on a flat desk, then press [Start].\n\n" +
+                    "This performs a fast 1D accel calibration in ~1 second without flipping 6 orientations.",
+                    "Start", "Cancel");
+                if (!confirm) return;
+
+                LBL_accel_status_msg.Text = "Running 1-touch accel calibration...";
+
+                // param5 = 4 : PREFLIGHT_CALIBRATION_ACCELEROMETER_SIMPLE
+                bool sent = MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent,
+                    MAVLink.MAV_CMD.PREFLIGHT_CALIBRATION, 0, 0, 0, 0, 4, 0, 0);
+
+                if (sent)
+                {
+                    LBL_accel_status_msg.Text = "1-Touch Calibration command sent! Keep vehicle level.";
+                    DisplayAlert("Calibration Complete", "1-Touch calibration completed! Keep vehicle level.", "OK");
+                }
+                else
+                {
+                    LBL_accel_status_msg.Text = "1-Touch Calibration command rejected or busy.";
+                }
+            }
+            catch (Exception ex)
+            {
+                DisplayAlert("Error", "Simple calibration failed: " + ex.Message, "OK");
+            }
+        }
+
+        private async void OnAccelCalStartClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (!MainV2.comPort.BaseStream.IsOpen)
+                {
+                    DisplayAlert("Not Connected", "Flight controller is not connected.", "OK");
+                    return;
+                }
+
+                bool confirm = await DisplayAlert("6-Axis Calibration",
+                    "⚠️ IMPORTANT: StampFly MUST be placed completely flat and motionless on a desk before starting.\n\n" +
+                    "Do NOT move or touch the vehicle during initial gyro calibration (first 3-5 seconds), or the ESP32 watchdog may reset the drone.\n\n" +
+                    "(Tip: For micro drones, [⚡ 1-Touch Cal] is faster and recommended without flipping 6 sides).\n\n" +
+                    "Proceed with 6-Axis Calibration?",
+                    "Start", "Cancel");
+                if (!confirm) return;
+
                 _isAccelCalibrating = true;
+                for (int i = 0; i < _accelPosCompleted.Length; i++) _accelPosCompleted[i] = false;
+                if (LBL_accel_progress != null) LBL_accel_progress.Text = "0 / 6 Done (0%)";
+                Canvas_Accel3D?.InvalidateSurface();
+
+                Btn_AccelCal_Simple.IsVisible = false;
                 Btn_AccelCal_Start.IsVisible = false;
+                Btn_AccelCal_Level.IsVisible = false;
                 Btn_AccelCal_Next.IsVisible = true;
                 Btn_AccelCal_Cancel.IsVisible = true;
-                LBL_accel_status_msg.Text = "Calibration started... Follow orientation instructions";
+                LBL_accel_status_msg.Text = "Starting calibration... Keep vehicle completely STILL on table!";
 
                 // PREFLIGHT_CALIBRATION (param5 = 1 : Accel Calib)
                 MainV2.comPort.doCommand((byte)MainV2.comPort.sysidcurrent, (byte)MainV2.comPort.compidcurrent,
@@ -3891,6 +4509,20 @@ namespace Xamarin
         {
             try
             {
+                int idx = (int)_currentAccelPos - 1;
+                if (idx >= 0 && idx < _accelPosCompleted.Length)
+                {
+                    _accelPosCompleted[idx] = true;
+                }
+
+                int doneCount = _accelPosCompleted.Count(x => x);
+                if (LBL_accel_progress != null)
+                {
+                    LBL_accel_progress.Text = string.Format("{0} / 6 Done ({1}%)", doneCount, doneCount * 100 / 6);
+                }
+
+                Canvas_Accel3D?.InvalidateSurface();
+
                 // FCに現在の姿勢完了を送信
                 MainV2.comPort.sendPacket(new MAVLink.mavlink_command_long_t
                 {
@@ -3911,10 +4543,13 @@ namespace Xamarin
         private void OnAccelCalCancelClicked(object sender, EventArgs e)
         {
             _isAccelCalibrating = false;
+            Btn_AccelCal_Simple.IsVisible = true;
             Btn_AccelCal_Start.IsVisible = true;
+            Btn_AccelCal_Level.IsVisible = true;
             Btn_AccelCal_Next.IsVisible = false;
             Btn_AccelCal_Cancel.IsVisible = false;
             LBL_accel_status_msg.Text = "Waiting";
+            Canvas_Accel3D?.InvalidateSurface();
             CleanupCalibrationSubscriptions();
         }
 
@@ -3928,6 +4563,7 @@ namespace Xamarin
                 else if (sender == Frame_Pos_NoseDown) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.NOSEDOWN);
                 else if (sender == Frame_Pos_NoseUp) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.NOSEUP);
                 else if (sender == Frame_Pos_Back) UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.BACK);
+                Canvas_Accel3D?.InvalidateSurface();
             }
             catch (Exception ex)
             {

@@ -905,16 +905,31 @@ namespace MissionPlanner.Controls
         {
             base.OnMouseClick(e);
 
-            if (ekfhitzone.IntersectsWith(new Rectangle(e.X, e.Y, 5, 5)))
+            int x = e.X;
+            int y = e.Y;
+            // DPI scaling adjustment if e.X/e.Y are in physical pixels and this.Width is DIP
+            if (this.Width > 0 && CanvasSize.Width > 0 && CanvasSize.Width > this.Width * 1.5)
             {
-                if (ekfclick != null)
-                    ekfclick(this, null);
+                float scale = (float)CanvasSize.Width / (float)this.Width;
+                x = (int)(x / scale);
+                y = (int)(y / scale);
             }
 
-            if (vibehitzone.IntersectsWith(new Rectangle(e.X, e.Y, 5, 5)))
+            if (ekfhitzone.IntersectsWith(new Rectangle(x - 8, y - 8, 16, 16)))
             {
-                if (vibeclick != null)
-                    vibeclick(this, null);
+                ekfclick?.Invoke(this, null);
+            }
+            else if (vibehitzone.IntersectsWith(new Rectangle(x - 8, y - 8, 16, 16)))
+            {
+                vibeclick?.Invoke(this, null);
+            }
+            else if (this.Width <= 200 && y >= this.Height * 0.55)
+            {
+                // For compact circular HUD: lower-left quadrant -> EKF, lower-right quadrant -> VIBE
+                if (x < this.Width / 2)
+                    ekfclick?.Invoke(this, null);
+                else
+                    vibeclick?.Invoke(this, null);
             }
         }
 
@@ -2107,45 +2122,58 @@ namespace MissionPlanner.Controls
 
                 if (displayvibe)
                 {
-                    vibehitzone = new Rectangle(this.Width - 18 * fontsize, this.Height - 30 - fontoffset, 40,
-                        fontsize * 2);
-
-                    if (vibex > 30 || vibey > 30 || vibez > 30)
+                    float vibeFontSize = Math.Max(fontsize + 2, 9f);
+                    int vx, vy;
+                    if (this.Width <= 200)
                     {
-                        drawstring("Vibe", font, fontsize + 2, (SolidBrush)Brushes.Red, vibehitzone.X,
-                            vibehitzone.Y);
+                        // コンパクト丸型HUD向け配置 (下部右側)
+                        vx = this.Width / 2 + 8;
+                        vy = this.Height - 22;
                     }
                     else
                     {
-                        drawstring("Vibe", font, fontsize + 2, _whiteBrush, vibehitzone.X,
-                            vibehitzone.Y);
+                        vx = this.Width - 18 * fontsize;
+                        vy = this.Height - 30 - fontoffset;
                     }
+                    vibehitzone = new Rectangle(vx - 2, vy - 2, 42, 24);
+
+                    SolidBrush vibeBrush;
+                    if (vibex > 60 || vibey > 60 || vibez > 60)
+                        vibeBrush = (SolidBrush)Brushes.Red;
+                    else if (vibex > 30 || vibey > 30 || vibez > 30)
+                        vibeBrush = (SolidBrush)Brushes.Orange;
+                    else
+                        vibeBrush = (SolidBrush)Brushes.LightGreen;
+
+                    drawstring("Vibe", font, vibeFontSize, vibeBrush, vx, vy);
                 }
 
                 if (displayekf)
                 {
-                    ekfhitzone = new Rectangle(this.Width - 23 * fontsize, this.Height - 30 - fontoffset, 40,
-                        fontsize * 2);
-
-                    if (ekfstatus > 0.5)
+                    float ekfFontSize = Math.Max(fontsize + 2, 9f);
+                    int ex, ey;
+                    if (this.Width <= 200)
                     {
-                        if (ekfstatus > 0.8)
-                        {
-                            drawstring("EKF", font, fontsize + 2, (SolidBrush)Brushes.Red,
-                                ekfhitzone.X,
-                                ekfhitzone.Y);
-                        }
-                        else
-                        {
-                            drawstring("EKF", font, fontsize + 2, (SolidBrush)Brushes.Orange,
-                                ekfhitzone.X,
-                                ekfhitzone.Y);
-                        }
+                        // コンパクト丸型HUD向け配置 (下部左側)
+                        ex = this.Width / 2 - 40;
+                        ey = this.Height - 22;
                     }
                     else
                     {
-                        drawstring("EKF", font, fontsize + 2, _whiteBrush, ekfhitzone.X, ekfhitzone.Y);
+                        ex = this.Width - 23 * fontsize;
+                        ey = this.Height - 30 - fontoffset;
                     }
+                    ekfhitzone = new Rectangle(ex - 2, ey - 2, 42, 24);
+
+                    SolidBrush ekfBrush;
+                    if (ekfstatus > 0.8)
+                        ekfBrush = (SolidBrush)Brushes.Red;
+                    else if (ekfstatus > 0.5)
+                        ekfBrush = (SolidBrush)Brushes.Orange;
+                    else
+                        ekfBrush = (SolidBrush)Brushes.LightGreen;
+
+                    drawstring("EKF", font, ekfFontSize, ekfBrush, ex, ey);
                 }
 
                 if (DesignMode)
@@ -2173,7 +2201,7 @@ namespace MissionPlanner.Controls
             if (text == HUDT.DISARMED || text == HUDT.ARMED || text == HUDT.FAILSAFE ||
                 text.StartsWith("AS") || text.StartsWith("GS") || text.StartsWith("GPS") ||
                 text == _mode || text.Contains("%") || text.Contains(":") ||
-                text == "Vibe" || text == "EKF" || text.Contains(">"))
+                text.Contains(">"))
             {
                 return;
             }
