@@ -706,8 +706,8 @@
                                 HeightRequest="28" Padding="10,0" CornerRadius="6" Clicked="OnCloseSetupModalClicked"/>
                     </Grid>
 
-                    <!-- Row 1: Sub-tabs (Accel / Compass / Gyro / Radio) -->
-                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+                    <!-- Row 1: Sub-tabs (Accel / Compass / Gyro / [Hidden] Radio) -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="6">
                         <Button x:Name="Btn_SetupTab_Accel" Grid.Column="0" Text="📐 Accel"
                                 BackgroundColor="#0284C7" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
                                 HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnSetupTabAccelClicked"/>
@@ -717,7 +717,8 @@
                         <Button x:Name="Btn_SetupTab_Gyro" Grid.Column="2" Text="🔄 Gyro / Level"
                                 BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
                                 HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnSetupTabGyroClicked"/>
-                        <Button x:Name="Btn_SetupTab_Radio" Grid.Column="3" Text="🎮 Radio (RC)"
+                        <!-- Hidden: Radio (RC) Tab Button (Preserved in code for future expansion) -->
+                        <Button x:Name="Btn_SetupTab_Radio" Grid.Column="2" Text="🎮 Radio (RC)" IsVisible="False"
                                 BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
                                 HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnSetupTabRadioClicked"/>
                     </Grid>
