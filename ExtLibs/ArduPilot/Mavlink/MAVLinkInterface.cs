@@ -26,6 +26,9 @@ namespace MissionPlanner
 {
     public class MAVLinkInterface : MAVLink, IDisposable, IMAVLinkInterface, IMAVLinkInterfaceLogRead
     {
+        public static ulong GlobalRcChannelsCount = 0;
+        public static ulong GlobalRcChannelsWindowCount = 0;
+        public static ulong GlobalRcOverrideSentCount = 0;
         private static readonly ILog log = LogManager.GetLogger(MethodBase.GetCurrentMethod().DeclaringType);
         private ICommsSerial _baseStream;
 
@@ -5366,12 +5369,17 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
                     // process for all mavs, filtering done inside - subscription handler
                     PacketReceived(message);
 
-                    if (message.msgid == (uint)MAVLink.MAVLINK_MSG_ID.ATTITUDE)
+
+                    if (message.msgid == (uint)MAVLINK_MSG_ID.RC_CHANNELS || message.msgid == 65 ||
+                        message.msgid == (uint)MAVLINK_MSG_ID.RC_CHANNELS_RAW || message.msgid == 35)
                     {
-                        var att = message.ToStructure<MAVLink.mavlink_attitude_t>();
-                        log.Info($"[ATTITUDE-PKT] Roll={att.roll * 57.2957795f:0.1} Pitch={att.pitch * 57.2957795f:0.1} Yaw={att.yaw * 57.2957795f:0.1}");
+                        GlobalRcChannelsCount++;
+                        GlobalRcChannelsWindowCount++;
+                        if (MAV != null && MAV.cs != null)
+                        {
+                            MAV.cs.rcChannelsPacketCount++;
+                        }
                     }
-                    log.Info($"[RCV-MSG] sys:{message.sysid} comp:{message.compid} msgid:{message.msgid} len:{message.payloadlength}");
                     _OnPacketReceived?.Invoke(this, message);
 
                     if (debugmavlink)

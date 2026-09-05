@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
+using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -35,6 +36,155 @@ namespace MissionPlanner.Comms
         public IPEndPoint RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
         public string ConfigRef { get; set; } = "";
+
+        private static HashSet<IPAddress> _localAddresses = null;
+        private static DateTime _lastLocalAddressesUpdate = DateTime.MinValue;
+
+        public static IPAddress NormalizeAddress(IPAddress address)
+        {
+            if (address == null)
+                return null;
+
+            try
+            {
+                if (address.IsIPv4MappedToIPv6)
+                    return address.MapToIPv4();
+            }
+            catch { }
+
+            return address;
+        }
+
+        public static bool IsLocalAddress(IPAddress address)
+        {
+            if (address == null)
+                return false;
+
+            address = NormalizeAddress(address);
+
+            if (IPAddress.IsLoopback(address))
+                return true;
+
+            try
+            {
+                if (_localAddresses == null || (DateTime.Now - _lastLocalAddressesUpdate).TotalSeconds > 5)
+                {
+                    var set = new HashSet<IPAddress>
+                    {
+                        IPAddress.Loopback,
+                        IPAddress.IPv6Loopback
+                    };
+
+                    try
+                    {
+                        var hostAddresses = Dns.GetHostAddresses(Dns.GetHostName());
+                        foreach (var a in hostAddresses)
+                            set.Add(NormalizeAddress(a));
+                    }
+                    catch { }
+
+                    try
+                    {
+                        foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+                        {
+                            if (ni.OperationalStatus == OperationalStatus.Up)
+                            {
+                                var ipProps = ni.GetIPProperties();
+                                foreach (var unicast in ipProps.UnicastAddresses)
+                                {
+                                    set.Add(NormalizeAddress(unicast.Address));
+                                }
+                            }
+                        }
+                    }
+                    catch { }
+
+                    _localAddresses = set;
+                    _lastLocalAddressesUpdate = DateTime.Now;
+                }
+
+                return _localAddresses.Contains(address);
+            }
+            catch
+            {
+                return false;
+            }
+        }
+
+        private bool IsValidRemoteEndPoint(IPEndPoint ep)
+        {
+            if (ep == null || ep.Address == null || ep.Port <= 0)
+                return false;
+
+            var addr = NormalizeAddress(ep.Address);
+
+            // Ignore Any, Broadcast, None (e.g. 255.255.255.255 or 0.0.0.0)
+            if (addr.Equals(IPAddress.Any) || addr.Equals(IPAddress.Broadcast) || addr.Equals(IPAddress.None) || addr.ToString() == "255.255.255.255" || addr.ToString() == "0.0.0.0")
+                return false;
+
+            // Ignore self/local loopback packets
+            if (IsSelfPacket(ep))
+                return false;
+
+            return true;
+        }
+
+        private void AddEndPoint(IPEndPoint ep)
+        {
+            if (ep == null || ep.Address == null)
+                return;
+
+            var normEp = new IPEndPoint(NormalizeAddress(ep.Address), ep.Port);
+            if (!IsValidRemoteEndPoint(normEp))
+                return;
+
+            lock (EndPointList)
+            {
+                foreach (var existing in EndPointList)
+                {
+                    if (NormalizeAddress(existing.Address).Equals(normEp.Address) && existing.Port == normEp.Port)
+                        return;
+                }
+
+                EndPointList.Add(normEp);
+                log.InfoFormat("UDPSerial: Added unique remote endpoint {0}", normEp);
+            }
+        }
+
+        private bool IsSelfPacket(IPEndPoint endPoint)
+        {
+            if (endPoint == null)
+                return false;
+
+            try
+            {
+                int localPort = 0;
+                if (client?.Client != null && client.Client.LocalEndPoint is IPEndPoint lep)
+                {
+                    localPort = lep.Port;
+                }
+                else if (int.TryParse(Port, out int p))
+                {
+                    localPort = p;
+                }
+
+                // If sent from our own local listening port and from a local address, it's our own loopback packet
+                if (localPort != 0 && endPoint.Port == localPort && IsLocalAddress(endPoint.Address))
+                    return true;
+
+                // If sent from one of our non-loopback local interface addresses (e.g. Wi-Fi IP),
+                // it is definitely sent from this device, not from an external vehicle!
+                if (!IPAddress.IsLoopback(endPoint.Address) && IsLocalAddress(endPoint.Address))
+                    return true;
+            }
+            catch
+            {
+            }
+
+            return false;
+        }
+
+
 
         public UdpSerial()
         {
@@ -158,10 +308,28 @@ namespace MissionPlanner.Comms
                 // reset any previous connection
                 RemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
 
-                client.Receive(ref RemoteIpEndPoint);
-                log.InfoFormat("UDPSerial connecting to {0} : {1}", RemoteIpEndPoint.Address, RemoteIpEndPoint.Port);
-                EndPointList.Add(RemoteIpEndPoint);
-                _isopen = true;
+                while (true)
+                {
+                    client.Receive(ref RemoteIpEndPoint);
+                    if (IsSelfPacket(RemoteIpEndPoint))
+                    {
+                        log.DebugFormat("UDPSerial Open: Discarding self packet from {0}", RemoteIpEndPoint);
+                        if (client.Available > 0)
+                            continue;
+
+                        while (client.Available == 0 && !CancelConnect)
+                        {
+                            Thread.Sleep(100);
+                        }
+                        if (CancelConnect) return;
+                        continue;
+                    }
+
+                    log.InfoFormat("UDPSerial connecting to {0} : {1}", RemoteIpEndPoint.Address, RemoteIpEndPoint.Port);
+                    AddEndPoint(RemoteIpEndPoint);
+                    _isopen = true;
+                    break;
+                }
             }
             catch (Exception ex)
             {
@@ -194,12 +362,18 @@ namespace MissionPlanner.Comms
                         var currentRemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
                         // assumes the udp packets are mavlink aligned, if we are receiving from more than one source
                         var b = client.Receive(ref currentRemoteIpEndPoint);
+
+                        if (IsSelfPacket(currentRemoteIpEndPoint))
+                        {
+                            log.DebugFormat("UDPSerial Read: Discarding self packet from {0}", currentRemoteIpEndPoint);
+                            continue;
+                        }
+
                         rbuffer.Seek(0, SeekOrigin.End);
                         rbuffer.Write(b, 0, b.Length);
                         rbuffer.Seek(position, SeekOrigin.Begin);
 
-                        if (!EndPointList.Contains(currentRemoteIpEndPoint))
-                            EndPointList.Add(currentRemoteIpEndPoint);
+                        AddEndPoint(currentRemoteIpEndPoint);
                     }
 
                     Thread.Yield();
@@ -273,15 +447,29 @@ namespace MissionPlanner.Comms
 
             if (EndPointList.Count == 0)
             {
-                EndPointList.Add(new IPEndPoint(IPAddress.Parse("192.168.4.1"), 14550));
+                AddEndPoint(new IPEndPoint(IPAddress.Parse("192.168.4.1"), 14550));
             }
 
-            foreach (var ipEndPoint in EndPointList.ToArray())
+            IPEndPoint[] targets;
+            lock (EndPointList)
             {
+                targets = EndPointList.ToArray();
+            }
+
+            foreach (var ipEndPoint in targets)
+            {
+                if (!IsValidRemoteEndPoint(ipEndPoint))
+                {
+                    lock (EndPointList)
+                    {
+                        EndPointList.Remove(ipEndPoint);
+                    }
+                    continue;
+                }
+
                 try
                 {
                     int sent = client.Send(data, length, ipEndPoint);
-                    log.InfoFormat("[UDP-OUT] Sent {0} bytes to {1}", sent, ipEndPoint);
                 }
                 catch (Exception ex)
                 {
@@ -338,6 +526,11 @@ namespace MissionPlanner.Comms
         {
             _isopen = false;
             if (client != null) client.Close();
+
+            lock (EndPointList)
+            {
+                EndPointList.Clear();
+            }
 
             client = new UdpClient();
         }

@@ -61,6 +61,22 @@ namespace Xamarin
         public static float LastRawGas = 0f;
         public static float LastRawBrake = 0f;
         public static bool IsJoystickActive = false;
+        public static int JoystickSendIntervalMs = 50; // Default 50ms (20Hz)
+        private static System.Threading.Timer _rcOverrideTimer = null;
+        private static readonly object _rcOverrideLock = new object();
+
+        // 📡 RC_CHANNELS パケット受信統計 (周期・カウント計測)
+        private static int _rcChannelsPacketCount = 0;
+        private static int _rcChannelsWindowCount = 0;
+        private static DateTime _lastRcStatsTime = DateTime.UtcNow;
+        private static double _lastRcChannelsHz = 0.0;
+        private static ulong _lastRcChannelsCount = 0;
+        private static long _hzCalcStartTicks = 0;
+        private static ulong _hzCalcStartRxCount = 0;
+        private static ulong _lastRcTxCount = 0;
+        private static double _lastRcTxHz = 0.0;
+        private static int _rcChannelsSub1 = -1;
+        private static int _rcChannelsSub2 = -1;
 
         // 🎮 18チャンネルの軸・キー割り当てデータ配列 (重複割り当て完全対応・各チャンネル独立保持)
         public static string[] ChannelAxisMapping = new string[19]
@@ -71,6 +87,8 @@ namespace Xamarin
         };
         // 🎮 18チャンネルのリバース設定データ配列
         public static bool[] ChannelReverseMapping = new bool[19];
+        // 🎮 18チャンネルのエクスポ設定データ配列 (0〜100%)
+        public static float[] ChannelExpoMapping = new float[19];
 
         public static int LastPressedButtonCode = 0;
         public static Dictionary<int, bool> PressedButtonMap = new Dictionary<int, bool>();
@@ -122,70 +140,113 @@ namespace Xamarin
             return s;
         }
 
-        // 🎮 割り当てられた軸・ボタンからリアルタイムPWM値を算出 (1000〜2000µs / リバース反転完全連動)
+        /// <summary>
+        /// 各チャンネルの FC パラメータ (RCx_MIN, RCx_MAX, RCx_TRIM) を取得
+        /// </summary>
+        public static void GetChannelLimits(int ch, out float min, out float max, out float trim)
+        {
+            min = 1000f;
+            max = 2000f;
+            trim = (ch == 3) ? 1000f : 1500f;
+
+            try
+            {
+                if (MainV2.comPort != null && MainV2.comPort.MAV != null && MainV2.comPort.MAV.param != null)
+                {
+                    var p = MainV2.comPort.MAV.param;
+                    string pMin = $"RC{ch}_MIN";
+                    string pMax = $"RC{ch}_MAX";
+                    string pTrim = $"RC{ch}_TRIM";
+
+                    if (p.ContainsKey(pMin)) min = Convert.ToSingle(p[pMin].Value);
+                    if (p.ContainsKey(pMax)) max = Convert.ToSingle(p[pMax].Value);
+                    if (p.ContainsKey(pTrim)) trim = Convert.ToSingle(p[pTrim].Value);
+
+                    if (min >= max)
+                    {
+                        min = 1000f;
+                        max = 2000f;
+                    }
+                    if (trim < min || trim > max)
+                    {
+                        trim = (min + max) / 2f;
+                    }
+                }
+            }
+            catch { }
+        }
+
+        /// <summary>
+        /// FCから受信したテレメトリ (RC_CHANNELS) の各チャンネル入力値 (PWM) を取得
+        /// </summary>
+        public static float GetFCChannelPwm(CurrentState cs, int ch)
+        {
+            if (cs == null) return 0f;
+            switch (ch)
+            {
+                case 1: return cs.ch1in;
+                case 2: return cs.ch2in;
+                case 3: return cs.ch3in;
+                case 4: return cs.ch4in;
+                case 5: return cs.ch5in;
+                case 6: return cs.ch6in;
+                case 7: return cs.ch7in;
+                case 8: return cs.ch8in;
+                case 9: return cs.ch9in;
+                case 10: return cs.ch10in;
+                case 11: return cs.ch11in;
+                case 12: return cs.ch12in;
+                case 13: return cs.ch13in;
+                case 14: return cs.ch14in;
+                case 15: return cs.ch15in;
+                case 16: return cs.ch16in;
+                case 17: return (cs.rcoverridech17 > 0) ? (float)cs.rcoverridech17 : 0f;
+                case 18: return (cs.rcoverridech18 > 0) ? (float)cs.rcoverridech18 : 0f;
+                default: return 0f;
+            }
+        }
+
+        // 後方互換用
         public int CalculateChannelPWM(string axisSetting, int defaultPwm = 1500, bool isReverse = false)
         {
+            return CalculateChannelPWM(1, axisSetting, isReverse, 0f);
+        }
+
+        // 🎮 ジョイスティック入力（軸・ボタン）を相対値に変換後、FCパラメータ (MIN, MAX, TRIM) の範囲にマッピングしてPWM値を算出
+        public int CalculateChannelPWM(int ch, string axisSetting, bool isReverse = false, float expoPercent = 0f)
+        {
+            GetChannelLimits(ch, out float min, out float max, out float trim);
+
             try
             {
                 string norm = NormalizeAxisName(axisSetting);
                 if (norm.Equals("None", StringComparison.OrdinalIgnoreCase))
                 {
-                    return defaultPwm;
+                    return (int)Math.Round((ch == 3) ? min : trim);
                 }
 
-                int rawPwm = defaultPwm;
+                // 1. スライダー・トリガー（片方向 0.0〜1.0）
+                if (norm == "Slider1" || norm == "Slider2")
+                {
+                    float val = (norm == "Slider1")
+                        ? ((LastRawBrake != 0f) ? LastRawBrake : LastRawThrottle)
+                        : ((LastRawGas != 0f) ? LastRawGas : LastRawRudder);
+                    float ratio = (val >= 0f) ? val : Math.Max(0f, (val + 1f) / 2f);
+                    ratio = Math.Max(0f, Math.Min(1f, ratio));
 
-                // 1. スティック軸 (X, Y, Z, Rz, Rx, Ry: 各軸完全独立保持・干渉完全防止)
-                if (norm == "X")
-                {
-                    float val = (LastRawAxisX != 0f) ? LastRawAxisX : LastStickRoll;
-                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
+                    if (isReverse) ratio = 1.0f - ratio;
+
+                    float pwm = min + ratio * (max - min);
+                    return (int)Math.Round(Math.Max(min, Math.Min(max, pwm)));
                 }
-                else if (norm == "Y")
-                {
-                    float val = (LastRawAxisY != 0f) ? LastRawAxisY : LastStickPitch;
-                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
-                }
-                else if (norm == "Z")
-                {
-                    // Z軸単独の値のみを参照 (Sliderや他の軸と完全分離)
-                    float val = LastRawAxisZ;
-                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
-                }
-                else if (norm == "Rz")
-                {
-                    // Rz軸単独の値のみを参照 (Sliderや他の軸と完全分離)
-                    float val = LastRawAxisRz;
-                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + val * 500));
-                }
-                else if (norm == "Rx")
-                {
-                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + LastRawAxisRx * 500));
-                }
-                else if (norm == "Ry")
-                {
-                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1500 + LastRawAxisRy * 500));
-                }
-                // 2. スライダー・トリガー (Slider1, Slider2: Z/Rz軸とは完全分離し、Brake/Gasまたは専用トリガー軸のみを参照)
-                else if (norm == "Slider1")
-                {
-                    float val = (LastRawBrake != 0f) ? LastRawBrake : LastRawThrottle;
-                    float ratio = (val >= 0f) ? val : Math.Max(0f, (val + 1f) / 2f);
-                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1000 + ratio * 1000));
-                }
-                else if (norm == "Slider2")
-                {
-                    float val = (LastRawGas != 0f) ? LastRawGas : LastRawRudder;
-                    float ratio = (val >= 0f) ? val : Math.Max(0f, (val + 1f) / 2f);
-                    rawPwm = (int)Math.Max(1000, Math.Min(2000, 1000 + ratio * 1000));
-                }
-                // 3. ゲームパッドボタン (押下中 2000µs, 離すと 1000µs)
-                else
+
+                // 2. ボタン（デジタル ON/OFF）
+                if (norm.StartsWith("Btn") || norm.StartsWith("Dpad"))
                 {
                     bool isPressed = false;
                     foreach (var kvp in PressedButtonMap)
                     {
-                        if (kvp.Value) // 押下中
+                        if (kvp.Value)
                         {
                             string pressedRaw = ConvertKeyCodeToName(kvp.Key);
                             string pressedNorm = NormalizeAxisName(pressedRaw);
@@ -200,27 +261,64 @@ namespace Xamarin
                         }
                     }
 
-                    if (isPressed)
-                    {
-                        rawPwm = 2000;
-                    }
-                    else if (norm.StartsWith("Btn") || norm.StartsWith("Dpad"))
-                    {
-                        rawPwm = 1000;
-                    }
+                    if (isReverse) isPressed = !isPressed;
+                    float pwm = isPressed ? max : min;
+                    return (int)Math.Round(pwm);
                 }
 
-                // 🎯 リバース反転: 1500µsを中心に完全対称反転 (例: 2000 -> 1000, 1000 -> 2000, 1750 -> 1250)
+                // 3. スティック軸（双方向 -1.0〜+1.0）
+                float rawAxis = 0f;
+                if (norm == "X") rawAxis = (LastRawAxisX != 0f) ? LastRawAxisX : LastStickRoll;
+                else if (norm == "Y") rawAxis = (LastRawAxisY != 0f) ? LastRawAxisY : LastStickPitch;
+                else if (norm == "Z") rawAxis = LastRawAxisZ;
+                else if (norm == "Rz") rawAxis = LastRawAxisRz;
+                else if (norm == "Rx") rawAxis = LastRawAxisRx;
+                else if (norm == "Ry") rawAxis = LastRawAxisRy;
+                else if (norm == "Throttle") rawAxis = LastRawThrottle;
+                else if (norm == "Rudder") rawAxis = LastRawRudder;
+
+                rawAxis = Math.Max(-1.0f, Math.Min(1.0f, rawAxis));
+
+                // Expoカーブ適用 (0〜100%)
+                if (expoPercent > 0f)
+                {
+                    float e = Math.Max(0f, Math.Min(1f, expoPercent / 100f));
+                    rawAxis = (1f - e) * rawAxis + e * (rawAxis * rawAxis * rawAxis);
+                }
+
+                // リバース反転
                 if (isReverse)
                 {
-                    rawPwm = 3000 - rawPwm;
+                    rawAxis = -rawAxis;
                 }
 
-                return rawPwm;
+                // スロットル (Ch3) かつスティック下端〜上端をフルに使う場合:
+                if (ch == 3)
+                {
+                    float ratio = (rawAxis + 1.0f) / 2.0f;
+                    float pwm = min + ratio * (max - min);
+                    return (int)Math.Round(Math.Max(min, Math.Min(max, pwm)));
+                }
+                else
+                {
+                    // 中立がある軸（Roll, Pitch, Yawなど）:
+                    // rawAxis < 0: trim + rawAxis * (trim - min)
+                    // rawAxis >= 0: trim + rawAxis * (max - trim)
+                    float pwm;
+                    if (rawAxis < 0f)
+                    {
+                        pwm = trim + rawAxis * (trim - min);
+                    }
+                    else
+                    {
+                        pwm = trim + rawAxis * (max - trim);
+                    }
+                    return (int)Math.Round(Math.Max(min, Math.Min(max, pwm)));
+                }
             }
             catch { }
 
-            return defaultPwm;
+            return (int)Math.Round((ch == 3) ? min : trim);
         }
 
         public static string ConvertKeyCodeToName(int keyCode)
@@ -409,84 +507,78 @@ namespace Xamarin
             FlightData_Load(null, null);
 
             int streamRequestCounter = 0;
-            Forms.Device.StartTimer(TimeSpan.FromMilliseconds(50), () =>
+            Forms.Device.StartTimer(TimeSpan.FromMilliseconds(16), () =>
             {
                 try
                 {
-                    // 🎮 1. ジョイスティック・モーダル用リアルタイム更新 (画面上のボタンの最新テキストを直接読み取って全ポジションバーをダイレクト更新！)
+                    // 🕹️ 60Hz 完全同期: RC_CHANNELS_OVERRIDE 送信 (画面開閉問わず常時最高速送信)
+                    SendRCOverridePacket();
+
+                    // 🎮 1. ジョイスティック・モーダル用リアルタイム更新 (FCからのRC_CHANNELS値をリアルタイム表示)
                     try
                     {
-                        if (Pnl_JoystickModal != null && Pnl_JoystickModal.IsVisible)
+                        SubscribeRcChannelsPackets();
+
+                        // 📊 QGC方式: RC_CHANNELS (RX) と RC_OVERRIDE (TX) の周波数 (Hz) とカウントを 1Hz で計算
+                        var now = DateTime.UtcNow;
+                        double elapsedStats = (now - _lastRcStatsTime).TotalSeconds;
+                        if (elapsedStats >= 0.95)
                         {
-                            for (int ch = 1; ch <= 18; ch++)
+                            _lastRcStatsTime = now;
+
+                            // FCに対して RC_CHANNELS のストリーム配信 (10Hz) を定期リクエスト
+                            if (Pnl_JoystickModal != null && Pnl_JoystickModal.IsVisible)
                             {
-                                // 画面上のボタンテキスト (例: "X ▾", "Btn A (×) ▾", "L2 ▾") または データ配列から最新設定を取得
-                                string mapping = (ch < ChannelAxisMapping.Length) ? ChannelAxisMapping[ch] : "None";
-                                var btn = this.FindByName<Button>($"Btn_RCAxis_{ch}");
-                                if (btn != null && !string.IsNullOrEmpty(btn.Text))
-                                {
-                                    mapping = btn.Text.Replace(" ▾", "").Trim();
-                                }
+                                RequestRCChannelsStream();
+                            }
 
-                                bool isRev = (ch < ChannelReverseMapping.Length) ? ChannelReverseMapping[ch] : false;
-                                var chkRev = this.FindByName<CheckBox>($"CHK_RCRev_{ch}");
-                                if (chkRev != null)
-                                {
-                                    isRev = chkRev.IsChecked;
-                                    if (ch < ChannelReverseMapping.Length) ChannelReverseMapping[ch] = isRev;
-                                }
+                            // 1. 受信 (RX: FC -> GCS)
+                            var csLocal = (MainV2.comPort != null && MainV2.comPort.MAV != null) ? MainV2.comPort.MAV.cs : null;
+                            ulong currentRxCount = MAVLinkInterface.GlobalRcChannelsCount;
+                            if (currentRxCount == 0 && csLocal != null && csLocal.rcChannelsPacketCount > 0)
+                            {
+                                currentRxCount = csLocal.rcChannelsPacketCount;
+                            }
+                            if (currentRxCount == 0)
+                            {
+                                currentRxCount = (ulong)_rcChannelsPacketCount;
+                            }
 
-                                int defPwm = (ch == 3) ? (isRev ? 2000 : 1000) : 1500;
-                                int pwm = CalculateChannelPWM(mapping, defPwm, isRev);
+                            // 🎯 安定した 1秒単位の正確な Hz 計測
+                            long nowTicks = DateTime.UtcNow.Ticks;
+                            if (_hzCalcStartTicks == 0) _hzCalcStartTicks = nowTicks;
+                            double elapsedSec = (nowTicks - _hzCalcStartTicks) / 10000000.0;
 
-                                // 🎯 ポジションバー更新 (0.0〜1.0)
-                                var pb = this.FindByName<ProgressBar>($"PB_joy_rc{ch}");
-                                if (pb != null)
-                                {
-                                    pb.Progress = Math.Max(0.0, Math.Min(1.0, (pwm - 1000) / 1000.0));
-                                }
+                            if (elapsedSec >= 1.0)
+                            {
+                                ulong rxDelta = (currentRxCount >= _hzCalcStartRxCount) ? (currentRxCount - _hzCalcStartRxCount) : 0;
+                                double measuredHz = (double)rxDelta / elapsedSec;
+                                _lastRcChannelsHz = measuredHz;
 
-                                // 🎯 数値ラベル更新 (例: "1500 µs")
-                                var lbl = this.FindByName<Label>($"LBL_joy_rc{ch}");
-                                if (lbl != null)
+                                _hzCalcStartTicks = nowTicks;
+                                _hzCalcStartRxCount = currentRxCount;
+                            }
+
+                            // フォールバック: MissionPlanner コアの packetspersecond
+                            if (_lastRcChannelsHz <= 0.0 && MainV2.comPort != null && MainV2.comPort.MAV != null && MainV2.comPort.MAV.packetspersecond != null)
+                            {
+                                if (MainV2.comPort.MAV.packetspersecond.TryGetValue((uint)MAVLink.MAVLINK_MSG_ID.RC_CHANNELS, out double pps) && pps > 0)
                                 {
-                                    lbl.Text = pwm + " µs";
+                                    _lastRcChannelsHz = pps;
                                 }
                             }
 
+                            // 3. むらさんのご要望: 受信 (RX: RC_CHANNELS) の Hz とカウントを専用表示
+                            if (Pnl_JoystickModal != null && Pnl_JoystickModal.IsVisible && LBL_RCChannelsStats != null)
+                            {
+                                LBL_RCChannelsStats.Text = $"📡 RC_CHANNELS: {_lastRcChannelsHz:F1} Hz | Count: {currentRxCount}";
+                            }
                         }
 
-                        // 🕹️ ジョイスティック有効時: 画面開閉状態に関わらずバックグラウンドで常時 FC へ RC Override パケットを送信 (Ch1〜Ch18)
-                        if (IsJoystickActive && MainV2.comPort != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
+                        // 🎯 チャンネルPWM表示更新
+                        if (Pnl_JoystickModal != null && Pnl_JoystickModal.IsVisible)
                         {
-                            try
-                            {
-                                var rcOverride = new MAVLink.mavlink_rc_channels_override_t
-                                {
-                                    target_system = 1,
-                                    target_component = 1,
-                                    chan1_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[1], 1500, ChannelReverseMapping[1]),
-                                    chan2_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[2], 1500, ChannelReverseMapping[2]),
-                                    chan3_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[3], ChannelReverseMapping[3] ? 2000 : 1000, ChannelReverseMapping[3]),
-                                    chan4_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[4], 1500, ChannelReverseMapping[4]),
-                                    chan5_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[5], 1500, ChannelReverseMapping[5]),
-                                    chan6_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[6], 1500, ChannelReverseMapping[6]),
-                                    chan7_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[7], 1500, ChannelReverseMapping[7]),
-                                    chan8_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[8], 1500, ChannelReverseMapping[8]),
-                                    chan9_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[9], 1500, ChannelReverseMapping[9]),
-                                    chan10_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[10], 1500, ChannelReverseMapping[10]),
-                                    chan11_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[11], 1500, ChannelReverseMapping[11]),
-                                    chan12_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[12], 1500, ChannelReverseMapping[12]),
-                                    chan13_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[13], 1500, ChannelReverseMapping[13]),
-                                    chan14_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[14], 1500, ChannelReverseMapping[14]),
-                                    chan15_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[15], 1500, ChannelReverseMapping[15]),
-                                    chan16_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[16], 1500, ChannelReverseMapping[16]),
-                                    chan17_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[17], 1500, ChannelReverseMapping[17]),
-                                    chan18_raw = (ushort)CalculateChannelPWM(ChannelAxisMapping[18], 1500, ChannelReverseMapping[18])
-                                };
-                                MainV2.comPort.sendPacket(rcOverride, 1, 1);
-                            }
-                            catch { }
+                            UpdateJoystickPWMValues();
                         }
                     }
                     catch (Exception ex)
@@ -564,7 +656,7 @@ namespace Xamarin
 
                         if (cs != null && isOpen)
                         {
-                            if (++streamRequestCounter % 20 == 1)
+                            if (++streamRequestCounter % 60 == 1)
                             {
                                 log.Info($"=== StampFly Live Attitude === Roll={cs.roll:0.1} Pitch={cs.pitch:0.1} Yaw={cs.yaw:0.1} Batt={cs.battery_voltage:0.2}V");
                                 try
@@ -575,7 +667,7 @@ namespace Xamarin
                                     MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 10, 1, 1);
                                     MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 5, 1, 1);
                                     MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, 2, 1, 1);
-                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 10, 1, 1);
+                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 20, 1, 1);
                                     _ = MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL, 30, 50000, 0, 0, 0, 0, 0, false);
                                 }
                                 catch { }
@@ -2665,6 +2757,8 @@ namespace Xamarin
             if (Pnl_JoystickModal != null)
             {
                 Pnl_JoystickModal.IsVisible = true;
+                SubscribeRcChannelsPackets();
+                RequestRCChannelsStream();
 
                 // 接続デバイス名の更新
                 try
@@ -2680,7 +2774,7 @@ namespace Xamarin
                         }
                         else
                         {
-                            Picker_ActiveJoystick.Items.Add("⚠️ 未接続 (No Device Detected)");
+                            Picker_ActiveJoystick.Items.Add("⚠️ No Device Detected");
                             Picker_ActiveJoystick.SelectedIndex = 0;
                         }
                     }
@@ -2715,7 +2809,7 @@ namespace Xamarin
                     }
                     else
                     {
-                        Picker_ActiveJoystick.Items.Add("⚠️ 未接続 (No Device Detected)");
+                        Picker_ActiveJoystick.Items.Add("⚠️ No Device Detected");
                         Picker_ActiveJoystick.SelectedIndex = 0;
                     }
                 }
@@ -2766,6 +2860,8 @@ namespace Xamarin
                     var entExpo = this.FindByName<Entry>($"ENT_RCExpo_{ch}");
                     if (entExpo != null)
                     {
+                        float.TryParse(entExpo.Text, out float expVal);
+                        if (ch < ChannelExpoMapping.Length) ChannelExpoMapping[ch] = expVal;
                         global::Xamarin.Essentials.Preferences.Set($"MP_Joy_RC{ch}_Expo", entExpo.Text ?? "0");
                     }
                 }
@@ -2785,6 +2881,19 @@ namespace Xamarin
                 {
                     global::Xamarin.Essentials.Preferences.Set("MP_Joy_ManualControl", CHK_manual_control.IsChecked);
                 }
+
+                // 6. Send Rate & Enable
+                if (Picker_SendRate != null && Picker_SendRate.SelectedIndex >= 0)
+                {
+                    global::Xamarin.Essentials.Preferences.Set("MP_Joy_SendRateIdx", Picker_SendRate.SelectedIndex);
+                    JoystickSendIntervalMs = GetSendIntervalMsFromIndex(Picker_SendRate.SelectedIndex);
+                }
+                if (CHK_enable_joystick != null)
+                {
+                    global::Xamarin.Essentials.Preferences.Set("MP_Joy_Enabled", CHK_enable_joystick.IsChecked);
+                    IsJoystickActive = CHK_enable_joystick.IsChecked;
+                }
+                UpdateRCOverrideTimer();
             }
             catch (Exception ex)
             {
@@ -2835,7 +2944,10 @@ namespace Xamarin
                     var entExpo = this.FindByName<Entry>($"ENT_RCExpo_{ch}");
                     if (entExpo != null)
                     {
-                        entExpo.Text = global::Xamarin.Essentials.Preferences.Get($"MP_Joy_RC{ch}_Expo", "0");
+                        string savedExpo = global::Xamarin.Essentials.Preferences.Get($"MP_Joy_RC{ch}_Expo", "0");
+                        entExpo.Text = savedExpo;
+                        float.TryParse(savedExpo, out float expVal);
+                        if (ch < ChannelExpoMapping.Length) ChannelExpoMapping[ch] = expVal;
                     }
                 }
 
@@ -2856,10 +2968,289 @@ namespace Xamarin
                 {
                     CHK_manual_control.IsChecked = global::Xamarin.Essentials.Preferences.Get("MP_Joy_ManualControl", true);
                 }
+
+                // 送信レート & 有効化の復元
+                int savedRateIdx = global::Xamarin.Essentials.Preferences.Get("MP_Joy_SendRateIdx", 0); // 0 = 60 Hz (16.6ms)
+                if (Picker_SendRate != null)
+                {
+                    Picker_SendRate.SelectedIndex = Math.Max(0, Math.Min(4, savedRateIdx));
+                }
+                JoystickSendIntervalMs = GetSendIntervalMsFromIndex(savedRateIdx);
+
+                bool savedEnabled = global::Xamarin.Essentials.Preferences.Get("MP_Joy_Enabled", false);
+                if (CHK_enable_joystick != null)
+                {
+                    CHK_enable_joystick.IsChecked = savedEnabled;
+                }
+                IsJoystickActive = savedEnabled;
+                UpdateRCOverrideTimer();
             }
             catch (Exception ex)
             {
                 Console.WriteLine("LoadJoystickSettings error: " + ex);
+            }
+        }
+
+        private static bool _isRcPacketSubscribed = false;
+
+        private void SubscribeRcChannelsPackets()
+        {
+            try
+            {
+                if (MainV2.comPort != null && !_isRcPacketSubscribed)
+                {
+                    MainV2.comPort.OnPacketReceived += OnGlobalPacketReceived;
+                    _isRcPacketSubscribed = true;
+                }
+            }
+            catch { }
+        }
+
+        private static int _streamParamSetCounter = 0;
+        private static DateTime _lastStreamRequestTime = DateTime.MinValue;
+
+        private void RequestRCChannelsStream()
+        {
+            try
+            {
+                // StampFly (ESP32 Wi-Fi) のバッファ溢れ防止: 10秒に1回だけキープアライブ送信
+                if ((DateTime.UtcNow - _lastStreamRequestTime).TotalSeconds < 10.0)
+                    return;
+                _lastStreamRequestTime = DateTime.UtcNow;
+
+                if (MainV2.comPort != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
+                {
+                    byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                    byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+
+                    if (MainV2.comPort.MAV != null && MainV2.comPort.MAV.cs != null)
+                    {
+                        MainV2.comPort.MAV.cs.raterc = 10;
+                    }
+
+                    // 1. QGC準拠: MAV_CMD_SET_MESSAGE_INTERVAL (RC_CHANNELS msgid 65, 100,000 µs = 10Hz)
+                    var cmdSetInterval = new MAVLink.mavlink_command_long_t
+                    {
+                        target_system = sysid,
+                        target_component = compid,
+                        command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
+                        confirmation = 0,
+                        param1 = 65,        // RC_CHANNELS
+                        param2 = 100000,    // 100,000 µs = 10.0 Hz (StampFly Wi-Fi に最適な黄金比)
+                        param3 = 0,
+                        param4 = 0,
+                        param5 = 0,
+                        param6 = 0,
+                        param7 = 0
+                    };
+                    MainV2.comPort.sendPacket(cmdSetInterval, sysid, compid);
+
+                    // 2. ダイレクト REQUEST_DATA_STREAM パケット (10Hz)
+                    var req = new MAVLink.mavlink_request_data_stream_t
+                    {
+                        target_system = sysid,
+                        target_component = compid,
+                        req_message_rate = 10,
+                        start_stop = 1,
+                        req_stream_id = (byte)MAVLink.MAV_DATA_STREAM.RC_CHANNELS
+                    };
+                    MainV2.comPort.sendPacket(req, sysid, compid);
+
+                    // 3. FCパラメータ設定 (10Hz)
+                    try
+                    {
+                        MainV2.comPort.setParam("SR1_RC_CHAN", 10);
+                        MainV2.comPort.setParam("SR0_RC_CHAN", 10);
+                    }
+                    catch { }
+                }
+            }
+            catch { }
+        }
+
+        private long _lastInstantPwmUpdateTicks = 0;
+        public void TriggerInstantPWMUpdate()
+        {
+            long now = DateTime.UtcNow.Ticks;
+            // 50Hz (20ms) 以上の頻度での過剰なUIディスパッチを抑制
+            if (now - _lastInstantPwmUpdateTicks > 200000)
+            {
+                _lastInstantPwmUpdateTicks = now;
+                global::Xamarin.Forms.Device.BeginInvokeOnMainThread(() =>
+                {
+                    UpdateJoystickPWMValues();
+                });
+            }
+        }
+
+        public void UpdateJoystickPWMValues()
+        {
+            if (Pnl_JoystickModal == null || !Pnl_JoystickModal.IsVisible) return;
+            var cs = (MainV2.comPort != null && MainV2.comPort.MAV != null) ? MainV2.comPort.MAV.cs : null;
+
+            for (int ch = 1; ch <= 18; ch++)
+            {
+                string mapping = (ch < ChannelAxisMapping.Length) ? ChannelAxisMapping[ch] : "None";
+                var btn = this.FindByName<Button>($"Btn_RCAxis_{ch}");
+                if (btn != null && !string.IsNullOrEmpty(btn.Text))
+                {
+                    mapping = btn.Text.Replace(" ▾", "").Trim();
+                }
+
+                bool isRev = (ch < ChannelReverseMapping.Length) ? ChannelReverseMapping[ch] : false;
+                var chkRev = this.FindByName<CheckBox>($"CHK_RCRev_{ch}");
+                if (chkRev != null)
+                {
+                    isRev = chkRev.IsChecked;
+                    if (ch < ChannelReverseMapping.Length) ChannelReverseMapping[ch] = isRev;
+                }
+
+                float expo = (ch < ChannelExpoMapping.Length) ? ChannelExpoMapping[ch] : 0f;
+                var entExpo = this.FindByName<Entry>($"ENT_RCExpo_{ch}");
+                if (entExpo != null && float.TryParse(entExpo.Text, out float parsedExpo))
+                {
+                    expo = parsedExpo;
+                    if (ch < ChannelExpoMapping.Length) ChannelExpoMapping[ch] = expo;
+                }
+
+                GetChannelLimits(ch, out float min, out float max, out float trim);
+
+                // 🎯 1. リアルポジション表示: FC からの RC_CHANNELS テレメトリ値を表示
+                float fcPwm = (cs != null) ? GetFCChannelPwm(cs, ch) : 0f;
+
+                // 🎯 2. FC未接続/未受信時のフォールバック用ローカル計算PWM値（相対 -> MIN/MAX変換）
+                int localPwm = CalculateChannelPWM(ch, mapping, isRev, expo);
+
+                float displayPwm = (fcPwm > 0f) ? fcPwm : (float)localPwm;
+
+                var lbl = this.FindByName<Label>($"LBL_joy_rc{ch}");
+                if (lbl != null)
+                {
+                    lbl.Text = $"{(int)Math.Round(displayPwm)} µs";
+                    lbl.TextColor = (fcPwm > 0f)
+                        ? global::Xamarin.Forms.Color.FromHex("#38BDF8")
+                        : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+                }
+            }
+        }
+
+        private static void OnGlobalPacketReceived(object sender, MAVLink.MAVLinkMessage msg)
+        {
+            if (msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.RC_CHANNELS || msg.msgid == 65 ||
+                msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.RC_CHANNELS_RAW || msg.msgid == 35 ||
+                msg.msgid == (uint)MAVLink.MAVLINK_MSG_ID.RC_CHANNELS_SCALED)
+            {
+                System.Threading.Interlocked.Increment(ref _rcChannelsPacketCount);
+                System.Threading.Interlocked.Increment(ref _rcChannelsWindowCount);
+                // UIスレッド競合防止: タイマー側の滑らかな定期更新(30Hz)に一本化
+            }
+        }
+
+        // 📡 RC_CHANNELS_OVERRIDE パケット送信処理 (60Hz 同期・将来の V2 拡張対応)
+        public static bool UseRCOverrideV2 = false; // 🚀 将来の RC_CHANNELS_OVERRIDE-V2 移行用フラグ
+
+        private void SendRCOverridePacket()
+        {
+            if (!IsJoystickActive || MainV2.comPort == null)
+                return;
+
+            try
+            {
+                if (UseRCOverrideV2)
+                {
+                    // 🚀 将来の RC_CHANNELS_OVERRIDE-V2 送信処理
+                    SendRCOverrideV2Packet();
+                    return;
+                }
+
+                var rcOverride = new MAVLink.mavlink_rc_channels_override_t
+                {
+                    target_system = 1,
+                    target_component = 1,
+                    chan1_raw = (ushort)CalculateChannelPWM(1, ChannelAxisMapping[1], ChannelReverseMapping[1], ChannelExpoMapping[1]),
+                    chan2_raw = (ushort)CalculateChannelPWM(2, ChannelAxisMapping[2], ChannelReverseMapping[2], ChannelExpoMapping[2]),
+                    chan3_raw = (ushort)CalculateChannelPWM(3, ChannelAxisMapping[3], ChannelReverseMapping[3], ChannelExpoMapping[3]),
+                    chan4_raw = (ushort)CalculateChannelPWM(4, ChannelAxisMapping[4], ChannelReverseMapping[4], ChannelExpoMapping[4]),
+                    chan5_raw = (ushort)CalculateChannelPWM(5, ChannelAxisMapping[5], ChannelReverseMapping[5], ChannelExpoMapping[5]),
+                    chan6_raw = (ushort)CalculateChannelPWM(6, ChannelAxisMapping[6], ChannelReverseMapping[6], ChannelExpoMapping[6]),
+                    chan7_raw = (ushort)CalculateChannelPWM(7, ChannelAxisMapping[7], ChannelReverseMapping[7], ChannelExpoMapping[7]),
+                    chan8_raw = (ushort)CalculateChannelPWM(8, ChannelAxisMapping[8], ChannelReverseMapping[8], ChannelExpoMapping[8]),
+                    chan9_raw = (ushort)CalculateChannelPWM(9, ChannelAxisMapping[9], ChannelReverseMapping[9], ChannelExpoMapping[9]),
+                    chan10_raw = (ushort)CalculateChannelPWM(10, ChannelAxisMapping[10], ChannelReverseMapping[10], ChannelExpoMapping[10]),
+                    chan11_raw = (ushort)CalculateChannelPWM(11, ChannelAxisMapping[11], ChannelReverseMapping[11], ChannelExpoMapping[11]),
+                    chan12_raw = (ushort)CalculateChannelPWM(12, ChannelAxisMapping[12], ChannelReverseMapping[12], ChannelExpoMapping[12]),
+                    chan13_raw = (ushort)CalculateChannelPWM(13, ChannelAxisMapping[13], ChannelReverseMapping[13], ChannelExpoMapping[13]),
+                    chan14_raw = (ushort)CalculateChannelPWM(14, ChannelAxisMapping[14], ChannelReverseMapping[14], ChannelExpoMapping[14]),
+                    chan15_raw = (ushort)CalculateChannelPWM(15, ChannelAxisMapping[15], ChannelReverseMapping[15], ChannelExpoMapping[15]),
+                    chan16_raw = (ushort)CalculateChannelPWM(16, ChannelAxisMapping[16], ChannelReverseMapping[16], ChannelExpoMapping[16]),
+                    chan17_raw = (ushort)CalculateChannelPWM(17, ChannelAxisMapping[17], ChannelReverseMapping[17], ChannelExpoMapping[17]),
+                    chan18_raw = (ushort)CalculateChannelPWM(18, ChannelAxisMapping[18], ChannelReverseMapping[18], ChannelExpoMapping[18])
+                };
+                MainV2.comPort.sendPacket(rcOverride, 1, 1);
+                MAVLinkInterface.GlobalRcOverrideSentCount++;
+            }
+            catch { }
+        }
+
+        private void SendRCOverrideV2Packet()
+        {
+            // 🚀 将来の RC_CHANNELS_OVERRIDE-V2 実装用フック
+        }
+
+        public void UpdateRCOverrideTimer()
+        {
+            // 🕹️ 60Hz メインループ完全同期駆動のため、別スレッドタイマーは停止・破棄
+            lock (_rcOverrideLock)
+            {
+                if (_rcOverrideTimer != null)
+                {
+                    _rcOverrideTimer.Dispose();
+                    _rcOverrideTimer = null;
+                }
+            }
+        }
+
+        public static int GetSendIntervalMsFromIndex(int index)
+        {
+            switch (index)
+            {
+                case 0: return 16;  // 60 Hz (Direct 16.6ms)
+                case 1: return 20;  // 50 Hz
+                case 2: return 30;  // 33 Hz
+                case 3: return 40;  // 25 Hz
+                case 4: return 50;  // 20 Hz
+                case 5: return 100; // 10 Hz
+                default: return 16;
+            }
+        }
+
+        private void OnJoystickSendRateChanged(object sender, EventArgs e)
+        {
+            try
+            {
+                if (Picker_SendRate == null || Picker_SendRate.SelectedIndex < 0) return;
+                int interval = GetSendIntervalMsFromIndex(Picker_SendRate.SelectedIndex);
+                JoystickSendIntervalMs = interval;
+                global::Xamarin.Essentials.Preferences.Set("MP_Joy_SendRateIdx", Picker_SendRate.SelectedIndex);
+                UpdateRCOverrideTimer();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnJoystickSendRateChanged error: " + ex);
+            }
+        }
+
+        private void OnJoystickEnableCheckedChanged(object sender, CheckedChangedEventArgs e)
+        {
+            try
+            {
+                IsJoystickActive = e.Value;
+                global::Xamarin.Essentials.Preferences.Set("MP_Joy_Enabled", IsJoystickActive);
+                UpdateRCOverrideTimer();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnJoystickEnableCheckedChanged error: " + ex);
             }
         }
 
@@ -2868,7 +3259,7 @@ namespace Xamarin
             try
             {
                 SaveJoystickSettings();
-                await DisplayAlert("ジョイスティック設定", "設定を正常に保存しました！\n次回起動時もこの設定が維持されます。", "OK");
+                await DisplayAlert("Joystick Settings", "Settings saved successfully!\nPreferences will be preserved on next launch.", "OK");
                 if (Pnl_JoystickModal != null) Pnl_JoystickModal.IsVisible = false;
             }
             catch (Exception ex)
@@ -2888,28 +3279,28 @@ namespace Xamarin
                 int ch = 0;
                 if (btn.CommandParameter != null) int.TryParse(btn.CommandParameter.ToString(), out ch);
 
-                string result = await DisplayActionSheet($"RC{ch} 割り当て軸・キーの選択", "キャンセル", null,
-                    "X (Roll / スティック横)",
-                    "Y (Pitch / スティック縦)",
-                    "Z (Throttle / スロットル)",
-                    "Rz (Yaw / ラダー)",
-                    "Rx (右スティック横)",
-                    "Ry (右スティック縦)",
-                    "Slider1 (L2 / 左スライダー・トリガー)",
-                    "Slider2 (R2 / 右スライダー・トリガー)",
-                    "Btn A (×ボタン)",
-                    "Btn B (○ボタン)",
-                    "Btn X (□ボタン)",
-                    "Btn Y (△ボタン)",
-                    "Btn L1 (左バンパー)",
-                    "Btn R1 (右バンパー)",
-                    "Btn L3 (左押し込み)",
-                    "Btn R3 (右押し込み)",
-                    "Dpad Up (十字上)",
-                    "Dpad Down (十字下)",
-                    "Dpad Left (十字左)",
-                    "Dpad Right (十字右)",
-                    "None (割り当てなし)");
+                string result = await DisplayActionSheet($"Select Axis/Key for RC{ch}", "Cancel", null,
+                    "X (Roll / Stick Horiz)",
+                    "Y (Pitch / Stick Vert)",
+                    "Z (Throttle / Stick Vert)",
+                    "Rz (Yaw / Stick Horiz)",
+                    "Rx (Right Stick Horiz)",
+                    "Ry (Right Stick Vert)",
+                    "Slider1 (L2 / Left Trigger)",
+                    "Slider2 (R2 / Right Trigger)",
+                    "Btn A (Cross Button)",
+                    "Btn B (Circle Button)",
+                    "Btn X (Square Button)",
+                    "Btn Y (Triangle Button)",
+                    "Btn L1 (Left Bumper)",
+                    "Btn R1 (Right Bumper)",
+                    "Btn L3 (Left Stick Click)",
+                    "Btn R3 (Right Stick Click)",
+                    "Dpad Up",
+                    "Dpad Down",
+                    "Dpad Left",
+                    "Dpad Right",
+                    "None");
 
                 if (!string.IsNullOrEmpty(result) && result != "キャンセル")
                 {
@@ -2944,7 +3335,7 @@ namespace Xamarin
                 if (btn.CommandParameter != null) int.TryParse(btn.CommandParameter.ToString(), out ch);
 
                 ActiveDetectingButton = btn;
-                btn.Text = "動かして...";
+                btn.Text = "MOVE...";
                 btn.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#EAB308");
 
                 float baseRawX = LastRawAxisX;
@@ -2995,7 +3386,7 @@ namespace Xamarin
                     if (!string.IsNullOrEmpty(detected))
                     {
                         ActiveDetectingButton = null;
-                        btn.Text = "完了!";
+                        btn.Text = "DONE!";
                         btn.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#10B981");
 
                         // 🎯 1. 処理用データ配列を即座に更新 (他チャンネルはそのまま保持)
