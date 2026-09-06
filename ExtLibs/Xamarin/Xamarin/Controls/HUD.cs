@@ -135,15 +135,14 @@ namespace MissionPlanner.Controls
         public HUD()
         {
             opengl =
-                displayvibe =
-                    displayekf =
-                        displayheading =
+                displayheading =
                             displayspeed =
                                 displayalt =
                                     displayconninfo =
                                         displayxtrack = displayrollpitch = displaygps = bgon = hudon = batteryon = true;
 
             displayAOASSA = false;
+            displayvibe = displayekf = false;
 
             IgnorePixelScaling = false;
 
@@ -922,14 +921,6 @@ namespace MissionPlanner.Controls
             else if (vibehitzone.IntersectsWith(new Rectangle(x - 8, y - 8, 16, 16)))
             {
                 vibeclick?.Invoke(this, null);
-            }
-            else if (this.Width <= 200 && y >= this.Height * 0.55)
-            {
-                // For compact circular HUD: lower-left quadrant -> EKF, lower-right quadrant -> VIBE
-                if (x < this.Width / 2)
-                    ekfclick?.Invoke(this, null);
-                else
-                    vibeclick?.Invoke(this, null);
             }
         }
 
@@ -2201,7 +2192,7 @@ namespace MissionPlanner.Controls
             if (text == HUDT.DISARMED || text == HUDT.ARMED || text == HUDT.FAILSAFE ||
                 text.StartsWith("AS") || text.StartsWith("GS") || text.StartsWith("GPS") ||
                 text == _mode || text.Contains("%") || text.Contains(":") ||
-                text.Contains(">"))
+                text == "Vibe" || text == "EKF" || text.Contains(">"))
             {
                 return;
             }

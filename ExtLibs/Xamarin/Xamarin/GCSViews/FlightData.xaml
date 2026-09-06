@@ -276,10 +276,7 @@
                            WidthRequest="120" HeightRequest="120" CornerRadius="60" IsClippedToBounds="True"
                            HorizontalOptions="Center" VerticalOptions="Center"
                            BackgroundColor="#590F172A" BorderColor="#475569" IsVisible="True">
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnHudTapped"/>
-                        </Frame.GestureRecognizers>
-                        <controls:HUD x:Name="hud1" EnableTouchEvents="True" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
+                        <controls:HUD x:Name="hud1" EnableTouchEvents="False" VerticalOptions="FillAndExpand" HorizontalOptions="FillAndExpand"/>
                     </Frame>
 
                     <!-- 🧭 EKF & 📳 VIBE Quick Badges (タップで詳細表示) -->

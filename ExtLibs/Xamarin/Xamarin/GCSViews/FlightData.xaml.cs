@@ -391,9 +391,6 @@ namespace Xamarin
             mymap = gMapControl1;
             myhud = hud1;
 
-            // 🧭 HUD上のEKF & VIBE タップハンドラー
-            hud1.ekfclick += (s, e) => OpenDiagModal(isEkf: true);
-            hud1.vibeclick += (s, e) => OpenDiagModal(isEkf: false);
 
             switch (Forms.Device.RuntimePlatform)
             {
@@ -4449,11 +4446,6 @@ namespace Xamarin
                 else
                     OnDiagTabVibeClicked(null, null);
             });
-        }
-
-        private void OnHudTapped(object sender, EventArgs e)
-        {
-            OpenDiagModal(isEkf: true);
         }
 
         private void OnEkfBadgeTapped(object sender, EventArgs e)
