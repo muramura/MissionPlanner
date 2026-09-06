@@ -401,6 +401,65 @@ namespace Xamarin.Droid
                 return list;
             };
 
+            // 📳 コントローラー＆端末バイブレーション送信ハンドラ登録
+            FlightData.VibrateHandler = (pattern, durationMs) =>
+            {
+                try
+                {
+                    RunOnUiThread(() =>
+                    {
+                        try
+                        {
+                            // 1. Controller rumble (InputDevice.Vibrator)
+                            if (FlightData.VibrateGamepadEnabled)
+                            {
+                                var devIds = global::Android.Views.InputDevice.GetDeviceIds();
+                                if (devIds != null)
+                                {
+                                    foreach (var id in devIds)
+                                    {
+                                        var dev = global::Android.Views.InputDevice.GetDevice(id);
+                                        if (dev != null && dev.Vibrator != null && dev.Vibrator.HasVibrator)
+                                        {
+                                            if (global::Android.OS.Build.VERSION.SdkInt >= global::Android.OS.BuildVersionCodes.O)
+                                            {
+                                                dev.Vibrator.Vibrate(global::Android.OS.VibrationEffect.CreateOneShot(durationMs, global::Android.OS.VibrationEffect.DefaultAmplitude));
+                                            }
+                                            else
+                                            {
+                                                dev.Vibrator.Vibrate(durationMs);
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+
+                            // 2. Phone device vibrator
+                            if (FlightData.VibratePhoneEnabled)
+                            {
+                                var phoneVibrator = (global::Android.OS.Vibrator)GetSystemService(global::Android.Content.Context.VibratorService);
+                                if (phoneVibrator != null && phoneVibrator.HasVibrator)
+                                {
+                                    if (global::Android.OS.Build.VERSION.SdkInt >= global::Android.OS.BuildVersionCodes.O)
+                                    {
+                                        phoneVibrator.Vibrate(global::Android.OS.VibrationEffect.CreateOneShot(durationMs, global::Android.OS.VibrationEffect.DefaultAmplitude));
+                                    }
+                                    else
+                                    {
+                                        phoneVibrator.Vibrate(durationMs);
+                                    }
+                                }
+                            }
+                        }
+                        catch (global::System.Exception ex)
+                        {
+                            global::Android.Util.Log.Warn("MainActivity", "Vibrate execution error: " + ex.Message);
+                        }
+                    });
+                }
+                catch { }
+            };
+
             AndroidEnvironment.UnhandledExceptionRaiser += AndroidEnvironment_UnhandledExceptionRaiser;
 
             {

@@ -8,4 +8,5 @@
 		</intent>
 	</queries>
 	<uses-sdk android:minSdkVersion="21" android:targetSdkVersion="35" />
+	<uses-permission android:name="android.permission.VIBRATE" />
 </manifest>

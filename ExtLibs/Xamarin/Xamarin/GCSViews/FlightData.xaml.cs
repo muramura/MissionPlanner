@@ -38,10 +38,30 @@ using Label = Xamarin.Forms.Label;
 
 namespace Xamarin
 {
+        // 📳 ハプティクス・バイブレーションパターン列挙型
+    public enum HapticPattern
+    {
+        Arm = 1,
+        Disarm = 2,
+        BatteryWarning = 3,
+        BatteryCritical = 4,
+        Failsafe = 5,
+        Test = 6
+    }
+
     public partial class FlightData : ContentPage, IActivate, IDeactivate
     {
         // 🎮 Android ネイティブ接続のジョイスティック列挙用デリゲート
         public static Func<List<string>> GetConnectedJoysticksFunc;
+
+        // 📳 Android ネイティブ接続のゲームコントローラー＆端末バイブレーション送信デリゲート
+        public static Action<HapticPattern, int> VibrateHandler;
+
+        // 📳 ハプティクス＆異常検知状態トラッキング
+        private bool? _lastHapticArmedState = null;
+        private bool? _lastHapticFailsafeState = null;
+        private DateTime _lastHapticBattWarnTime = DateTime.MinValue;
+        private DateTime _lastHapticAnomalyWarnTime = DateTime.MinValue;
 
         // 🎮 リアルタイム・スティック入力バッファ (MainActivityから更新)
         public static float LastStickRoll = 0f;    // -1.0 〜 +1.0 (X)
@@ -389,6 +409,7 @@ namespace Xamarin
 
             // 🎮 保存されたジョイスティック設定を起動時に自動読み込み
             LoadJoystickSettings();
+            LoadVibeSettings();
 
             List<string> list = new List<string>();
 
@@ -843,6 +864,69 @@ namespace Xamarin
                                     LBL_dock_vibe_dot.Text = "🟢";
                                     LBL_dock_vibe_text.Text = $"VIBE: {maxVibe:0}";
                                     LBL_dock_vibe_text.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                                }
+                            }
+                            catch { }
+
+                            // 📳 HAPTIC FEEDBACK & ANOMALY MONITORS (コントローラー振動＆異常検知)
+                            try
+                            {
+                                if (VibrateMasterEnabled)
+                                {
+                                    // 1. ARM / DISARM 遷移検知
+                                    if (_lastHapticArmedState.HasValue && _lastHapticArmedState.Value != cs.armed)
+                                    {
+                                        if (cs.armed)
+                                        {
+                                            TriggerHapticForChoice(Config_Pattern_Arm);
+                                        }
+                                        else
+                                        {
+                                            TriggerHapticForChoice(Config_Pattern_Disarm);
+                                        }
+                                    }
+                                    _lastHapticArmedState = cs.armed;
+
+                                    // 2. フェールセーフ発動検知
+                                    if (_lastHapticFailsafeState.HasValue && !_lastHapticFailsafeState.Value && cs.failsafe)
+                                    {
+                                        TriggerHapticForChoice(Config_Pattern_Anomaly);
+                                    }
+                                    _lastHapticFailsafeState = cs.failsafe;
+
+                                    // 3. 低電圧・限界電圧バッテリー監視 (1.0V以上で有効なバッテリー接続中)
+                                    double v = cs.battery_voltage;
+                                    if (v > 1.0)
+                                    {
+                                        var now = DateTime.UtcNow;
+                                        if (v < 3.30 && (now - _lastHapticBattWarnTime).TotalSeconds >= 3.5)
+                                        {
+                                            TriggerHapticForChoice(Config_Pattern_BattCrit);
+                                            _lastHapticBattWarnTime = now;
+                                        }
+                                        else if (v < 3.55 && (now - _lastHapticBattWarnTime).TotalSeconds >= 7.0)
+                                        {
+                                            TriggerHapticForChoice(Config_Pattern_BattWarn);
+                                            _lastHapticBattWarnTime = now;
+                                        }
+                                    }
+
+                                    // 4. EKF 推定異常 & IMU 危険振動 / クリッピング異常検知 (5秒間隔クールダウン)
+                                    var nowAnomaly = DateTime.UtcNow;
+                                    if ((nowAnomaly - _lastHapticAnomalyWarnTime).TotalSeconds >= 5.0)
+                                    {
+                                        float currentMaxVibe = Math.Max(cs.vibex, Math.Max(cs.vibey, cs.vibez));
+                                        if (cs.ekfstatus > 0.8f || currentMaxVibe > 60f)
+                                        {
+                                            TriggerHapticForChoice(Config_Pattern_Anomaly);
+                                            _lastHapticAnomalyWarnTime = nowAnomaly;
+                                        }
+                                    }
+                                }
+                                else
+                                {
+                                    _lastHapticArmedState = cs.armed;
+                                    _lastHapticFailsafeState = cs.failsafe;
                                 }
                             }
                             catch { }
@@ -2886,6 +2970,7 @@ namespace Xamarin
 
                 // 画面上の全UI（軸割り当て・リバース・エクスポ・モード）を保存設定と同期
                 LoadJoystickSettings();
+                LoadVibeSettings();
             }
         }
 
@@ -2923,13 +3008,332 @@ namespace Xamarin
             }
         }
 
-        public async void OnJoystickTestVibeClicked(object sender, EventArgs e)
+        // 📳 バイブレーション設定フラグ & パターンマッピング
+        public static bool VibrateMasterEnabled = true;
+        public static bool VibrateGamepadEnabled = true;
+        public static bool VibratePhoneEnabled = true;
+
+        public static int Config_Pattern_Arm = 0;
+        public static int Config_Pattern_Disarm = 1;
+        public static int Config_Pattern_BattWarn = 2;
+        public static int Config_Pattern_BattCrit = 3;
+        public static int Config_Pattern_Anomaly = 4;
+
+        // 📳 選択されたパターン番号に応じたハプティクス発火
+        public static void TriggerHapticForChoice(int choiceIndex)
+        {
+            if (!VibrateMasterEnabled) return;
+            switch (choiceIndex)
+            {
+                case 0:
+                    TriggerHaptic(HapticPattern.Arm);
+                    break;
+                case 1:
+                    TriggerHaptic(HapticPattern.Disarm);
+                    break;
+                case 2:
+                    TriggerHaptic(HapticPattern.BatteryWarning);
+                    break;
+                case 3:
+                    TriggerHaptic(HapticPattern.BatteryCritical);
+                    break;
+                case 4:
+                    TriggerHaptic(HapticPattern.Failsafe);
+                    break;
+                case 5:
+                default:
+                    // 🚫 なし (OFF)
+                    break;
+            }
+        }
+
+        // 📳 ハプティクス（コントローラー＆端末）発火制御メソッド
+        public static void TriggerHaptic(HapticPattern pattern, int? overrideVariant = null)
+        {
+            if (!VibrateMasterEnabled) return;
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    switch (pattern)
+                    {
+                        case HapticPattern.Arm:
+                            VibrateHandler?.Invoke(HapticPattern.Arm, 140);
+                            await Task.Delay(100);
+                            VibrateHandler?.Invoke(HapticPattern.Arm, 140);
+                            break;
+
+                        case HapticPattern.Disarm:
+                            VibrateHandler?.Invoke(HapticPattern.Disarm, 280);
+                            break;
+
+                        case HapticPattern.BatteryWarning:
+                            VibrateHandler?.Invoke(HapticPattern.BatteryWarning, 180);
+                            await Task.Delay(120);
+                            VibrateHandler?.Invoke(HapticPattern.BatteryWarning, 180);
+                            break;
+
+                        case HapticPattern.BatteryCritical:
+                            for (int i = 0; i < 3; i++)
+                            {
+                                VibrateHandler?.Invoke(HapticPattern.BatteryCritical, 300);
+                                await Task.Delay(100);
+                            }
+                            break;
+
+                        case HapticPattern.Failsafe:
+                            for (int i = 0; i < 3; i++)
+                            {
+                                VibrateHandler?.Invoke(HapticPattern.Failsafe, 450);
+                                await Task.Delay(150);
+                            }
+                            break;
+
+                        case HapticPattern.Test:
+                        default:
+                            VibrateHandler?.Invoke(HapticPattern.Test, 180);
+                            await Task.Delay(100);
+                            VibrateHandler?.Invoke(HapticPattern.Test, 180);
+                            break;
+                    }
+                }
+                catch { }
+            });
+        }
+
+        // 📂 バイブレーション設定読み込み
+        public void LoadVibeSettings()
         {
             try
             {
-                global::Xamarin.Essentials.Vibration.Vibrate(TimeSpan.FromMilliseconds(200));
+                VibrateMasterEnabled = global::Xamarin.Essentials.Preferences.Get("MP_Vibe_Master", true);
+                VibrateGamepadEnabled = global::Xamarin.Essentials.Preferences.Get("MP_Vibe_Gamepad", true);
+                VibratePhoneEnabled = global::Xamarin.Essentials.Preferences.Get("MP_Vibe_Phone", true);
+
+                Config_Pattern_Arm = global::Xamarin.Essentials.Preferences.Get("MP_Vibe_Pattern_Arm", 0);
+                Config_Pattern_Disarm = global::Xamarin.Essentials.Preferences.Get("MP_Vibe_Pattern_Disarm", 1);
+                Config_Pattern_BattWarn = global::Xamarin.Essentials.Preferences.Get("MP_Vibe_Pattern_BattWarn", 2);
+                Config_Pattern_BattCrit = global::Xamarin.Essentials.Preferences.Get("MP_Vibe_Pattern_BattCrit", 3);
+                Config_Pattern_Anomaly = global::Xamarin.Essentials.Preferences.Get("MP_Vibe_Pattern_Anomaly", 4);
+
+                if (CHK_Vibe_MasterEnabled != null) CHK_Vibe_MasterEnabled.IsChecked = VibrateMasterEnabled;
+                if (CHK_Vibe_Gamepad != null) CHK_Vibe_Gamepad.IsChecked = VibrateGamepadEnabled;
+                if (CHK_Vibe_Phone != null) CHK_Vibe_Phone.IsChecked = VibratePhoneEnabled;
+
+                if (Picker_Vibe_Arm != null) Picker_Vibe_Arm.SelectedIndex = Math.Max(0, Math.Min(5, Config_Pattern_Arm));
+                if (Picker_Vibe_Disarm != null) Picker_Vibe_Disarm.SelectedIndex = Math.Max(0, Math.Min(5, Config_Pattern_Disarm));
+                if (Picker_Vibe_BattWarn != null) Picker_Vibe_BattWarn.SelectedIndex = Math.Max(0, Math.Min(5, Config_Pattern_BattWarn));
+                if (Picker_Vibe_BattCrit != null) Picker_Vibe_BattCrit.SelectedIndex = Math.Max(0, Math.Min(5, Config_Pattern_BattCrit));
+                if (Picker_Vibe_Anomaly != null) Picker_Vibe_Anomaly.SelectedIndex = Math.Max(0, Math.Min(5, Config_Pattern_Anomaly));
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Console.WriteLine("LoadVibeSettings error: " + ex);
+            }
+        }
+
+        // 💾 バイブレーション設定保存
+        public void SaveVibeSettings()
+        {
+            try
+            {
+                if (CHK_Vibe_MasterEnabled != null) VibrateMasterEnabled = CHK_Vibe_MasterEnabled.IsChecked;
+                if (CHK_Vibe_Gamepad != null) VibrateGamepadEnabled = CHK_Vibe_Gamepad.IsChecked;
+                if (CHK_Vibe_Phone != null) VibratePhoneEnabled = CHK_Vibe_Phone.IsChecked;
+
+                if (Picker_Vibe_Arm != null && Picker_Vibe_Arm.SelectedIndex >= 0) Config_Pattern_Arm = Picker_Vibe_Arm.SelectedIndex;
+                if (Picker_Vibe_Disarm != null && Picker_Vibe_Disarm.SelectedIndex >= 0) Config_Pattern_Disarm = Picker_Vibe_Disarm.SelectedIndex;
+                if (Picker_Vibe_BattWarn != null && Picker_Vibe_BattWarn.SelectedIndex >= 0) Config_Pattern_BattWarn = Picker_Vibe_BattWarn.SelectedIndex;
+                if (Picker_Vibe_BattCrit != null && Picker_Vibe_BattCrit.SelectedIndex >= 0) Config_Pattern_BattCrit = Picker_Vibe_BattCrit.SelectedIndex;
+                if (Picker_Vibe_Anomaly != null && Picker_Vibe_Anomaly.SelectedIndex >= 0) Config_Pattern_Anomaly = Picker_Vibe_Anomaly.SelectedIndex;
+
+                global::Xamarin.Essentials.Preferences.Set("MP_Vibe_Master", VibrateMasterEnabled);
+                global::Xamarin.Essentials.Preferences.Set("MP_Vibe_Gamepad", VibrateGamepadEnabled);
+                global::Xamarin.Essentials.Preferences.Set("MP_Vibe_Phone", VibratePhoneEnabled);
+
+                global::Xamarin.Essentials.Preferences.Set("MP_Vibe_Pattern_Arm", Config_Pattern_Arm);
+                global::Xamarin.Essentials.Preferences.Set("MP_Vibe_Pattern_Disarm", Config_Pattern_Disarm);
+                global::Xamarin.Essentials.Preferences.Set("MP_Vibe_Pattern_BattWarn", Config_Pattern_BattWarn);
+                global::Xamarin.Essentials.Preferences.Set("MP_Vibe_Pattern_BattCrit", Config_Pattern_BattCrit);
+                global::Xamarin.Essentials.Preferences.Set("MP_Vibe_Pattern_Anomaly", Config_Pattern_Anomaly);
+
+                UserDialogs.Instance.Toast("💾 バイブレーション設定を保存しました", TimeSpan.FromSeconds(1.5));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SaveVibeSettings error: " + ex);
+            }
+        }
+
+        // 🔄 アンの提案（デフォルト設定）へリセット
+        public void ResetVibeSettingsToDefaults()
+        {
+            try
+            {
+                if (CHK_Vibe_MasterEnabled != null) CHK_Vibe_MasterEnabled.IsChecked = true;
+                if (CHK_Vibe_Gamepad != null) CHK_Vibe_Gamepad.IsChecked = true;
+                if (CHK_Vibe_Phone != null) CHK_Vibe_Phone.IsChecked = true;
+
+                if (Picker_Vibe_Arm != null) Picker_Vibe_Arm.SelectedIndex = 0;
+                if (Picker_Vibe_Disarm != null) Picker_Vibe_Disarm.SelectedIndex = 1;
+                if (Picker_Vibe_BattWarn != null) Picker_Vibe_BattWarn.SelectedIndex = 2;
+                if (Picker_Vibe_BattCrit != null) Picker_Vibe_BattCrit.SelectedIndex = 3;
+                if (Picker_Vibe_Anomaly != null) Picker_Vibe_Anomaly.SelectedIndex = 4;
+
+                SaveVibeSettings();
+                UserDialogs.Instance.Toast("🔄 アンの提案（デフォルト設定）にリセットしました", TimeSpan.FromSeconds(2.0));
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("ResetVibeSettingsToDefaults error: " + ex);
+            }
+        }
+
+        public void OnJoystickTestVibeClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                LoadVibeSettings();
+                if (Popup_VibeTest != null)
+                {
+                    Popup_VibeTest.IsVisible = true;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnJoystickTestVibeClicked error: " + ex);
+            }
+        }
+
+        private void TestVibe_Arm_Clicked(object sender, EventArgs e)
+        {
+            if (CHK_Vibe_MasterEnabled != null) VibrateMasterEnabled = CHK_Vibe_MasterEnabled.IsChecked;
+            if (CHK_Vibe_Gamepad != null) VibrateGamepadEnabled = CHK_Vibe_Gamepad.IsChecked;
+            if (CHK_Vibe_Phone != null) VibratePhoneEnabled = CHK_Vibe_Phone.IsChecked;
+
+            int sel = Picker_Vibe_Arm != null && Picker_Vibe_Arm.SelectedIndex >= 0 ? Picker_Vibe_Arm.SelectedIndex : Config_Pattern_Arm;
+            if (!VibrateMasterEnabled)
+            {
+                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                return;
+            }
+            TriggerHapticForChoice(sel);
+            UserDialogs.Instance.Toast(sel == 5 ? "🚫 ARM: 振動なし (OFF)" : $"🟢 ARM: パターン {sel + 1} テスト再生", TimeSpan.FromSeconds(1.2));
+        }
+
+        private void TestVibe_Disarm_Clicked(object sender, EventArgs e)
+        {
+            if (CHK_Vibe_MasterEnabled != null) VibrateMasterEnabled = CHK_Vibe_MasterEnabled.IsChecked;
+            if (CHK_Vibe_Gamepad != null) VibrateGamepadEnabled = CHK_Vibe_Gamepad.IsChecked;
+            if (CHK_Vibe_Phone != null) VibratePhoneEnabled = CHK_Vibe_Phone.IsChecked;
+
+            int sel = Picker_Vibe_Disarm != null && Picker_Vibe_Disarm.SelectedIndex >= 0 ? Picker_Vibe_Disarm.SelectedIndex : Config_Pattern_Disarm;
+            if (!VibrateMasterEnabled)
+            {
+                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                return;
+            }
+            TriggerHapticForChoice(sel);
+            UserDialogs.Instance.Toast(sel == 5 ? "🚫 DISARM: 振動なし (OFF)" : $"🔴 DISARM: パターン {sel + 1} テスト再生", TimeSpan.FromSeconds(1.2));
+        }
+
+        private void TestVibe_BattWarn_Clicked(object sender, EventArgs e)
+        {
+            if (CHK_Vibe_MasterEnabled != null) VibrateMasterEnabled = CHK_Vibe_MasterEnabled.IsChecked;
+            if (CHK_Vibe_Gamepad != null) VibrateGamepadEnabled = CHK_Vibe_Gamepad.IsChecked;
+            if (CHK_Vibe_Phone != null) VibratePhoneEnabled = CHK_Vibe_Phone.IsChecked;
+
+            int sel = Picker_Vibe_BattWarn != null && Picker_Vibe_BattWarn.SelectedIndex >= 0 ? Picker_Vibe_BattWarn.SelectedIndex : Config_Pattern_BattWarn;
+            if (!VibrateMasterEnabled)
+            {
+                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                return;
+            }
+            TriggerHapticForChoice(sel);
+            UserDialogs.Instance.Toast(sel == 5 ? "🚫 バッテリー警告: 振動なし (OFF)" : $"🔋 バッテリー警告: パターン {sel + 1} テスト再生", TimeSpan.FromSeconds(1.2));
+        }
+
+        private void TestVibe_BattCrit_Clicked(object sender, EventArgs e)
+        {
+            if (CHK_Vibe_MasterEnabled != null) VibrateMasterEnabled = CHK_Vibe_MasterEnabled.IsChecked;
+            if (CHK_Vibe_Gamepad != null) VibrateGamepadEnabled = CHK_Vibe_Gamepad.IsChecked;
+            if (CHK_Vibe_Phone != null) VibratePhoneEnabled = CHK_Vibe_Phone.IsChecked;
+
+            int sel = Picker_Vibe_BattCrit != null && Picker_Vibe_BattCrit.SelectedIndex >= 0 ? Picker_Vibe_BattCrit.SelectedIndex : Config_Pattern_BattCrit;
+            if (!VibrateMasterEnabled)
+            {
+                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                return;
+            }
+            TriggerHapticForChoice(sel);
+            UserDialogs.Instance.Toast(sel == 5 ? "🚫 バッテリー危険: 振動なし (OFF)" : $"⚠️ バッテリー危険: パターン {sel + 1} テスト再生", TimeSpan.FromSeconds(1.2));
+        }
+
+        private void TestVibe_Anomaly_Clicked(object sender, EventArgs e)
+        {
+            if (CHK_Vibe_MasterEnabled != null) VibrateMasterEnabled = CHK_Vibe_MasterEnabled.IsChecked;
+            if (CHK_Vibe_Gamepad != null) VibrateGamepadEnabled = CHK_Vibe_Gamepad.IsChecked;
+            if (CHK_Vibe_Phone != null) VibratePhoneEnabled = CHK_Vibe_Phone.IsChecked;
+
+            int sel = Picker_Vibe_Anomaly != null && Picker_Vibe_Anomaly.SelectedIndex >= 0 ? Picker_Vibe_Anomaly.SelectedIndex : Config_Pattern_Anomaly;
+            if (!VibrateMasterEnabled)
+            {
+                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                return;
+            }
+            TriggerHapticForChoice(sel);
+            UserDialogs.Instance.Toast(sel == 5 ? "🚫 異常/FS: 振動なし (OFF)" : $"🚨 異常/FS: パターン {sel + 1} テスト再生", TimeSpan.FromSeconds(1.2));
+        }
+
+        private void TestVibe_PlayAll_Clicked(object sender, EventArgs e)
+        {
+            if (CHK_Vibe_MasterEnabled != null) VibrateMasterEnabled = CHK_Vibe_MasterEnabled.IsChecked;
+            if (CHK_Vibe_Gamepad != null) VibrateGamepadEnabled = CHK_Vibe_Gamepad.IsChecked;
+            if (CHK_Vibe_Phone != null) VibratePhoneEnabled = CHK_Vibe_Phone.IsChecked;
+
+            if (!VibrateMasterEnabled)
+            {
+                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                return;
+            }
+
+            Task.Run(async () =>
+            {
+                try
+                {
+                    UserDialogs.Instance.Toast("🔁 5パターン連続テスト開始...", TimeSpan.FromSeconds(1.5));
+                    TriggerHaptic(HapticPattern.Arm);
+                    await Task.Delay(1000);
+                    TriggerHaptic(HapticPattern.Disarm);
+                    await Task.Delay(1000);
+                    TriggerHaptic(HapticPattern.BatteryWarning);
+                    await Task.Delay(1000);
+                    TriggerHaptic(HapticPattern.BatteryCritical);
+                    await Task.Delay(1500);
+                    TriggerHaptic(HapticPattern.Failsafe);
+                }
+                catch { }
+            });
+        }
+
+        private void Btn_Vibe_ResetDefaults_Clicked(object sender, EventArgs e)
+        {
+            ResetVibeSettingsToDefaults();
+        }
+
+        private void CloseVibeTestPopup_Clicked(object sender, EventArgs e)
+        {
+            SaveVibeSettings();
+            if (Popup_VibeTest != null)
+            {
+                Popup_VibeTest.IsVisible = false;
+            }
+        }
+
+        private void OnEmptyTapIgnored(object sender, EventArgs e)
+        {
+            // Do nothing, intercepts clicks on modal body to prevent closing
         }
 
         // 💾 ジョイスティック設定の完全永続化保存
