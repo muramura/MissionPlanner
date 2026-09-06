@@ -163,7 +163,7 @@
                 <Grid Grid.Row="1">
                     <!-- Quick タブ (テレメトリ 2列x4行 = 8項目タイル) -->
                     <ScrollView x:Name="View_QuickTab" IsVisible="True">
-                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto" ColumnSpacing="3" RowSpacing="3">
+                        <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto,Auto,Auto,Auto" ColumnSpacing="3" RowSpacing="3">
                             <!-- 1. 高度 -->
                             <Frame Grid.Row="0" Grid.Column="0" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
                                 <StackLayout Spacing="0">
@@ -218,6 +218,20 @@
                                 <StackLayout Spacing="0">
                                     <Label Text="Satellites" TextColor="#94A3B8" FontSize="8"/>
                                     <Label x:Name="LBL_quick_sats" Text="0 sats" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold"/>
+                                </StackLayout>
+                            </Frame>
+                            <!-- 9. CPU Load (SYS_STATUS) -->
+                            <Frame Grid.Row="4" Grid.Column="0" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
+                                <StackLayout Spacing="0">
+                                    <Label Text="CPU Load" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_cpuload" Text="-- %" TextColor="#10B981" FontSize="12" FontAttributes="Bold"/>
+                                </StackLayout>
+                            </Frame>
+                            <!-- 10. Link Quality -->
+                            <Frame Grid.Row="4" Grid.Column="1" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
+                                <StackLayout Spacing="0">
+                                    <Label Text="Link Quality" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_link" Text="-- %" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
                         </Grid>

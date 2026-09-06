@@ -91,12 +91,17 @@ namespace Xamarin
 
                         try
                         {
-                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.ALL, 4);
-                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA1, 10);
-                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 10);
-                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 3);
-                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 20);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA1, 4);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 1);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 1);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 1);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, 1);
 
+                            // Populate parameter cache in background upon connection
+                            _ = Task.Run(() =>
+                            {
+                                try { MainV2.comPort.getParamList(); } catch { }
+                            });
                         }
                         catch { }
                     }

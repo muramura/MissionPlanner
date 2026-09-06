@@ -951,6 +951,29 @@ namespace Xamarin
                                 LBL_quick_curr.Text = $"{cs.current:0.0} A";
                                 LBL_quick_sats.Text = $"{cs.satcount} sats";
 
+                                // 9. CPU Load (from SYS_STATUS msg)
+                                float cpuLoad = cs.load;
+                                LBL_quick_cpuload.Text = $"{cpuLoad:0.0} %";
+                                if (cpuLoad >= 95.0f)
+                                {
+                                    LBL_quick_cpuload.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444"); // Red (saturated)
+                                }
+                                else if (cpuLoad >= 80.0f)
+                                {
+                                    LBL_quick_cpuload.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B"); // Amber
+                                }
+                                else
+                                {
+                                    LBL_quick_cpuload.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981"); // Green
+                                }
+
+                                // 10. Link Quality
+                                int linkQual = (int)cs.linkqualitygcs;
+                                LBL_quick_link.Text = $"{linkQual} %";
+                                LBL_quick_link.TextColor = linkQual >= 80 
+                                    ? global::Xamarin.Forms.Color.FromHex("#38BDF8") 
+                                    : (linkQual >= 50 ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#EF4444"));
+
                                 if (View_StatusTab.IsVisible)
                                 {
                                     LBL_status_list.Text = $"Roll: {cs.roll:0.0}°\nPitch: {cs.pitch:0.0}°\nYaw: {cs.yaw:0.0}°\nAlt: {cs.alt:0.0}m\nClimb: {cs.verticalspeed:0.0}m/s\nVolt: {cs.battery_voltage:0.00}V\nCur: {cs.current:0.0}A\nSatCount: {cs.satcount}\nGPSFix: {cs.gpsstatus}\nArmed: {cs.armed}\nMode: {cs.mode}";
