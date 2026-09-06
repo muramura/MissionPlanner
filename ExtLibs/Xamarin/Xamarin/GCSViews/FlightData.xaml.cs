@@ -6664,11 +6664,30 @@ namespace Xamarin
         {
             try
             {
-                var param = MainV2.comPort?.MAV?.param;
-                log.Info($"[RefreshParams] Total count: {param?.Count ?? -1}, ARMING_RUDDER exists: {param?.ContainsKey("ARMING_RUDDER")}, BATT_LOW_VOLT exists: {param?.ContainsKey("BATT_LOW_VOLT")}");
-                if (param != null && param.ContainsKey("ARMING_RUDDER"))
+                if (MainV2.comPort != null)
                 {
-                    log.Info($"[RefreshParams] ARMING_RUDDER value: {param["ARMING_RUDDER"].Value}");
+                    byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                    byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+
+                    // Lightweight pinpoint read requests for only required safety parameters (no bulk download, no FC CPU slowdown)
+                    string[] safetyParams = new[] { "ARMING_RUDDER", "BATT_LOW_VOLT", "BATT_FS_LOW_ACT", "BATT_CRT_VOLT", "BATT_FS_CRT_ACT", "DISARM_DELAY", "ARMING_CHECK" };
+                    Task.Run(async () =>
+                    {
+                        foreach (var p in safetyParams)
+                        {
+                            try
+                            {
+                                await MainV2.comPort.GetParamAsync(sysid, compid, p, -1, false);
+                                await Task.Delay(25);
+                            }
+                            catch { }
+                        }
+                        await Task.Delay(120);
+                        Device.BeginInvokeOnMainThread(() =>
+                        {
+                            LoadArmingSafetyParameters();
+                        });
+                    });
                 }
             }
             catch (Exception ex)
