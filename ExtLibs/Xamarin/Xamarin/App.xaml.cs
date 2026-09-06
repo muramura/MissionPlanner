@@ -1,4 +1,4 @@
-﻿using log4net;
+using log4net;
 using MissionPlanner;
 using MissionPlanner.Comms;
 using MissionPlanner.Utilities;
@@ -96,6 +96,22 @@ namespace Xamarin
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 10);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 3);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 20);
+
+                            // Load all parameters into MP cache upon connection
+                            _ = Task.Run(() =>
+                            {
+                                try
+                                {
+                                    System.Threading.Thread.Sleep(600);
+                                    log.Info("AutoConnect: starting getParamList() to populate cache...");
+                                    MainV2.comPort.getParamList();
+                                    log.Info($"AutoConnect: getParamList() finished. Cached params count: {MainV2.comPort.MAV.param.Count}");
+                                }
+                                catch (Exception ex)
+                                {
+                                    log.Error("AutoConnect getParamList error: ", ex);
+                                }
+                            });
                         }
                         catch { }
                     }

@@ -1,4 +1,4 @@
-﻿<?xml version="1.0" encoding="utf-8" ?>
+<?xml version="1.0" encoding="utf-8" ?>
 <ContentPage xmlns="http://xamarin.com/schemas/2014/forms"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:forms="clr-namespace:SkiaSharp.Views.Forms;assembly=SkiaSharp.Views.Forms"
@@ -739,6 +739,23 @@
                         <!-- ================= B. Button Actions (Flight Modes & Arming) ================= -->
                         <ScrollView x:Name="View_Joy_Buttons" IsVisible="False">
                             <StackLayout Spacing="8">
+                                <!-- Stick Arming Gesture Status & Quick Link -->
+                                <Frame BackgroundColor="#0F172A" BorderColor="#0284C7" CornerRadius="6" Padding="8,6" HasShadow="False">
+                                    <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                                        <Label Grid.Column="0" Text="🛡️" FontSize="16" VerticalOptions="Center"/>
+                                        <StackLayout Grid.Column="1" Spacing="1" VerticalOptions="Center">
+                                            <StackLayout Orientation="Horizontal" Spacing="6">
+                                                <Label Text="Stick Arming Gesture (ARMING_RUDDER):" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold"/>
+                                                <Label x:Name="LBL_joy_stick_gesture_status" Text="Disabled (Recommended)" TextColor="#10B981" FontSize="9" FontAttributes="Bold"/>
+                                            </StackLayout>
+                                            <Label Text="Use buttons below for safe Land, PosHold, Loiter, and Arming without accidental rudder shutoff." TextColor="#64748B" FontSize="8"/>
+                                        </StackLayout>
+                                        <Button Grid.Column="2" Text="⚙️ Set Gesture" FontSize="9" FontAttributes="Bold"
+                                                BackgroundColor="#0284C7" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="26" Padding="8,0"
+                                                Clicked="OnOpenArmingSettingsClicked"/>
+                                    </Grid>
+                                </Frame>
+
                                 <!-- Quick Preset & Instructions Bar -->
                                 <Frame BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="8,6" HasShadow="False">
                                     <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center">
@@ -1022,17 +1039,20 @@
                                 HeightRequest="28" Padding="10,0" CornerRadius="6" Clicked="OnCloseSetupModalClicked"/>
                     </Grid>
 
-                    <!-- Row 1: Sub-tabs (Accel / Compass / Gyro / [Hidden] Radio) -->
-                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                    <!-- Row 1: Sub-tabs (Accel / Compass / Gyro / Arming & Safety) -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
                         <Button x:Name="Btn_SetupTab_Accel" Grid.Column="0" Text="📐 Accel"
                                 BackgroundColor="#0284C7" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
                                 HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnSetupTabAccelClicked"/>
                         <Button x:Name="Btn_SetupTab_Compass" Grid.Column="1" Text="🧭 Compass"
                                 BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
                                 HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnSetupTabCompassClicked"/>
-                        <Button x:Name="Btn_SetupTab_Gyro" Grid.Column="2" Text="🔄 Gyro / Level"
+                        <Button x:Name="Btn_SetupTab_Gyro" Grid.Column="2" Text="🔄 Gyro"
                                 BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
                                 HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnSetupTabGyroClicked"/>
+                        <Button x:Name="Btn_SetupTab_Arming" Grid.Column="3" Text="🛡️ Arm &amp; Safety"
+                                BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
+                                HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnSetupTabArmingClicked"/>
                         <!-- Hidden: Radio (RC) Tab Button (Preserved in code for future expansion) -->
                         <Button x:Name="Btn_SetupTab_Radio" Grid.Column="2" Text="🎮 Radio (RC)" IsVisible="False"
                                 BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
@@ -1467,6 +1487,217 @@
                                         FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="12,0" IsVisible="False" Clicked="OnRadioCalSaveClicked"/>
                                 <Button x:Name="Btn_RadioCal_Cancel" Grid.Column="3" Text="✕ Cancel" BackgroundColor="#475569" TextColor="#F1F5F9"
                                         FontSize="11" HeightRequest="34" CornerRadius="6" Padding="10,0" IsVisible="False" Clicked="OnRadioCalCancelClicked"/>
+                            </Grid>
+                        </Grid>
+
+                        <!-- ================= E. Arming & Safety Suite ================= -->
+                        <Grid x:Name="View_Setup_Arming" IsVisible="False" RowDefinitions="*,Auto" RowSpacing="6">
+                            <ScrollView Grid.Row="0" VerticalScrollBarVisibility="Always">
+                                <StackLayout Spacing="8" Padding="2,0">
+                                    
+                                    <!-- 1. Stick Arm/Disarm Gesture (ARMING_RUDDER) Section -->
+                                    <Frame BackgroundColor="#1E293B" BorderColor="#0284C7" Padding="10,8" CornerRadius="8" HasShadow="False">
+                                        <StackLayout Spacing="6">
+                                            <!-- Section Header -->
+                                            <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                                                <StackLayout Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                    <Label Text="🛡️" FontSize="14" VerticalOptions="Center"/>
+                                                    <Label Text="Stick Arming &amp; Disarm Gesture" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                    <Label Text="(ARMING_RUDDER)" TextColor="#64748B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                </StackLayout>
+                                                <Button Grid.Column="1" Text="🔄 Refresh" BackgroundColor="#0284C7" TextColor="#FFFFFF"
+                                                        FontSize="9" FontAttributes="Bold" HeightRequest="24" CornerRadius="4" Padding="8,0"
+                                                        Clicked="OnRefreshArmingParamsClicked"/>
+                                                <Label x:Name="LBL_arming_rudder_fc_val" Grid.Column="2" Text="FC: Disabled (0)" TextColor="#10B981" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            </Grid>
+                                            
+                                            <!-- Info Banner -->
+                                            <Frame BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                                <Label Text="⚠️ Crucial Safety: For Gamepads &amp; StampFly, stick gestures risk accidental motor shutoff during descent or quick yawing. Disabling stick gestures and using a dedicated button is strongly recommended."
+                                                       TextColor="#CBD5E1" FontSize="9"/>
+                                            </Frame>
+
+                                            <!-- 3 Selection Cards -->
+                                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                                                <!-- Card 0: Disabled (Recommended) -->
+                                                <Frame x:Name="Card_Arming_Disabled" Grid.Column="0" BackgroundColor="#0F172A" BorderColor="#10B981" Padding="8,8" CornerRadius="8" HasShadow="False">
+                                                    <Frame.GestureRecognizers>
+                                                        <TapGestureRecognizer Tapped="OnArmingCardDisabledClicked"/>
+                                                    </Frame.GestureRecognizers>
+                                                    <StackLayout Spacing="4">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="🚫 Disabled (0)" TextColor="#10B981" FontSize="11" FontAttributes="Bold"/>
+                                                            <Label x:Name="Badge_Arming_Disabled" Grid.Column="1" Text="● ACTIVE" TextColor="#10B981" FontSize="8" FontAttributes="Bold" IsVisible="False"/>
+                                                        </Grid>
+                                                        <Frame BackgroundColor="#10B98122" BorderColor="#10B981" Padding="4,2" CornerRadius="4" HasShadow="False" HorizontalOptions="Start">
+                                                            <Label Text="RECOMMENDED" TextColor="#10B981" FontSize="8" FontAttributes="Bold"/>
+                                                        </Frame>
+                                                        <Label Text="Stick gestures completely disabled. No accidental disarming during flight. Requires Button or GCS to Arm/Disarm."
+                                                               TextColor="#94A3B8" FontSize="9"/>
+                                                    </StackLayout>
+                                                </Frame>
+
+                                                <!-- Card 1: Arming Only -->
+                                                <Frame x:Name="Card_Arming_ArmOnly" Grid.Column="1" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,8" CornerRadius="8" HasShadow="False">
+                                                    <Frame.GestureRecognizers>
+                                                        <TapGestureRecognizer Tapped="OnArmingCardArmOnlyClicked"/>
+                                                    </Frame.GestureRecognizers>
+                                                    <StackLayout Spacing="4">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="⚠️ Arm Only (1)" TextColor="#F59E0B" FontSize="11" FontAttributes="Bold"/>
+                                                            <Label x:Name="Badge_Arming_ArmOnly" Grid.Column="1" Text="● ACTIVE" TextColor="#F59E0B" FontSize="8" FontAttributes="Bold" IsVisible="False"/>
+                                                        </Grid>
+                                                        <Label Text="Allows stick arming (Throttle down + Rudder right), but Disarm via stick is prohibited in flight."
+                                                               TextColor="#94A3B8" FontSize="9"/>
+                                                    </StackLayout>
+                                                </Frame>
+
+                                                <!-- Card 2: Arm and Disarm (Standard RC) -->
+                                                <Frame x:Name="Card_Arming_ArmOrDisarm" Grid.Column="2" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,8" CornerRadius="8" HasShadow="False">
+                                                    <Frame.GestureRecognizers>
+                                                        <TapGestureRecognizer Tapped="OnArmingCardArmOrDisarmClicked"/>
+                                                    </Frame.GestureRecognizers>
+                                                    <StackLayout Spacing="4">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="✅ Standard (2)" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold"/>
+                                                            <Label x:Name="Badge_Arming_ArmOrDisarm" Grid.Column="1" Text="● ACTIVE" TextColor="#38BDF8" FontSize="8" FontAttributes="Bold" IsVisible="False"/>
+                                                        </Grid>
+                                                        <Label Text="Traditional RC gestures. Down+Right to Arm, Down+Left to Disarm. Warning: Can cause in-flight motor cutoff."
+                                                               TextColor="#94A3B8" FontSize="9"/>
+                                                    </StackLayout>
+                                                </Frame>
+                                            </Grid>
+                                        </StackLayout>
+                                    </Frame>
+
+                                    <!-- 2. Battery Failsafe & Thresholds Section -->
+                                    <Frame BackgroundColor="#1E293B" BorderColor="#334155" Padding="10,8" CornerRadius="8" HasShadow="False">
+                                        <StackLayout Spacing="6">
+                                            <StackLayout Orientation="Horizontal" Spacing="6">
+                                                <Label Text="🔋" FontSize="14" VerticalOptions="Center"/>
+                                                <Label Text="Battery Voltage Failsafe &amp; Actions" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                <Label Text="(1S LiPo / General)" TextColor="#64748B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            </StackLayout>
+
+                                            <!-- Row A: Low Battery Threshold & Action -->
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                                <!-- Low Voltage (BATT_LOW_VOLT) -->
+                                                <Frame BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                                    <StackLayout Spacing="4">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="⚠️ Low Battery Warning" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"/>
+                                                            <Label x:Name="LBL_batt_low_volt_fc" Grid.Column="1" Text="3.55 V" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                        </Grid>
+                                                        <Label Text="Voltage threshold (BATT_LOW_VOLT):" TextColor="#64748B" FontSize="8"/>
+                                                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="4">
+                                                            <Button x:Name="Btn_LowVolt_360" Grid.Column="0" Text="3.60V" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnLowVoltPresetClicked"/>
+                                                            <Button x:Name="Btn_LowVolt_355" Grid.Column="1" Text="3.55V" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnLowVoltPresetClicked"/>
+                                                            <Button x:Name="Btn_LowVolt_350" Grid.Column="2" Text="3.50V" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnLowVoltPresetClicked"/>
+                                                            <Button x:Name="Btn_LowVolt_340" Grid.Column="3" Text="3.40V" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnLowVoltPresetClicked"/>
+                                                        </Grid>
+                                                    </StackLayout>
+                                                </Frame>
+
+                                                <!-- Low Voltage Action (BATT_FS_LOW_ACT) -->
+                                                <Frame Grid.Column="1" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                                    <StackLayout Spacing="4">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="Low Battery Action" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"/>
+                                                            <Label x:Name="LBL_batt_fs_low_act_fc" Grid.Column="1" Text="None (0)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                        </Grid>
+                                                        <Label Text="Failsafe action (BATT_FS_LOW_ACT):" TextColor="#64748B" FontSize="8"/>
+                                                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                                                            <Button x:Name="Btn_LowAct_0" Grid.Column="0" Text="None (0)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnLowActClicked"/>
+                                                            <Button x:Name="Btn_LowAct_1" Grid.Column="1" Text="🛬 Land (1)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnLowActClicked"/>
+                                                            <Button x:Name="Btn_LowAct_2" Grid.Column="2" Text="🏠 RTL (2)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnLowActClicked"/>
+                                                        </Grid>
+                                                    </StackLayout>
+                                                </Frame>
+                                            </Grid>
+
+                                            <!-- Row B: Critical Battery Threshold & Action -->
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                                <!-- Critical Voltage (BATT_CRT_VOLT) -->
+                                                <Frame Grid.Column="0" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                                    <StackLayout Spacing="4">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="🚨 Critical Voltage (Emergency)" TextColor="#EF4444" FontSize="10" FontAttributes="Bold"/>
+                                                            <Label x:Name="LBL_batt_crt_volt_fc" Grid.Column="1" Text="3.30 V" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                        </Grid>
+                                                        <Label Text="Voltage threshold (BATT_CRT_VOLT):" TextColor="#64748B" FontSize="8"/>
+                                                        <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="4">
+                                                            <Button x:Name="Btn_CrtVolt_340" Grid.Column="0" Text="3.40V" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnCrtVoltPresetClicked"/>
+                                                            <Button x:Name="Btn_CrtVolt_335" Grid.Column="1" Text="3.35V" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnCrtVoltPresetClicked"/>
+                                                            <Button x:Name="Btn_CrtVolt_330" Grid.Column="2" Text="3.30V" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnCrtVoltPresetClicked"/>
+                                                            <Button x:Name="Btn_CrtVolt_320" Grid.Column="3" Text="3.20V" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnCrtVoltPresetClicked"/>
+                                                        </Grid>
+                                                    </StackLayout>
+                                                </Frame>
+
+                                                <!-- Critical Voltage Action (BATT_FS_CRT_ACT) -->
+                                                <Frame Grid.Column="1" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                                    <StackLayout Spacing="4">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="Critical Action" TextColor="#EF4444" FontSize="10" FontAttributes="Bold"/>
+                                                            <Label x:Name="LBL_batt_fs_crt_act_fc" Grid.Column="1" Text="Land (1)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                        </Grid>
+                                                        <Label Text="Failsafe action (BATT_FS_CRT_ACT):" TextColor="#64748B" FontSize="8"/>
+                                                        <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4">
+                                                            <Button x:Name="Btn_CrtAct_0" Grid.Column="0" Text="None (0)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnCrtActClicked"/>
+                                                            <Button x:Name="Btn_CrtAct_1" Grid.Column="1" Text="🛬 Land (1)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnCrtActClicked"/>
+                                                            <Button x:Name="Btn_CrtAct_2" Grid.Column="2" Text="🏠 RTL (2)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnCrtActClicked"/>
+                                                        </Grid>
+                                                    </StackLayout>
+                                                </Frame>
+                                            </Grid>
+                                        </StackLayout>
+                                    </Frame>
+
+                                    <!-- 3. Landing Auto-Disarm & Pre-Arm Safety Checks -->
+                                    <Frame BackgroundColor="#1E293B" BorderColor="#334155" Padding="10,8" CornerRadius="8" HasShadow="False">
+                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="8">
+                                            <!-- Auto Disarm Delay (DISARM_DELAY) -->
+                                            <StackLayout Grid.Column="0" Spacing="4">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <Label Text="⏱️ Auto Disarm Delay" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                    <Label x:Name="LBL_disarm_delay_fc" Grid.Column="1" Text="10 s" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                                </Grid>
+                                                <Label Text="Motors stop after landing (DISARM_DELAY):" TextColor="#64748B" FontSize="8"/>
+                                                <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="4">
+                                                    <Button x:Name="Btn_Delay_0" Grid.Column="0" Text="Off (0)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnDisarmDelayClicked"/>
+                                                    <Button x:Name="Btn_Delay_5" Grid.Column="1" Text="5 s" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnDisarmDelayClicked"/>
+                                                    <Button x:Name="Btn_Delay_10" Grid.Column="2" Text="10 s" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnDisarmDelayClicked"/>
+                                                    <Button x:Name="Btn_Delay_15" Grid.Column="3" Text="15 s" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnDisarmDelayClicked"/>
+                                                </Grid>
+                                            </StackLayout>
+
+                                            <!-- Pre-Arm Safety Checks (ARMING_CHECK) -->
+                                            <StackLayout Grid.Column="1" Spacing="4">
+                                                <Grid ColumnDefinitions="*,Auto">
+                                                    <Label Text="🛡️ Pre-Arm Checks" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                    <Label x:Name="LBL_arming_check_fc" Grid.Column="1" Text="All (1)" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                                </Grid>
+                                                <Label Text="Arming safety check mask (ARMING_CHECK):" TextColor="#64748B" FontSize="8"/>
+                                                <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                                    <Button x:Name="Btn_Check_All" Grid.Column="0" Text="✅ All Checks (1)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnArmingCheckClicked"/>
+                                                    <Button x:Name="Btn_Check_Skip" Grid.Column="1" Text="⚠️ Skip Checks (0)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnArmingCheckClicked"/>
+                                                </Grid>
+                                            </StackLayout>
+                                        </Grid>
+                                    </Frame>
+
+                                </StackLayout>
+                            </ScrollView>
+
+                            <!-- Footer Actions -->
+                            <Grid Grid.Row="1" ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                                <Button Grid.Column="0" Text="🔄 Refresh Parameters" BackgroundColor="#0284C7" TextColor="#FFFFFF"
+                                        FontSize="11" FontAttributes="Bold" HeightRequest="32" CornerRadius="6" Padding="12,0"
+                                        Clicked="OnRefreshArmingParamsClicked"/>
+                                <Label Grid.Column="1"/>
+                                <Button Grid.Column="2" Text="🎮 Open Joystick Button Setup" BackgroundColor="#334155" TextColor="#38BDF8"
+                                        FontSize="11" FontAttributes="Bold" HeightRequest="32" CornerRadius="6" Padding="12,0"
+                                        Clicked="OnOpenJoystickFromArmingClicked"/>
                             </Grid>
                         </Grid>
 

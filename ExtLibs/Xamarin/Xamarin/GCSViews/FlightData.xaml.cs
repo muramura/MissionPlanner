@@ -1,4 +1,4 @@
-﻿using Acr.UserDialogs;
+using Acr.UserDialogs;
 using FormsVideoLibrary;
 using GMap.NET;
 using GMap.NET.MapProviders;
@@ -677,7 +677,6 @@ namespace Xamarin
 
             FlightData_Load(null, null);
 
-            int streamRequestCounter = 0;
             Forms.Device.StartTimer(TimeSpan.FromMilliseconds(16), () =>
             {
                 try
@@ -901,22 +900,7 @@ namespace Xamarin
 
                         if (cs != null && isOpen)
                         {
-                            if (++streamRequestCounter % 60 == 1)
-                            {
-                                log.Info($"=== StampFly Live Attitude === Roll={cs.roll:0.1} Pitch={cs.pitch:0.1} Yaw={cs.yaw:0.1} Batt={cs.battery_voltage:0.2}V");
-                                try
-                                {
-                                    MainV2.comPort.MAVlist[1, 1].mavlinkv2 = true;
-                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.ALL, 10, 1, 1);
-                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA1, 10, 1, 1);
-                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 10, 1, 1);
-                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 5, 1, 1);
-                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, 2, 1, 1);
-                                    MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 20, 1, 1);
-                                    _ = MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL, 30, 50000, 0, 0, 0, 0, 0, false);
-                                }
-                                catch { }
-                            }
+
                             // Update HUD attitude & values in real-time
                             hud1.roll = (float)cs.roll;
                             hud1.pitch = (float)cs.pitch;
@@ -2713,12 +2697,17 @@ namespace Xamarin
                 string action = await DisplayActionSheet($"Motor Control (Current: {statusStr})", "Cancel", null,
                     "🟢 ARM (Start Motors)",
                     "🔴 DISARM (Stop Motors)",
-                    "🚨 Emergency LAND");
+                    "🚨 Emergency LAND",
+                    "🛡️ Arming & Stick Safety Settings");
 
                 if (string.IsNullOrEmpty(action) || action == "Cancel")
                     return;
 
-                if (action.Contains("ARM"))
+                if (action.Contains("Safety"))
+                {
+                    OpenArmingSafetySettings();
+                }
+                else if (action.Contains("ARM"))
                 {
                     await MainV2.comPort.doARMAsync(1, 1, true);
                     UserDialogs.Instance.Toast("🟢 Sending ARM command", TimeSpan.FromSeconds(1));
@@ -2911,12 +2900,17 @@ namespace Xamarin
                 string action = await DisplayActionSheet($"Motor Control (Current: {statusStr})", "Cancel", null,
                     "🟢 ARM (Start Motors)",
                     "🔴 DISARM (Stop Motors)",
-                    "🚨 Emergency LAND");
+                    "🚨 Emergency LAND",
+                    "🛡️ Arming & Stick Safety Settings");
 
                 if (string.IsNullOrEmpty(action) || action == "Cancel")
                     return;
 
-                if (action.Contains("ARM"))
+                if (action.Contains("Safety"))
+                {
+                    OpenArmingSafetySettings();
+                }
+                else if (action.Contains("ARM"))
                 {
                     await MainV2.comPort.doARMAsync(1, 1, true);
                     UserDialogs.Instance.Toast("🟢 Sending ARM command", TimeSpan.FromSeconds(1));
@@ -5572,6 +5566,7 @@ namespace Xamarin
                 View_Setup_Compass.IsVisible = (tab == "compass");
                 View_Setup_Gyro.IsVisible = (tab == "gyro");
                 View_Setup_Radio.IsVisible = (tab == "radio");
+                View_Setup_Arming.IsVisible = (tab == "arming");
 
                 Btn_SetupTab_Accel.BackgroundColor = (tab == "accel") ? global::Xamarin.Forms.Color.FromHex("#0284C7") : global::Xamarin.Forms.Color.FromHex("#1E293B");
                 Btn_SetupTab_Accel.TextColor = (tab == "accel") ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
@@ -5582,12 +5577,19 @@ namespace Xamarin
                 Btn_SetupTab_Gyro.BackgroundColor = (tab == "gyro") ? global::Xamarin.Forms.Color.FromHex("#0284C7") : global::Xamarin.Forms.Color.FromHex("#1E293B");
                 Btn_SetupTab_Gyro.TextColor = (tab == "gyro") ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
 
+                Btn_SetupTab_Arming.BackgroundColor = (tab == "arming") ? global::Xamarin.Forms.Color.FromHex("#0284C7") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_SetupTab_Arming.TextColor = (tab == "arming") ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+
                 Btn_SetupTab_Radio.BackgroundColor = (tab == "radio") ? global::Xamarin.Forms.Color.FromHex("#0284C7") : global::Xamarin.Forms.Color.FromHex("#1E293B");
                 Btn_SetupTab_Radio.TextColor = (tab == "radio") ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
 
                 if (tab == "accel")
                 {
                     UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.LEVEL);
+                }
+                else if (tab == "arming")
+                {
+                    LoadArmingSafetyParameters();
                 }
             }
             catch (Exception ex)
@@ -5600,6 +5602,7 @@ namespace Xamarin
         private void OnSetupTabCompassClicked(object sender, EventArgs e) => SwitchSetupTab("compass");
         private void OnSetupTabGyroClicked(object sender, EventArgs e) => SwitchSetupTab("gyro");
         private void OnSetupTabRadioClicked(object sender, EventArgs e) => SwitchSetupTab("radio");
+        private void OnSetupTabArmingClicked(object sender, EventArgs e) => SwitchSetupTab("arming");
 
         #region --- 1. ACCELEROMETER CALIBRATION ---
 
@@ -6212,6 +6215,468 @@ namespace Xamarin
             Btn_RadioCal_Start.IsVisible = true;
             Btn_RadioCal_Save.IsVisible = false;
             Btn_RadioCal_Cancel.IsVisible = false;
+        }
+
+        #endregion
+
+        #region --- 5. ARMING & SAFETY SUITE ---
+
+        private void OpenArmingSafetySettings()
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    Pnl_SetupModal.IsVisible = true;
+                    SwitchSetupTab("arming");
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+            });
+        }
+
+        private void OnOpenArmingSettingsClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                Pnl_JoystickModal.IsVisible = false;
+                OpenArmingSafetySettings();
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void OnOpenJoystickFromArmingClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                Pnl_SetupModal.IsVisible = false;
+                OnOpenJoystickModalClicked(null, null);
+                OnJoyTabButtonsClicked(null, null);
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void LoadArmingSafetyParameters()
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    // 1. ARMING_RUDDER (0: Disabled, 1: ArmOnly, 2: ArmOrDisarm)
+                    float rudderVal = GetMAVParam("ARMING_RUDDER", 2);
+                    int rudderMode = (int)Math.Round(rudderVal);
+
+                    if (Card_Arming_Disabled != null)
+                    {
+                        bool isDis = (rudderMode == 0);
+                        Card_Arming_Disabled.BorderColor = isDis ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#334155");
+                        Card_Arming_Disabled.BackgroundColor = isDis ? global::Xamarin.Forms.Color.FromHex("#064E3B") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                        if (Badge_Arming_Disabled != null) Badge_Arming_Disabled.IsVisible = isDis;
+                    }
+                    if (Card_Arming_ArmOnly != null)
+                    {
+                        bool isArmOnly = (rudderMode == 1);
+                        Card_Arming_ArmOnly.BorderColor = isArmOnly ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
+                        Card_Arming_ArmOnly.BackgroundColor = isArmOnly ? global::Xamarin.Forms.Color.FromHex("#451A03") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                        if (Badge_Arming_ArmOnly != null) Badge_Arming_ArmOnly.IsVisible = isArmOnly;
+                    }
+                    if (Card_Arming_ArmOrDisarm != null)
+                    {
+                        bool isBoth = (rudderMode >= 2);
+                        Card_Arming_ArmOrDisarm.BorderColor = isBoth ? global::Xamarin.Forms.Color.FromHex("#38BDF8") : global::Xamarin.Forms.Color.FromHex("#334155");
+                        Card_Arming_ArmOrDisarm.BackgroundColor = isBoth ? global::Xamarin.Forms.Color.FromHex("#0C4A6E") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                        if (Badge_Arming_ArmOrDisarm != null) Badge_Arming_ArmOrDisarm.IsVisible = isBoth;
+                    }
+
+                    string rudderStr = (rudderMode == 0) ? "FC: Disabled (0)" : (rudderMode == 1) ? "FC: Arm Only (1)" : $"FC: Standard ({rudderMode})";
+                    if (LBL_arming_rudder_fc_val != null)
+                    {
+                        LBL_arming_rudder_fc_val.Text = rudderStr;
+                        LBL_arming_rudder_fc_val.TextColor = (rudderMode == 0) ? global::Xamarin.Forms.Color.FromHex("#10B981") : (rudderMode == 1) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                    }
+
+                    if (LBL_joy_stick_gesture_status != null)
+                    {
+                        LBL_joy_stick_gesture_status.Text = (rudderMode == 0) ? "Disabled (Recommended)" : (rudderMode == 1) ? "Arm Only (1)" : "Standard Enabled (2)";
+                        LBL_joy_stick_gesture_status.TextColor = (rudderMode == 0) ? global::Xamarin.Forms.Color.FromHex("#10B981") : (rudderMode == 1) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                    }
+
+                    // 2. Battery Failsafe
+                    float lowVolt = GetMAVParam("BATT_LOW_VOLT", 3.55f);
+                    float crtVolt = GetMAVParam("BATT_CRT_VOLT", 3.30f);
+                    int lowAct = (int)Math.Round(GetMAVParam("BATT_FS_LOW_ACT", 0));
+                    int crtAct = (int)Math.Round(GetMAVParam("BATT_FS_CRT_ACT", 1));
+
+                    if (LBL_batt_low_volt_fc != null) LBL_batt_low_volt_fc.Text = $"{lowVolt:F2} V";
+                    if (LBL_batt_crt_volt_fc != null) LBL_batt_crt_volt_fc.Text = $"{crtVolt:F2} V";
+
+                    HighlightPresetButton(Btn_LowVolt_360, Math.Abs(lowVolt - 3.60f) < 0.02f);
+                    HighlightPresetButton(Btn_LowVolt_355, Math.Abs(lowVolt - 3.55f) < 0.02f);
+                    HighlightPresetButton(Btn_LowVolt_350, Math.Abs(lowVolt - 3.50f) < 0.02f);
+                    HighlightPresetButton(Btn_LowVolt_340, Math.Abs(lowVolt - 3.40f) < 0.02f);
+
+                    HighlightPresetButton(Btn_CrtVolt_340, Math.Abs(crtVolt - 3.40f) < 0.02f);
+                    HighlightPresetButton(Btn_CrtVolt_335, Math.Abs(crtVolt - 3.35f) < 0.02f);
+                    HighlightPresetButton(Btn_CrtVolt_330, Math.Abs(crtVolt - 3.30f) < 0.02f);
+                    HighlightPresetButton(Btn_CrtVolt_320, Math.Abs(crtVolt - 3.20f) < 0.02f);
+
+                    string lowActStr = (lowAct == 0) ? "None (0)" : (lowAct == 1) ? "Land (1)" : (lowAct == 2) ? "RTL (2)" : $"Act {lowAct}";
+                    if (LBL_batt_fs_low_act_fc != null) LBL_batt_fs_low_act_fc.Text = lowActStr;
+                    HighlightPresetButton(Btn_LowAct_0, lowAct == 0);
+                    HighlightPresetButton(Btn_LowAct_1, lowAct == 1);
+                    HighlightPresetButton(Btn_LowAct_2, lowAct == 2);
+
+                    string crtActStr = (crtAct == 0) ? "None (0)" : (crtAct == 1) ? "Land (1)" : (crtAct == 2) ? "RTL (2)" : $"Act {crtAct}";
+                    if (LBL_batt_fs_crt_act_fc != null) LBL_batt_fs_crt_act_fc.Text = crtActStr;
+                    HighlightPresetButton(Btn_CrtAct_0, crtAct == 0);
+                    HighlightPresetButton(Btn_CrtAct_1, crtAct == 1);
+                    HighlightPresetButton(Btn_CrtAct_2, crtAct == 2);
+
+                    // 3. Auto Disarm & Arming Check
+                    int disarmDelay = (int)Math.Round(GetMAVParam("DISARM_DELAY", 10));
+                    int armingCheck = (int)Math.Round(GetMAVParam("ARMING_CHECK", 1));
+
+                    if (LBL_disarm_delay_fc != null) LBL_disarm_delay_fc.Text = (disarmDelay <= 0) ? "Off (0s)" : $"{disarmDelay} s";
+                    HighlightPresetButton(Btn_Delay_0, disarmDelay <= 0);
+                    HighlightPresetButton(Btn_Delay_5, disarmDelay == 5);
+                    HighlightPresetButton(Btn_Delay_10, disarmDelay == 10);
+                    HighlightPresetButton(Btn_Delay_15, disarmDelay == 15);
+
+                    if (LBL_arming_check_fc != null) LBL_arming_check_fc.Text = (armingCheck == 0) ? "Skip (0)" : "All (1)";
+                    HighlightPresetButton(Btn_Check_All, armingCheck != 0);
+                    HighlightPresetButton(Btn_Check_Skip, armingCheck == 0);
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex);
+                }
+            });
+        }
+
+        private void HighlightPresetButton(global::Xamarin.Forms.Button btn, bool isActive)
+        {
+            if (btn == null) return;
+            btn.BackgroundColor = isActive ? global::Xamarin.Forms.Color.FromHex("#0284C7") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+            btn.TextColor = isActive ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+        }
+
+        private void EnsureParamKey(byte sysid, byte compid, string paramName, float defaultVal)
+        {
+            try
+            {
+                if (MainV2.comPort != null && MainV2.comPort.MAVlist != null && MainV2.comPort.MAVlist[sysid, compid] != null)
+                {
+                    var pList = MainV2.comPort.MAVlist[sysid, compid].param;
+                    if (pList != null && !pList.ContainsKey(paramName))
+                    {
+                        pList[paramName] = new MAVLink.MAVLinkParam(paramName, defaultVal, MAVLink.MAV_PARAM_TYPE.REAL32);
+                    }
+                }
+            }
+            catch { }
+        }
+
+        private void SetArmingRudder(float val)
+        {
+            try
+            {
+                if (MainV2.comPort != null)
+                {
+                    if (val == 0)
+                        UserDialogs.Instance.Toast("🛡️ Sent ARMING_RUDDER=0 (Disabled) to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
+                    else if (val == 1)
+                        UserDialogs.Instance.Toast("⚠️ Sent ARMING_RUDDER=1 (Arm Only) to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
+                    else
+                        UserDialogs.Instance.Toast("✅ Sent ARMING_RUDDER=2 (Standard) to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
+
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+                            EnsureParamKey(sysid, compid, "ARMING_RUDDER", 2f);
+                            bool res = MainV2.comPort.setParam(sysid, compid, "ARMING_RUDDER", val, true);
+                            log.Info($"[SetArmingRudder] sysid={sysid}, compid={compid}, val={val}, result={res}");
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("[SetArmingRudder] Error: ", ex);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void SetBattLowVolt(float volt)
+        {
+            try
+            {
+                if (MainV2.comPort != null)
+                {
+                    UserDialogs.Instance.Toast($"🔋 Sent BATT_LOW_VOLT={volt:F2}V to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+                            EnsureParamKey(sysid, compid, "BATT_LOW_VOLT", 3.55f);
+                            bool res = MainV2.comPort.setParam(sysid, compid, "BATT_LOW_VOLT", volt, true);
+                            log.Info($"[SetBattLowVolt] sysid={sysid}, compid={compid}, val={volt}, result={res}");
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("[SetBattLowVolt] Error: ", ex);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void SetBattCrtVolt(float volt)
+        {
+            try
+            {
+                if (MainV2.comPort != null)
+                {
+                    UserDialogs.Instance.Toast($"🚨 Sent BATT_CRT_VOLT={volt:F2}V to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+                            EnsureParamKey(sysid, compid, "BATT_CRT_VOLT", 3.30f);
+                            bool res = MainV2.comPort.setParam(sysid, compid, "BATT_CRT_VOLT", volt, true);
+                            log.Info($"[SetBattCrtVolt] sysid={sysid}, compid={compid}, val={volt}, result={res}");
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("[SetBattCrtVolt] Error: ", ex);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void SetBattLowAct(float act)
+        {
+            try
+            {
+                if (MainV2.comPort != null)
+                {
+                    UserDialogs.Instance.Toast($"🔋 Sent BATT_FS_LOW_ACT={act} to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+                            EnsureParamKey(sysid, compid, "BATT_FS_LOW_ACT", 0f);
+                            bool res = MainV2.comPort.setParam(sysid, compid, "BATT_FS_LOW_ACT", act, true);
+                            log.Info($"[SetBattLowAct] sysid={sysid}, compid={compid}, val={act}, result={res}");
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("[SetBattLowAct] Error: ", ex);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void SetBattCrtAct(float act)
+        {
+            try
+            {
+                if (MainV2.comPort != null)
+                {
+                    UserDialogs.Instance.Toast($"🚨 Sent BATT_FS_CRT_ACT={act} to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+                            EnsureParamKey(sysid, compid, "BATT_FS_CRT_ACT", 1f);
+                            bool res = MainV2.comPort.setParam(sysid, compid, "BATT_FS_CRT_ACT", act, true);
+                            log.Info($"[SetBattCrtAct] sysid={sysid}, compid={compid}, val={act}, result={res}");
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("[SetBattCrtAct] Error: ", ex);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void SetDisarmDelay(float sec)
+        {
+            try
+            {
+                if (MainV2.comPort != null)
+                {
+                    UserDialogs.Instance.Toast($"⏱️ Sent DISARM_DELAY={sec}s to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+                            EnsureParamKey(sysid, compid, "DISARM_DELAY", 10f);
+                            bool res = MainV2.comPort.setParam(sysid, compid, "DISARM_DELAY", sec, true);
+                            log.Info($"[SetDisarmDelay] sysid={sysid}, compid={compid}, val={sec}, result={res}");
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("[SetDisarmDelay] Error: ", ex);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void SetArmingCheck(float check)
+        {
+            try
+            {
+                if (MainV2.comPort != null)
+                {
+                    UserDialogs.Instance.Toast($"🛡️ Sent ARMING_CHECK={check} to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+                            EnsureParamKey(sysid, compid, "ARMING_CHECK", 1f);
+                            bool res = MainV2.comPort.setParam(sysid, compid, "ARMING_CHECK", check, true);
+                            log.Info($"[SetArmingCheck] sysid={sysid}, compid={compid}, val={check}, result={res}");
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("[SetArmingCheck] Error: ", ex);
+                        }
+                    });
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void OnArmingCardDisabledClicked(object sender, EventArgs e) => SetArmingRudder(0);
+        private void OnArmingCardArmOnlyClicked(object sender, EventArgs e) => SetArmingRudder(1);
+        private void OnArmingCardArmOrDisarmClicked(object sender, EventArgs e) => SetArmingRudder(2);
+
+        private void OnLowVoltPresetClicked(object sender, EventArgs e)
+        {
+            if (sender is global::Xamarin.Forms.Button btn && float.TryParse(btn.Text.Replace("V", "").Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float v))
+            {
+                SetBattLowVolt(v);
+            }
+        }
+
+        private void OnCrtVoltPresetClicked(object sender, EventArgs e)
+        {
+            if (sender is global::Xamarin.Forms.Button btn && float.TryParse(btn.Text.Replace("V", "").Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float v))
+            {
+                SetBattCrtVolt(v);
+            }
+        }
+
+        private void OnLowActClicked(object sender, EventArgs e)
+        {
+            if (sender is global::Xamarin.Forms.Button btn)
+            {
+                if (btn == Btn_LowAct_0) SetBattLowAct(0);
+                else if (btn == Btn_LowAct_1) SetBattLowAct(1);
+                else if (btn == Btn_LowAct_2) SetBattLowAct(2);
+            }
+        }
+
+        private void OnCrtActClicked(object sender, EventArgs e)
+        {
+            if (sender is global::Xamarin.Forms.Button btn)
+            {
+                if (btn == Btn_CrtAct_0) SetBattCrtAct(0);
+                else if (btn == Btn_CrtAct_1) SetBattCrtAct(1);
+                else if (btn == Btn_CrtAct_2) SetBattCrtAct(2);
+            }
+        }
+
+        private void OnDisarmDelayClicked(object sender, EventArgs e)
+        {
+            if (sender is global::Xamarin.Forms.Button btn)
+            {
+                if (btn == Btn_Delay_0) SetDisarmDelay(0);
+                else if (btn == Btn_Delay_5) SetDisarmDelay(5);
+                else if (btn == Btn_Delay_10) SetDisarmDelay(10);
+                else if (btn == Btn_Delay_15) SetDisarmDelay(15);
+            }
+        }
+
+        private void OnArmingCheckClicked(object sender, EventArgs e)
+        {
+            if (sender is global::Xamarin.Forms.Button btn)
+            {
+                if (btn == Btn_Check_All) SetArmingCheck(1);
+                else if (btn == Btn_Check_Skip) SetArmingCheck(0);
+            }
+        }
+
+        private void OnRefreshArmingParamsClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                var param = MainV2.comPort?.MAV?.param;
+                log.Info($"[RefreshParams] Total count: {param?.Count ?? -1}, ARMING_RUDDER exists: {param?.ContainsKey("ARMING_RUDDER")}, BATT_LOW_VOLT exists: {param?.ContainsKey("BATT_LOW_VOLT")}");
+                if (param != null && param.ContainsKey("ARMING_RUDDER"))
+                {
+                    log.Info($"[RefreshParams] ARMING_RUDDER value: {param["ARMING_RUDDER"].Value}");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+            LoadArmingSafetyParameters();
+            UserDialogs.Instance.Toast("🔄 Refreshed parameters from cache", TimeSpan.FromSeconds(1));
         }
 
         #endregion
