@@ -371,7 +371,7 @@
             <Frame Margin="16,10" Padding="12,10" CornerRadius="8" HasShadow="True"
                    BackgroundColor="#1E293B" BorderColor="#475569"
                    HorizontalOptions="FillAndExpand" VerticalOptions="FillAndExpand">
-                <Grid RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
+                <Grid RowDefinitions="Auto,Auto,Auto,*" RowSpacing="8">
                     
                     <!-- 1. Header & Top Action Buttons -->
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalOptions="Center">
@@ -455,8 +455,20 @@
                         </Grid>
                     </Frame>
 
-                    <!-- 3. Scrollable Content: Channels, Calibration & Key Mapping -->
-                    <ScrollView Grid.Row="2">
+                    <!-- 3. Sub-tabs: RC Axes Calibration vs Button Actions (Flight Modes) -->
+                    <Grid Grid.Row="2" ColumnDefinitions="*,*" ColumnSpacing="8">
+                        <Button x:Name="Btn_JoyTab_Axes" Grid.Column="0" Text="🕹️ RC Axes (1-18)"
+                                BackgroundColor="#0284C7" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnJoyTabAxesClicked"/>
+                        <Button x:Name="Btn_JoyTab_Buttons" Grid.Column="1" Text="🔘 Button Actions (LAND / POSHOLD / LOITER)"
+                                BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
+                                HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnJoyTabButtonsClicked"/>
+                    </Grid>
+
+                    <!-- 4. Tab Contents Container -->
+                    <Grid Grid.Row="3">
+                        <!-- ================= A. RC Axes Calibration (1-18) ================= -->
+                        <ScrollView x:Name="View_Joy_Axes" IsVisible="True">
                         <StackLayout Spacing="8">
                             
                             <!-- Section A: Radio Channels & Axis Calibration -->
@@ -722,7 +734,271 @@
                                                         
 
                         </StackLayout>
-                    </ScrollView>
+                        </ScrollView>
+
+                        <!-- ================= B. Button Actions (Flight Modes & Arming) ================= -->
+                        <ScrollView x:Name="View_Joy_Buttons" IsVisible="False">
+                            <StackLayout Spacing="8">
+                                <!-- Quick Preset & Instructions Bar -->
+                                <Frame BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="8,6" HasShadow="False">
+                                    <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                                        <StackLayout Grid.Column="0" Orientation="Vertical" Spacing="1" VerticalOptions="Center">
+                                            <StackLayout Orientation="Horizontal" Spacing="6">
+                                                <Label Text="🎮 Direct Flight Mode &amp; Action Button Mapping" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold"/>
+                                                <Label Text="[LAND / POSHOLD / LOITER]" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                            </StackLayout>
+                                            <Label Text="Assign LAND, POSHOLD, LOITER, and Arming to physical controller buttons. Status lights up green when pressed."
+                                                   TextColor="#94A3B8" FontSize="9"/>
+                                        </StackLayout>
+                                        <Button Grid.Column="1" Text="🎯 COPTER PRESET" FontSize="9" FontAttributes="Bold"
+                                                BackgroundColor="#0284C7" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="28" Padding="8,0"
+                                                Clicked="OnJoyPresetCopterClicked"/>
+                                        <Button Grid.Column="2" Text="🔄 CLEAR ALL" FontSize="9" FontAttributes="Bold"
+                                                BackgroundColor="#334155" TextColor="#94A3B8" CornerRadius="4" HeightRequest="28" Padding="8,0"
+                                                Clicked="OnJoyClearAllActionsClicked"/>
+                                    </Grid>
+                                </Frame>
+
+                                <!-- Button Mapping Table Container -->
+                                <Frame BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="8" HasShadow="False">
+                                    <StackLayout Spacing="6">
+                                        <!-- Header Row -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" Padding="0,2">
+                                            <Label Grid.Column="0" Text="Controller Button" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold"/>
+                                            <Label Grid.Column="1" Text="Live Input" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                            <Label Grid.Column="2" Text="Assigned Flight Mode / Action (Tap to Change)" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold"/>
+                                        </Grid>
+                                        <BoxView HeightRequest="1" BackgroundColor="#334155"/>
+
+                                        <!-- 1. Btn A (Cross / ×) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#38BDF8" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Btn A (×)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="A / Cross" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_BtnA" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_BtnA" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_BtnA" Grid.Column="2" Text="LAND ▾" CommandParameter="Btn A"
+                                                    BackgroundColor="#DC2626" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 2. Btn B (Circle / ○) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#10B981" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Btn B (○)" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="B / Circle" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_BtnB" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_BtnB" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_BtnB" Grid.Column="2" Text="POSHOLD ▾" CommandParameter="Btn B"
+                                                    BackgroundColor="#059669" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 3. Btn X (Square / □) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#0284C7" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Btn X (□)" TextColor="#0284C7" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="X / Square" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_BtnX" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_BtnX" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_BtnX" Grid.Column="2" Text="LOITER ▾" CommandParameter="Btn X"
+                                                    BackgroundColor="#0284C7" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 4. Btn Y (Triangle / △) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#F59E0B" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Btn Y (△)" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="Y / Triangle" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_BtnY" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_BtnY" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_BtnY" Grid.Column="2" Text="ALTHOLD ▾" CommandParameter="Btn Y"
+                                                    BackgroundColor="#D97706" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 5. Btn L1 (Bumper Left) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#A78BFA" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Btn L1" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="Bumper L" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_BtnL1" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_BtnL1" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_BtnL1" Grid.Column="2" Text="None ▾" CommandParameter="Btn L1"
+                                                    BackgroundColor="#334155" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 6. Btn R1 (Bumper Right - ARM/DISARM) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#A78BFA" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Btn R1" TextColor="#A78BFA" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="Bumper R" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_BtnR1" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_BtnR1" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_BtnR1" Grid.Column="2" Text="ARM / DISARM ▾" CommandParameter="Btn R1"
+                                                    BackgroundColor="#7C3AED" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 7. Btn L2 (Trigger Left Button) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#64748B" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Btn L2" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="Trigger L" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_BtnL2" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_BtnL2" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_BtnL2" Grid.Column="2" Text="None ▾" CommandParameter="Btn L2"
+                                                    BackgroundColor="#334155" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 8. Btn R2 (Trigger Right Button) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#64748B" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Btn R2" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="Trigger R" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_BtnR2" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_BtnR2" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_BtnR2" Grid.Column="2" Text="None ▾" CommandParameter="Btn R2"
+                                                    BackgroundColor="#334155" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 9. Dpad Up (十字上) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#EC4899" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Dpad Up" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="⬆️ 十字キー上" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_DpadUp" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_DpadUp" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_DpadUp" Grid.Column="2" Text="ALTHOLD ▾" CommandParameter="Dpad Up"
+                                                    BackgroundColor="#D97706" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 10. Dpad Down (十字下) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#EC4899" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Dpad Down" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="⬇️ 十字キー下" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_DpadDown" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_DpadDown" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_DpadDown" Grid.Column="2" Text="LAND ▾" CommandParameter="Dpad Down"
+                                                    BackgroundColor="#DC2626" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 11. Dpad Left (十字左) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#EC4899" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Dpad Left" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="⬅️ 十字キー左" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_DpadLeft" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_DpadLeft" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_DpadLeft" Grid.Column="2" Text="POSHOLD ▾" CommandParameter="Dpad Left"
+                                                    BackgroundColor="#059669" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 12. Dpad Right (十字右) -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#EC4899" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Dpad Right" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="➡️ 十字キー右" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_DpadRight" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_DpadRight" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_DpadRight" Grid.Column="2" Text="LOITER ▾" CommandParameter="Dpad Right"
+                                                    BackgroundColor="#0284C7" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 13. Btn Start -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#64748B" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Btn Start" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="Start / Options" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_BtnStart" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_BtnStart" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_BtnStart" Grid.Column="2" Text="None ▾" CommandParameter="Btn Start"
+                                                    BackgroundColor="#334155" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                        <!-- 14. Btn Select -->
+                                        <Grid ColumnDefinitions="150,90,*" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                <Frame BackgroundColor="#1E293B" BorderColor="#64748B" CornerRadius="4" Padding="6,2" HasShadow="False">
+                                                    <Label Text="Btn Select" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"/>
+                                                </Frame>
+                                                <Label Text="Select / Share" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                            </StackLayout>
+                                            <Frame x:Name="Frame_JoyPress_BtnSelect" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
+                                                <Label x:Name="LBL_JoyPress_BtnSelect" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
+                                            </Frame>
+                                            <Button x:Name="Btn_JoyAction_BtnSelect" Grid.Column="2" Text="None ▾" CommandParameter="Btn Select"
+                                                    BackgroundColor="#334155" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
+                                                    HeightRequest="30" CornerRadius="5" Padding="10,0" Clicked="OnSelectButtonActionClicked"/>
+                                        </Grid>
+
+                                    </StackLayout>
+                                </Frame>
+                            </StackLayout>
+                        </ScrollView>
+                    </Grid>
 
                 </Grid>
             </Frame>

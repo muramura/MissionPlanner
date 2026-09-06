@@ -113,9 +113,183 @@ namespace Xamarin
         public static int LastPressedButtonCode = 0;
         public static Dictionary<int, bool> PressedButtonMap = new Dictionary<int, bool>();
 
+        // 🎮 各ボタンに割り当てられたフライトモード／アクションマッピング
+        public static Dictionary<string, string> ButtonActionMap = new Dictionary<string, string>();
+
+        public static readonly string[] AvailableButtonActions = new string[]
+        {
+            "None",
+            "LAND",
+            "POSHOLD",
+            "LOITER",
+            "ALTHOLD",
+            "STABILIZE",
+            "RTL",
+            "AUTO",
+            "ACRO",
+            "ARM / DISARM",
+            "ARM",
+            "DISARM",
+            "TAKEOFF"
+        };
+
+        public static readonly string[] ConfigurableButtons = new string[]
+        {
+            "Btn A", "Btn B", "Btn X", "Btn Y",
+            "Btn L1", "Btn R1", "Btn L2", "Btn R2",
+            "Dpad Up", "Dpad Down", "Dpad Left", "Dpad Right",
+            "Btn Start", "Btn Select"
+        };
+
+        public static string NormalizeButtonKeyName(string raw)
+        {
+            if (string.IsNullOrWhiteSpace(raw)) return "";
+            string s = raw.Trim();
+            if (s.IndexOf("Btn A", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnA", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("(×)", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn A";
+            if (s.IndexOf("Btn B", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnB", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("(○)", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn B";
+            if (s.IndexOf("Btn X", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnX", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("(□)", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn X";
+            if (s.IndexOf("Btn Y", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnY", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("(△)", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Y";
+            if (s.IndexOf("Btn L1", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnL1", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn L1";
+            if (s.IndexOf("Btn R1", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnR1", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn R1";
+            if (s.IndexOf("Btn L2", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnL2", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn L2";
+            if (s.IndexOf("Btn R2", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnR2", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn R2";
+            if (s.IndexOf("Dpad Up", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字上", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Up";
+            if (s.IndexOf("Dpad Down", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字下", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Down";
+            if (s.IndexOf("Dpad Left", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字左", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Left";
+            if (s.IndexOf("Dpad Right", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字右", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Right";
+            if (s.IndexOf("Btn Start", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Start";
+            if (s.IndexOf("Btn Select", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Select";
+            return s;
+        }
+
+        public static string GetDefaultActionForButton(string btnName)
+        {
+            switch (btnName)
+            {
+                case "Btn A": return "LAND";
+                case "Btn B": return "POSHOLD";
+                case "Btn X": return "LOITER";
+                case "Btn Y": return "ALTHOLD";
+                case "Dpad Down": return "LAND";
+                case "Dpad Left": return "POSHOLD";
+                case "Dpad Right": return "LOITER";
+                case "Dpad Up": return "ALTHOLD";
+                case "Btn R1": return "ARM / DISARM";
+                default: return "None";
+            }
+        }
+
         public static void SetButtonState(int keyCode, bool isDown)
         {
+            bool wasDown = PressedButtonMap.ContainsKey(keyCode) && PressedButtonMap[keyCode];
             PressedButtonMap[keyCode] = isDown;
+
+            // 🎯 立ち上がりエッジ (ボタンが押された瞬間) に割り当てられたフライトモード／アクションを実行！
+            if (isDown && !wasDown)
+            {
+                string rawName = ConvertKeyCodeToName(keyCode);
+                string btnName = NormalizeButtonKeyName(rawName);
+                ExecuteButtonAction(btnName);
+            }
+        }
+
+        public static void ExecuteButtonAction(string btnName)
+        {
+            if (string.IsNullOrEmpty(btnName)) return;
+            if (!ButtonActionMap.TryGetValue(btnName, out string action) || string.IsNullOrEmpty(action) || action == "None")
+            {
+                return;
+            }
+
+            Console.WriteLine($"[Joystick] Executing Button Action for '{btnName}': {action}");
+
+            try
+            {
+                switch (action.ToUpperInvariant())
+                {
+                    case "LAND":
+                        MainV2.comPort.setMode(1, 1, "Land");
+                        ShowButtonActionToast($"Mode: LAND ({btnName})", "#DC2626");
+                        TriggerHapticForChoice(Config_Pattern_Arm);
+                        break;
+                    case "POSHOLD":
+                        MainV2.comPort.setMode(1, 1, "PosHold");
+                        ShowButtonActionToast($"Mode: POSHOLD ({btnName})", "#059669");
+                        TriggerHapticForChoice(Config_Pattern_Arm);
+                        break;
+                    case "LOITER":
+                        MainV2.comPort.setMode(1, 1, "Loiter");
+                        ShowButtonActionToast($"Mode: LOITER ({btnName})", "#0284C7");
+                        TriggerHapticForChoice(Config_Pattern_Arm);
+                        break;
+                    case "ALTHOLD":
+                        MainV2.comPort.setMode(1, 1, "AltHold");
+                        ShowButtonActionToast($"Mode: ALTHOLD ({btnName})", "#D97706");
+                        TriggerHapticForChoice(Config_Pattern_Arm);
+                        break;
+                    case "STABILIZE":
+                        MainV2.comPort.setMode(1, 1, "Stabilize");
+                        ShowButtonActionToast($"Mode: STABILIZE ({btnName})", "#475569");
+                        TriggerHapticForChoice(Config_Pattern_Arm);
+                        break;
+                    case "RTL":
+                        MainV2.comPort.setMode(1, 1, "RTL");
+                        ShowButtonActionToast($"Mode: RTL ({btnName})", "#DB2777");
+                        TriggerHapticForChoice(Config_Pattern_BattCrit);
+                        break;
+                    case "AUTO":
+                        MainV2.comPort.setMode(1, 1, "Auto");
+                        ShowButtonActionToast($"Mode: AUTO ({btnName})", "#7C3AED");
+                        TriggerHapticForChoice(Config_Pattern_Arm);
+                        break;
+                    case "ACRO":
+                        MainV2.comPort.setMode(1, 1, "Acro");
+                        ShowButtonActionToast($"Mode: ACRO ({btnName})", "#DC2626");
+                        TriggerHapticForChoice(Config_Pattern_Arm);
+                        break;
+                    case "ARM / DISARM":
+                        bool currentArmed = (MainV2.comPort != null && MainV2.comPort.MAV != null && MainV2.comPort.MAV.cs != null && MainV2.comPort.MAV.cs.armed);
+                        MainV2.comPort.doARM(!currentArmed);
+                        ShowButtonActionToast(currentArmed ? $"DISARMED ({btnName})" : $"ARMED ({btnName})", currentArmed ? "#D97706" : "#059669");
+                        TriggerHapticForChoice(currentArmed ? Config_Pattern_Disarm : Config_Pattern_Arm);
+                        break;
+                    case "ARM":
+                        MainV2.comPort.doARM(true);
+                        ShowButtonActionToast($"ARMED ({btnName})", "#059669");
+                        TriggerHapticForChoice(Config_Pattern_Arm);
+                        break;
+                    case "DISARM":
+                        MainV2.comPort.doARM(false);
+                        ShowButtonActionToast($"DISARMED ({btnName})", "#D97706");
+                        TriggerHapticForChoice(Config_Pattern_Disarm);
+                        break;
+                    case "TAKEOFF":
+                        MainV2.comPort.doCommand(1, 1, MAVLink.MAV_CMD.TAKEOFF, 0, 0, 0, 0, 0, 0, 2.0f);
+                        ShowButtonActionToast($"TAKEOFF 2m ({btnName})", "#0284C7");
+                        TriggerHapticForChoice(Config_Pattern_Arm);
+                        break;
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("ExecuteButtonAction error: " + ex);
+            }
+        }
+
+        public static void ShowButtonActionToast(string message, string hexColor = "#38BDF8")
+        {
+            try
+            {
+                Forms.Device.BeginInvokeOnMainThread(() =>
+                {
+                    try
+                    {
+                        Acr.UserDialogs.UserDialogs.Instance.Toast(message, TimeSpan.FromSeconds(1.5));
+                    }
+                    catch { }
+                });
+            }
+            catch { }
         }
 
         // 🎮 割り当てられた軸・ボタンからリアルタイムPWM値を算出 (1000〜2000µs)
@@ -572,10 +746,11 @@ namespace Xamarin
                             }
                         }
 
-                        // 🎯 チャンネルPWM表示更新
+                        // 🎯 チャンネルPWM & ボタンアクション表示更新
                         if (Pnl_JoystickModal != null && Pnl_JoystickModal.IsVisible)
                         {
                             UpdateJoystickPWMValues();
+                            UpdateButtonActionIndicators();
                         }
                     }
                     catch (Exception ex)
@@ -3397,6 +3572,14 @@ namespace Xamarin
                     global::Xamarin.Essentials.Preferences.Set("MP_Joy_Enabled", CHK_enable_joystick.IsChecked);
                     IsJoystickActive = CHK_enable_joystick.IsChecked;
                 }
+
+                // 7. ボタンフライトモード／アクション設定の永続化
+                foreach (var b in ConfigurableButtons)
+                {
+                    string act = ButtonActionMap.ContainsKey(b) ? ButtonActionMap[b] : GetDefaultActionForButton(b);
+                    global::Xamarin.Essentials.Preferences.Set($"MP_Joy_BtnAction_{b}", act);
+                }
+
                 UpdateRCOverrideTimer();
             }
             catch (Exception ex)
@@ -3487,11 +3670,191 @@ namespace Xamarin
                     CHK_enable_joystick.IsChecked = savedEnabled;
                 }
                 IsJoystickActive = savedEnabled;
+
+                // ボタンフライトモード／アクション設定の復元
+                foreach (var b in ConfigurableButtons)
+                {
+                    string def = GetDefaultActionForButton(b);
+                    string saved = global::Xamarin.Essentials.Preferences.Get($"MP_Joy_BtnAction_{b}", def);
+                    ButtonActionMap[b] = saved;
+                }
+                UpdateAllButtonActionUI();
+
                 UpdateRCOverrideTimer();
             }
             catch (Exception ex)
             {
                 Console.WriteLine("LoadJoystickSettings error: " + ex);
+            }
+        }
+
+        // 🔘 ジョイスティックタブ切り替え (RC Axes vs Button Actions)
+        public void OnJoyTabAxesClicked(object sender, EventArgs e)
+        {
+            if (Btn_JoyTab_Axes != null)
+            {
+                Btn_JoyTab_Axes.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#0284C7");
+                Btn_JoyTab_Axes.TextColor = global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+            }
+            if (Btn_JoyTab_Buttons != null)
+            {
+                Btn_JoyTab_Buttons.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_JoyTab_Buttons.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            }
+            if (View_Joy_Axes != null) View_Joy_Axes.IsVisible = true;
+            if (View_Joy_Buttons != null) View_Joy_Buttons.IsVisible = false;
+        }
+
+        public void OnJoyTabButtonsClicked(object sender, EventArgs e)
+        {
+            if (Btn_JoyTab_Axes != null)
+            {
+                Btn_JoyTab_Axes.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_JoyTab_Axes.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            }
+            if (Btn_JoyTab_Buttons != null)
+            {
+                Btn_JoyTab_Buttons.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#0284C7");
+                Btn_JoyTab_Buttons.TextColor = global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+            }
+            if (View_Joy_Axes != null) View_Joy_Axes.IsVisible = false;
+            if (View_Joy_Buttons != null) View_Joy_Buttons.IsVisible = true;
+            UpdateAllButtonActionUI();
+        }
+
+        // 🔘 ボタンアクション選択ポップアップ
+        public async void OnSelectButtonActionClicked(object sender, EventArgs e)
+        {
+            var btn = sender as Button;
+            if (btn == null) return;
+            string btnName = btn.CommandParameter as string;
+            if (string.IsNullOrEmpty(btnName)) return;
+
+            string selected = await DisplayActionSheet(
+                $"Select Action for {btnName}",
+                "Cancel",
+                null,
+                AvailableButtonActions);
+
+            if (!string.IsNullOrEmpty(selected) && selected != "Cancel")
+            {
+                ButtonActionMap[btnName] = selected;
+                global::Xamarin.Essentials.Preferences.Set($"MP_Joy_BtnAction_{btnName}", selected);
+                UpdateButtonActionUI(btnName, selected);
+                ShowButtonActionToast($"{btnName} -> {selected}");
+            }
+        }
+
+        // 🎯 Copter / StampFly 推奨プリセット一括適用 (A=LAND, B=POSHOLD, X=LOITER, Y=ALTHOLD, R1=ARM)
+        public void OnJoyPresetCopterClicked(object sender, EventArgs e)
+        {
+            foreach (var b in ConfigurableButtons)
+            {
+                string def = GetDefaultActionForButton(b);
+                ButtonActionMap[b] = def;
+                global::Xamarin.Essentials.Preferences.Set($"MP_Joy_BtnAction_{b}", def);
+            }
+            UpdateAllButtonActionUI();
+            ShowButtonActionToast("🎯 Copter Preset Applied (A=LAND, B=POSHOLD, X=LOITER, Y=ALTHOLD)");
+        }
+
+        // 🔄 全ボタンアクションのクリア (None)
+        public void OnJoyClearAllActionsClicked(object sender, EventArgs e)
+        {
+            foreach (var b in ConfigurableButtons)
+            {
+                ButtonActionMap[b] = "None";
+                global::Xamarin.Essentials.Preferences.Set($"MP_Joy_BtnAction_{b}", "None");
+            }
+            UpdateAllButtonActionUI();
+            ShowButtonActionToast("All button actions reset to None");
+        }
+
+        public static global::Xamarin.Forms.Color GetActionColor(string action)
+        {
+            switch (action?.ToUpperInvariant())
+            {
+                case "LAND": return global::Xamarin.Forms.Color.FromHex("#DC2626"); // 赤
+                case "POSHOLD": return global::Xamarin.Forms.Color.FromHex("#059669"); // 緑
+                case "LOITER": return global::Xamarin.Forms.Color.FromHex("#0284C7"); // 青
+                case "ALTHOLD": return global::Xamarin.Forms.Color.FromHex("#D97706"); // 橙
+                case "STABILIZE": return global::Xamarin.Forms.Color.FromHex("#475569"); // 灰
+                case "RTL": return global::Xamarin.Forms.Color.FromHex("#DB2777"); // ピンク
+                case "AUTO": return global::Xamarin.Forms.Color.FromHex("#7C3AED"); // 紫
+                case "ACRO": return global::Xamarin.Forms.Color.FromHex("#DC2626"); // 赤
+                case "ARM / DISARM":
+                case "ARM":
+                case "DISARM": return global::Xamarin.Forms.Color.FromHex("#7C3AED"); // 紫
+                case "TAKEOFF": return global::Xamarin.Forms.Color.FromHex("#2563EB"); // 青
+                default: return global::Xamarin.Forms.Color.FromHex("#334155"); // 濃灰 (None)
+            }
+        }
+
+        public void UpdateButtonActionUI(string btnName, string action)
+        {
+            try
+            {
+                string cleanId = btnName.Replace(" ", "");
+                var btn = this.FindByName<Button>($"Btn_JoyAction_{cleanId}");
+                if (btn != null)
+                {
+                    btn.Text = action + " ▾";
+                    btn.BackgroundColor = GetActionColor(action);
+                    btn.TextColor = (action == "None") ? global::Xamarin.Forms.Color.FromHex("#94A3B8") : global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+                }
+            }
+            catch { }
+        }
+
+        public void UpdateAllButtonActionUI()
+        {
+            foreach (var b in ConfigurableButtons)
+            {
+                string act = ButtonActionMap.ContainsKey(b) ? ButtonActionMap[b] : GetDefaultActionForButton(b);
+                UpdateButtonActionUI(b, act);
+            }
+        }
+
+        public void UpdateButtonActionIndicators()
+        {
+            if (View_Joy_Buttons == null || !View_Joy_Buttons.IsVisible) return;
+
+            foreach (var b in ConfigurableButtons)
+            {
+                bool isPressed = false;
+                foreach (var kvp in PressedButtonMap)
+                {
+                    if (kvp.Value)
+                    {
+                        string raw = ConvertKeyCodeToName(kvp.Key);
+                        if (NormalizeButtonKeyName(raw) == b)
+                        {
+                            isPressed = true;
+                            break;
+                        }
+                    }
+                }
+
+                string cleanId = b.Replace(" ", "");
+                var lbl = this.FindByName<Label>($"LBL_JoyPress_{cleanId}");
+                var frm = this.FindByName<global::Xamarin.Forms.Frame>($"Frame_JoyPress_{cleanId}");
+                if (lbl != null && frm != null)
+                {
+                    if (isPressed)
+                    {
+                        lbl.Text = "● PRESSED";
+                        lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                        frm.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                        frm.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#064E3B");
+                    }
+                    else
+                    {
+                        lbl.Text = "RELEASED";
+                        lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#64748B");
+                        frm.BorderColor = global::Xamarin.Forms.Color.FromHex("#334155");
+                        frm.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+                    }
+                }
             }
         }
 
