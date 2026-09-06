@@ -141,39 +141,14 @@ namespace Xamarin
         }
 
         /// <summary>
-        /// 各チャンネルの FC パラメータ (RCx_MIN, RCx_MAX, RCx_TRIM) を取得
+        /// 各チャンネルの PWM レンジ (プロポ/ジョイスティック標準: 1000〜2000µs, Trim: 1500µs / スロットル: 1000µs)
         /// </summary>
         public static void GetChannelLimits(int ch, out float min, out float max, out float trim)
         {
+            // 🎮 プロポ・ジョイスティック送信値は常に標準 1000〜2000µs フルスケール
             min = 1000f;
             max = 2000f;
             trim = (ch == 3) ? 1000f : 1500f;
-
-            try
-            {
-                if (MainV2.comPort != null && MainV2.comPort.MAV != null && MainV2.comPort.MAV.param != null)
-                {
-                    var p = MainV2.comPort.MAV.param;
-                    string pMin = $"RC{ch}_MIN";
-                    string pMax = $"RC{ch}_MAX";
-                    string pTrim = $"RC{ch}_TRIM";
-
-                    if (p.ContainsKey(pMin)) min = Convert.ToSingle(p[pMin].Value);
-                    if (p.ContainsKey(pMax)) max = Convert.ToSingle(p[pMax].Value);
-                    if (p.ContainsKey(pTrim)) trim = Convert.ToSingle(p[pTrim].Value);
-
-                    if (min >= max)
-                    {
-                        min = 1000f;
-                        max = 2000f;
-                    }
-                    if (trim < min || trim > max)
-                    {
-                        trim = (min + max) / 2f;
-                    }
-                }
-            }
-            catch { }
         }
 
         /// <summary>
@@ -200,8 +175,8 @@ namespace Xamarin
                 case 14: return cs.ch14in;
                 case 15: return cs.ch15in;
                 case 16: return cs.ch16in;
-                case 17: return (cs.rcoverridech17 > 0) ? (float)cs.rcoverridech17 : 0f;
-                case 18: return (cs.rcoverridech18 > 0) ? (float)cs.rcoverridech18 : 0f;
+                case 17: return (cs.ch17in > 0) ? cs.ch17in : ((cs.rcoverridech17 > 0) ? (float)cs.rcoverridech17 : 0f);
+                case 18: return (cs.ch18in > 0) ? cs.ch18in : ((cs.rcoverridech18 > 0) ? (float)cs.rcoverridech18 : 0f);
                 default: return 0f;
             }
         }
@@ -4026,8 +4001,8 @@ namespace Xamarin
                 case 14: return cs.ch14in;
                 case 15: return cs.ch15in;
                 case 16: return cs.ch16in;
-                case 17: return (cs.rcoverridech17 > 0) ? (float)cs.rcoverridech17 : (IsJoystickActive ? (float)CalculateChannelPWM(ChannelAxisMapping.Length > 17 ? ChannelAxisMapping[17] : "None", 1500, ChannelReverseMapping.Length > 17 ? ChannelReverseMapping[17] : false) : 1500f);
-                case 18: return (cs.rcoverridech18 > 0) ? (float)cs.rcoverridech18 : (IsJoystickActive ? (float)CalculateChannelPWM(ChannelAxisMapping.Length > 18 ? ChannelAxisMapping[18] : "None", 1500, ChannelReverseMapping.Length > 18 ? ChannelReverseMapping[18] : false) : 1500f);
+                case 17: return (cs.ch17in > 0) ? cs.ch17in : ((cs.rcoverridech17 > 0) ? (float)cs.rcoverridech17 : (IsJoystickActive ? (float)CalculateChannelPWM(ChannelAxisMapping.Length > 17 ? ChannelAxisMapping[17] : "None", 1500, ChannelReverseMapping.Length > 17 ? ChannelReverseMapping[17] : false) : 1500f));
+                case 18: return (cs.ch18in > 0) ? cs.ch18in : ((cs.rcoverridech18 > 0) ? (float)cs.rcoverridech18 : (IsJoystickActive ? (float)CalculateChannelPWM(ChannelAxisMapping.Length > 18 ? ChannelAxisMapping[18] : "None", 1500, ChannelReverseMapping.Length > 18 ? ChannelReverseMapping[18] : false) : 1500f));
                 default: return 1500f;
             }
         }
@@ -4096,20 +4071,41 @@ namespace Xamarin
         {
             View_Diag_Ekf.IsVisible = true;
             View_Diag_Vibe.IsVisible = false;
+            View_Diag_Calib.IsVisible = false;
             Btn_DiagTab_Ekf.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#0284C7");
             Btn_DiagTab_Ekf.TextColor = global::Xamarin.Forms.Color.FromHex("#FFFFFF");
             Btn_DiagTab_Vibe.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
             Btn_DiagTab_Vibe.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            Btn_DiagTab_Calib.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_DiagTab_Calib.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
         }
 
         private void OnDiagTabVibeClicked(object sender, EventArgs e)
         {
             View_Diag_Ekf.IsVisible = false;
             View_Diag_Vibe.IsVisible = true;
+            View_Diag_Calib.IsVisible = false;
             Btn_DiagTab_Ekf.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
             Btn_DiagTab_Ekf.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
             Btn_DiagTab_Vibe.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#0284C7");
             Btn_DiagTab_Vibe.TextColor = global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+            Btn_DiagTab_Calib.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_DiagTab_Calib.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+        }
+
+        private void OnDiagTabCalibClicked(object sender, EventArgs e)
+        {
+            View_Diag_Ekf.IsVisible = false;
+            View_Diag_Vibe.IsVisible = false;
+            View_Diag_Calib.IsVisible = true;
+            Btn_DiagTab_Ekf.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_DiagTab_Ekf.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            Btn_DiagTab_Vibe.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+            Btn_DiagTab_Vibe.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            Btn_DiagTab_Calib.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#0284C7");
+            Btn_DiagTab_Calib.TextColor = global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+
+            SelectCalibCategory(_selectedCalibCategory);
         }
 
         private void UpdateDiagModal(CurrentState cs)
@@ -4176,6 +4172,10 @@ namespace Xamarin
                     UpdateClipLabel(LBL_vibe_clip0, cs.vibeclip0);
                     UpdateClipLabel(LBL_vibe_clip1, cs.vibeclip1);
                     UpdateClipLabel(LBL_vibe_clip2, cs.vibeclip2);
+                }
+                else if (View_Diag_Calib.IsVisible)
+                {
+                    UpdateCalibLive(cs);
                 }
             }
             catch { }
@@ -4247,6 +4247,546 @@ namespace Xamarin
                 lbl.TextColor = isOn ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#64748B");
             }
         }
+
+        
+        #region Sensor & Calibration Inspector (センサ・校正診断) Handlers & Evaluation
+
+        private string _selectedCalibCategory = "accel";
+        private int _calibBadgeUpdateCounter = 0;
+
+        private void OnTreeAccelClicked(object sender, EventArgs e) => SelectCalibCategory("accel");
+        private void OnTreeGyroClicked(object sender, EventArgs e) => SelectCalibCategory("gyro");
+        private void OnTreeCompassClicked(object sender, EventArgs e) => SelectCalibCategory("compass");
+        private void OnTreeRadioClicked(object sender, EventArgs e) => SelectCalibCategory("radio");
+        private void OnTreeEscClicked(object sender, EventArgs e) => SelectCalibCategory("esc");
+
+        private class CalibParamInfo
+        {
+            public string Name { get; set; }
+            public string Meaning { get; set; }
+            public float Value { get; set; }
+            public string ValueStr { get; set; }
+            public string IdealStr { get; set; }
+            public string ToleranceStr { get; set; }
+            public int HealthLevel { get; set; } // 0: Good, 1: Warning, 2: Error
+        }
+
+        private float GetMAVParam(string name, float defaultVal = 0)
+        {
+            try
+            {
+                if (MainV2.comPort != null && MainV2.comPort.MAV != null && MainV2.comPort.MAV.param != null)
+                {
+                    if (MainV2.comPort.MAV.param.ContainsKey(name))
+                    {
+                        return (float)MainV2.comPort.MAV.param[name].Value;
+                    }
+                }
+            }
+            catch { }
+            return defaultVal;
+        }
+
+        private void SetTreeItemVisual(global::Xamarin.Forms.Frame frame, global::Xamarin.Forms.Label lbl, bool isSelected)
+        {
+            if (frame == null || lbl == null) return;
+            if (isSelected)
+            {
+                frame.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#0284C7");
+                frame.BorderColor = global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+            }
+            else
+            {
+                frame.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#0F172A");
+                frame.BorderColor = global::Xamarin.Forms.Color.FromHex("#334155");
+                lbl.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            }
+        }
+
+
+
+        private string GetRcOptionName(int opt)
+        {
+            switch (opt)
+            {
+                case 0: return "未設定 (Do Nothing)";
+                case 2: return "高度保持 (AltHold)";
+                case 3: return "簡易モード (Simple)";
+                case 4: return "RTL (自動帰還)";
+                case 7: return "WP保存 (Save WP)";
+                case 9: return "カメラシャッター";
+                case 10: return "カメラマウント";
+                case 14: return "フリップ (Flip Mode)";
+                case 17: return "ブレーキ (Brake)";
+                case 18: return "スロー起動 (Throw)";
+                case 28: return "リレー制御 (Relay)";
+                case 31: return "モーターテスト";
+                case 41: return "アーム/ディスアーム";
+                case 46: return "RCオーバーライド";
+                case 55: return "Auto (自動航行)";
+                case 56: return "Guided (誘導モード)";
+                case 57: return "RTL (帰還モード)";
+                case 58: return "Smart RTL (安全帰還)";
+                case 62: return "Land (自動着陸)";
+                case 70: return "VTOLモード切替";
+                case 153: return "緊急モーター停止 (E-Stop)";
+                default: return $"Option {opt}";
+            }
+        }
+
+        private void SelectCalibCategory(string category)
+        {
+            try
+            {
+                _selectedCalibCategory = category;
+
+                SetTreeItemVisual(Tree_Item_Accel, LBL_Tree_Accel, category == "accel");
+                SetTreeItemVisual(Tree_Item_Gyro, LBL_Tree_Gyro, category == "gyro");
+                SetTreeItemVisual(Tree_Item_Compass, LBL_Tree_Compass, category == "compass");
+                SetTreeItemVisual(Tree_Item_Radio, LBL_Tree_Radio, category == "radio");
+                SetTreeItemVisual(Tree_Item_Esc, LBL_Tree_Esc, category == "esc");
+
+                if (category == "radio")
+                {
+                    if (Frame_calib_live != null) Frame_calib_live.IsVisible = false;
+                }
+                else
+                {
+                    if (Frame_calib_live != null) Frame_calib_live.IsVisible = true;
+                }
+
+                var paramList = new List<CalibParamInfo>();
+                string adviceTitle = "";
+                string adviceCause = "";
+                string adviceAction = "";
+
+                if (category == "accel")
+                {
+                    LBL_calib_title.Text = "【加速度センサー (IMU 1)】";
+                    LBL_calib_subtitle.Text = "6面キャリブレーション・ゼロ点補正・水平トリム";
+
+                    float ax_ofs = GetMAVParam("INS_ACCOFFS_X", 0);
+                    float ay_ofs = GetMAVParam("INS_ACCOFFS_Y", 0);
+                    float az_ofs = GetMAVParam("INS_ACCOFFS_Z", 0);
+                    float ax_scl = GetMAVParam("INS_ACCSCAL_X", 1.0f);
+                    float ay_scl = GetMAVParam("INS_ACCSCAL_Y", 1.0f);
+                    float az_scl = GetMAVParam("INS_ACCSCAL_Z", 1.0f);
+                    float trim_x = GetMAVParam("AHRS_TRIM_X", 0);
+                    float trim_y = GetMAVParam("AHRS_TRIM_Y", 0);
+
+                    Func<float, int> ofsHealth = val => Math.Abs(val) > 4.0f ? 2 : (Math.Abs(val) > 3.0f ? 1 : 0);
+                    Func<float, int> sclHealth = val => (val < 0.80f || val > 1.20f) ? 2 : ((val < 0.85f || val > 1.15f) ? 1 : 0);
+                    Func<float, int> trimHealth = val => Math.Abs(val) > 0.087f ? 2 : (Math.Abs(val) > 0.050f ? 1 : 0);
+
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCOFFS_X", Meaning = "X軸 ゼロ点ズレ", Value = ax_ofs, ValueStr = ax_ofs.ToString("+0.00;-0.00;0.00") + " m/s²", IdealStr = "0.00", ToleranceStr = "±3.00以内", HealthLevel = ofsHealth(ax_ofs) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCOFFS_Y", Meaning = "Y軸 ゼロ点ズレ", Value = ay_ofs, ValueStr = ay_ofs.ToString("+0.00;-0.00;0.00") + " m/s²", IdealStr = "0.00", ToleranceStr = "±3.00以内", HealthLevel = ofsHealth(ay_ofs) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCOFFS_Z", Meaning = "Z軸 ゼロ点ズレ", Value = az_ofs, ValueStr = az_ofs.ToString("+0.00;-0.00;0.00") + " m/s²", IdealStr = "0.00", ToleranceStr = "±3.00以内", HealthLevel = ofsHealth(az_ofs) });
+
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCSCAL_X", Meaning = "X軸 感度スケール", Value = ax_scl, ValueStr = ax_scl.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.85〜1.15", HealthLevel = sclHealth(ax_scl) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCSCAL_Y", Meaning = "Y軸 感度スケール", Value = ay_scl, ValueStr = ay_scl.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.85〜1.15", HealthLevel = sclHealth(ay_scl) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCSCAL_Z", Meaning = "Z軸 感度スケール", Value = az_scl, ValueStr = az_scl.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.85〜1.15", HealthLevel = sclHealth(az_scl) });
+
+                    paramList.Add(new CalibParamInfo { Name = "AHRS_TRIM_X", Meaning = "水平ロールトリム", Value = trim_x, ValueStr = trim_x.ToString("+0.000;-0.000;0.000") + " rad", IdealStr = "0.000", ToleranceStr = "±0.050以内", HealthLevel = trimHealth(trim_x) });
+                    paramList.Add(new CalibParamInfo { Name = "AHRS_TRIM_Y", Meaning = "水平ピッチトリム", Value = trim_y, ValueStr = trim_y.ToString("+0.000;-0.000;0.000") + " rad", IdealStr = "0.000", ToleranceStr = "±0.050以内", HealthLevel = trimHealth(trim_y) });
+
+                    int maxH = 0;
+                    foreach (var p in paramList) if (p.HealthLevel > maxH) maxH = p.HealthLevel;
+
+                    if (maxH == 2)
+                    {
+                        adviceTitle = "🔴 診断結果: 加速度キャリブレーション異常 (要再校正)";
+                        adviceCause = "【原因】ゼロ点ズレが4.0m/s²以上、または感度スケールが0.80〜1.20の安全限界を逸脱しています。6面校正中に機体が動いたか、傾いた面で校正された可能性があります。";
+                        adviceAction = "【対処法】平らで水平な場所に置き、SETUP画面から再度「6面加速度キャリブレーション」を実施してください。";
+                    }
+                    else if (maxH == 1)
+                    {
+                        adviceTitle = "🟡 診断結果: 加速度パラメータ注意";
+                        adviceCause = "【状態】一部の軸でオフセットまたはトリムが許容境界付近です。ホバリング時に僅かに流れる可能性があります。";
+                        adviceAction = "【対処法】機体を水平に静置して「水平キャリブレーション (Level)」を実施すると改善します。";
+                    }
+                    else
+                    {
+                        adviceTitle = "🟢 診断結果: 加速度センサー極めて良好 (OPTIMAL)";
+                        adviceCause = "【状態】オフセット・スケール・水平トリムの全パラメータが理想値に極めて近く、正確に校正されています。";
+                        adviceAction = "【アドバイス】再校正の必要はありません。このまま安全にフライト可能です。";
+                    }
+                }
+                else if (category == "gyro")
+                {
+                    LBL_calib_title.Text = "【ジャイロセンサー (IMU 1)】";
+                    LBL_calib_subtitle.Text = "静止時ドリフトオフセット補正 (起動時自動校正)";
+
+                    float gx = GetMAVParam("INS_GYROFFS_X", 0);
+                    float gy = GetMAVParam("INS_GYROFFS_Y", 0);
+                    float gz = GetMAVParam("INS_GYROFFS_Z", 0);
+
+                    Func<float, int> gyroHealth = val => Math.Abs(val) > 0.050f ? 2 : (Math.Abs(val) > 0.030f ? 1 : 0);
+
+                    paramList.Add(new CalibParamInfo { Name = "INS_GYROFFS_X", Meaning = "X軸 角速度ドリフト", Value = gx, ValueStr = gx.ToString("+0.0000;-0.0000;0.0000") + " r/s", IdealStr = "0.0000", ToleranceStr = "±0.030以内", HealthLevel = gyroHealth(gx) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_GYROFFS_Y", Meaning = "Y軸 角速度ドリフト", Value = gy, ValueStr = gy.ToString("+0.0000;-0.0000;0.0000") + " r/s", IdealStr = "0.0000", ToleranceStr = "±0.030以内", HealthLevel = gyroHealth(gy) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_GYROFFS_Z", Meaning = "Z軸 角速度ドリフト", Value = gz, ValueStr = gz.ToString("+0.0000;-0.0000;0.0000") + " r/s", IdealStr = "0.0000", ToleranceStr = "±0.030以内", HealthLevel = gyroHealth(gz) });
+
+                    int maxH = 0;
+                    foreach (var p in paramList) if (p.HealthLevel > maxH) maxH = p.HealthLevel;
+
+                    if (maxH == 2)
+                    {
+                        adviceTitle = "🔴 診断結果: ジャイロドリフト過大 (Bad Gyro Health)";
+                        adviceCause = "【原因】電源投入直後の自動初期化中に機体が動かされたため、静止時の角速度ドリフトが大きく記録されています。";
+                        adviceAction = "【対処法】機体を完全に静止した安定した台に置き、バッテリー（電源）を再接続して再起動してください。";
+                    }
+                    else if (maxH == 1)
+                    {
+                        adviceTitle = "🟡 診断結果: ジャイロドリフトやや高め";
+                        adviceCause = "【状態】ドリフト値が注意水準です。長時間の静止時に姿勢が僅かにドリフトする可能性があります。";
+                        adviceAction = "【対処法】飛行前に水平校正を実行するか、静止状態で再起動してください。";
+                    }
+                    else
+                    {
+                        adviceTitle = "🟢 診断結果: ジャイロセンサー極めて良好 (OPTIMAL)";
+                        adviceCause = "【状態】3軸すべての静止ドリフトがゼロ付近で安定しており、姿勢角の積分誤差は生じません。";
+                        adviceAction = "【アドバイス】姿勢制御系は完全に正常です。再校正は不要です。";
+                    }
+                }
+                else if (category == "compass")
+                {
+                    LBL_calib_title.Text = "【地磁気コンパス (Compass 1)】";
+                    LBL_calib_subtitle.Text = "硬磁性オフセット・軟磁性感度補正・歪み補正";
+
+                    float ox = GetMAVParam("COMPASS_OFS_X", 0);
+                    float oy = GetMAVParam("COMPASS_OFS_Y", 0);
+                    float oz = GetMAVParam("COMPASS_OFS_Z", 0);
+                    float tot = (float)Math.Sqrt(ox * ox + oy * oy + oz * oz);
+
+                    float dx = GetMAVParam("COMPASS_DIA_X", 1.0f);
+                    float dy = GetMAVParam("COMPASS_DIA_Y", 1.0f);
+                    float dz = GetMAVParam("COMPASS_DIA_Z", 1.0f);
+
+                    float odx = GetMAVParam("COMPASS_ODI_X", 0);
+
+                    Func<float, int> ofsHealth = val => Math.Abs(val) > 400 ? 2 : (Math.Abs(val) > 250 ? 1 : 0);
+                    int totHealth = tot > 400 ? 2 : (tot > 300 ? 1 : 0);
+                    Func<float, int> diaHealth = val => (val < 0.70f || val > 1.30f) ? 2 : ((val < 0.80f || val > 1.20f) ? 1 : 0);
+                    int odiHealth = Math.Abs(odx) > 0.25f ? 2 : (Math.Abs(odx) > 0.15f ? 1 : 0);
+
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_OFS_X", Meaning = "X軸 磁気オフセット", Value = ox, ValueStr = ox.ToString("+0;-0;0") + " mG", IdealStr = "0 mG", ToleranceStr = "±200以内", HealthLevel = ofsHealth(ox) });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_OFS_Y", Meaning = "Y軸 磁気オフセット", Value = oy, ValueStr = oy.ToString("+0;-0;0") + " mG", IdealStr = "0 mG", ToleranceStr = "±200以内", HealthLevel = ofsHealth(oy) });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_OFS_Z", Meaning = "Z軸 磁気オフセット", Value = oz, ValueStr = oz.ToString("+0;-0;0") + " mG", IdealStr = "0 mG", ToleranceStr = "±200以内", HealthLevel = ofsHealth(oz) });
+                    paramList.Add(new CalibParamInfo { Name = "OFS_TOTAL_LEN", Meaning = "合成磁気オフセット長", Value = tot, ValueStr = tot.ToString("0") + " mG", IdealStr = "< 200", ToleranceStr = "< 350 mG", HealthLevel = totHealth });
+
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_DIA_X", Meaning = "X軸 軟磁性感度", Value = dx, ValueStr = dx.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.80〜1.20", HealthLevel = diaHealth(dx) });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_DIA_Y", Meaning = "Y軸 軟磁性感度", Value = dy, ValueStr = dy.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.80〜1.20", HealthLevel = diaHealth(dy) });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_DIA_Z", Meaning = "Z軸 軟磁性感度", Value = dz, ValueStr = dz.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.80〜1.20", HealthLevel = diaHealth(dz) });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_ODI_X", Meaning = "XY軸 歪み補正", Value = odx, ValueStr = odx.ToString("+0.000;-0.000;0.000"), IdealStr = "0.000", ToleranceStr = "±0.15以内", HealthLevel = odiHealth });
+
+                    int maxH = 0;
+                    foreach (var p in paramList) if (p.HealthLevel > maxH) maxH = p.HealthLevel;
+
+                    if (maxH == 2)
+                    {
+                        adviceTitle = "🔴 診断結果: 磁気オフセット過大 (PreArm: Compass Offsets High)";
+                        adviceCause = "【原因】磁気オフセット合成値が400mGを超えています。機体フレーム内部のネジ、電源配線、スピーカー等の磁気干渉を受けています。";
+                        adviceAction = "【対処法】金属・鉄筋建物を避けた屋外で、SETUP画面から「コンパスキャリブレーション」を実施してください。";
+                    }
+                    else if (maxH == 1)
+                    {
+                        adviceTitle = "🟡 診断結果: 磁気オフセット注意";
+                        adviceCause = "【状態】オフセット値が300〜400mGとやや高めです。旋回時に方位推定の微小なブレが生じる可能性があります。";
+                        adviceAction = "【対処法】配線をコンパスから離すか、屋外で再校正を行うとより良好になります。";
+                    }
+                    else
+                    {
+                        adviceTitle = "🟢 診断結果: 地磁気コンパス極めて良好 (OPTIMAL)";
+                        adviceCause = "【状態】硬磁性・軟磁性補正値ともに理想的で、磁気干渉のないクリアな環境が保たれています。";
+                        adviceAction = "【アドバイス】方位（Yaw）推定は極めて高精度です。再校正は不要です。";
+                    }
+                }
+                else if (category == "radio")
+                {
+                    LBL_calib_title.Text = "【プロポ / 送信機 (Radio CH1-18)】";
+                    LBL_calib_subtitle.Text = "リアルタイム入力モニター・可動域・AUX機能割当 (OPTION)";
+
+                    string[] chStickNames = { "Roll (CH1)", "Pitch (CH2)", "Throttle (CH3)", "Yaw (CH4)" };
+                    for (int i = 1; i <= 4; i++)
+                    {
+                        float rmin = GetMAVParam($"RC{i}_MIN", 1000);
+                        float rmax = GetMAVParam($"RC{i}_MAX", 2000);
+                        float rtrim = GetMAVParam($"RC{i}_TRIM", 1500);
+
+                        int minH = rmin > 1100 ? 2 : (rmin > 1050 ? 1 : 0);
+                        int maxH = rmax < 1900 ? 2 : (rmax < 1950 ? 1 : 0);
+                        int trimH = (i != 3 && Math.Abs(rtrim - 1500) > 50) ? 1 : 0;
+
+                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MIN", Meaning = $"{chStickNames[i-1]} 最小PWM", Value = rmin, ValueStr = rmin.ToString("0") + " μs", IdealStr = "1000", ToleranceStr = "950〜1050", HealthLevel = minH });
+                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MAX", Meaning = $"{chStickNames[i-1]} 最大PWM", Value = rmax, ValueStr = rmax.ToString("0") + " μs", IdealStr = "2000", ToleranceStr = "1950〜2050", HealthLevel = maxH });
+                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_TRIM", Meaning = $"{chStickNames[i-1]} 中立PWM", Value = rtrim, ValueStr = rtrim.ToString("0") + " μs", IdealStr = (i == 3 ? "1000" : "1500"), ToleranceStr = (i == 3 ? "1000付近" : "1480〜1520"), HealthLevel = trimH });
+                    }
+
+                    for (int i = 5; i <= 18; i++)
+                    {
+                        string chRole = (i == 5) ? "Mode (CH5)" : (i == 6 ? "Arm (CH6)" : $"AUX{i-4} (CH{i})");
+                        
+                        string optParamName = $"RC{i}_OPTION";
+                        float optVal = GetMAVParam(optParamName, -1);
+                        float rmin = GetMAVParam($"RC{i}_MIN", 1000);
+                        float rmax = GetMAVParam($"RC{i}_MAX", 2000);
+                        float rtrim = GetMAVParam($"RC{i}_TRIM", 1500);
+
+                        if (optVal >= 0)
+                        {
+                            int optInt = (int)optVal;
+                            string optName = GetRcOptionName(optInt);
+                            paramList.Add(new CalibParamInfo { Name = optParamName, Meaning = $"{chRole} 機能割当", Value = optVal, ValueStr = $"{optInt}: {optName}", IdealStr = "-", ToleranceStr = "有効設定", HealthLevel = 0 });
+                        }
+
+                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MIN", Meaning = $"{chRole} 最小", Value = rmin, ValueStr = rmin.ToString("0") + " μs", IdealStr = "1000", ToleranceStr = "900〜1100", HealthLevel = (rmin > 1150 || rmin < 850) ? 1 : 0 });
+                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MAX", Meaning = $"{chRole} 最大", Value = rmax, ValueStr = rmax.ToString("0") + " μs", IdealStr = "2000", ToleranceStr = "1900〜2100", HealthLevel = (rmax < 1850 || rmax > 2150) ? 1 : 0 });
+                    }
+
+                    int maxHAll = 0;
+                    foreach (var p in paramList) if (p.HealthLevel > maxHAll) maxHAll = p.HealthLevel;
+
+                    if (maxHAll == 2)
+                    {
+                        adviceTitle = "🔴 診断結果: スティック可動域（エンドポイント）不足";
+                        adviceCause = "【原因】MINが1100以上、またはMAXが1900未満です。プロポのスティックを全開に倒してもアーム操作や全開スロットルが認識されない恐れがあります。";
+                        adviceAction = "【対処法】送信機側のエンドポイント(Travel)が100%になっているか確認し、プロポキャリブレーションを実施してください。";
+                    }
+                    else if (maxHAll == 1)
+                    {
+                        adviceTitle = "🟡 診断結果: スティック中立トリムズレ注意";
+                        adviceCause = "【状態】Roll/Pitch/Yawの中立トリムが1500からズレています。スティックから手を離しても機体がゆっくり流れる可能性があります。";
+                        adviceAction = "【対処法】プロポ側のトリムボタンを中央に戻し、再度キャリブレーションを行ってください。";
+                    }
+                    else
+                    {
+                        adviceTitle = "🟢 診断結果: プロポ入力レンジ極めて良好 (OPTIMAL)";
+                        adviceCause = "【状態】1000〜2000μsのフルレンジが認識されており、中立トリムおよびAUX機能割当も正常です。";
+                        adviceAction = "【アドバイス】全18チャンネルの操縦レスポンスは万全です。再校正は不要です。";
+                    }
+                }
+                else if (category == "esc")
+                {
+                    LBL_calib_title.Text = "【ESC / モーター制御 (Motors & ESC)】";
+                    LBL_calib_subtitle.Text = "PWM出力レンジ・スピン・アイドル回転設定";
+
+                    float pmin = GetMAVParam("MOT_PWM_MIN", 1000);
+                    float pmax = GetMAVParam("MOT_PWM_MAX", 2000);
+                    float sarm = GetMAVParam("MOT_SPIN_ARM", 0.10f);
+                    float smin = GetMAVParam("MOT_SPIN_MIN", 0.15f);
+                    float smax = GetMAVParam("MOT_SPIN_MAX", 0.95f);
+                    float expo = GetMAVParam("MOT_THST_EXPO", 0.65f);
+
+                    int armHealth = (sarm >= smin) ? 2 : ((sarm < 0.03f || sarm > 0.20f) ? 1 : 0);
+                    int minHealth = (smin <= sarm) ? 2 : ((smin < 0.05f || smin > 0.30f) ? 1 : 0);
+
+                    paramList.Add(new CalibParamInfo { Name = "MOT_PWM_MIN", Meaning = "ESC最小パルス", Value = pmin, ValueStr = pmin.ToString("0") + " μs", IdealStr = "1000", ToleranceStr = "1000", HealthLevel = 0 });
+                    paramList.Add(new CalibParamInfo { Name = "MOT_PWM_MAX", Meaning = "ESC最大パルス", Value = pmax, ValueStr = pmax.ToString("0") + " μs", IdealStr = "2000", ToleranceStr = "2000", HealthLevel = 0 });
+                    paramList.Add(new CalibParamInfo { Name = "MOT_SPIN_ARM", Meaning = "アーム時回転比率", Value = sarm, ValueStr = sarm.ToString("0.00"), IdealStr = "0.10", ToleranceStr = "0.05〜0.15", HealthLevel = armHealth });
+                    paramList.Add(new CalibParamInfo { Name = "MOT_SPIN_MIN", Meaning = "飛行時最小回転比率", Value = smin, ValueStr = smin.ToString("0.00"), IdealStr = "0.15", ToleranceStr = "0.10〜0.20", HealthLevel = minHealth });
+                    paramList.Add(new CalibParamInfo { Name = "MOT_SPIN_MAX", Meaning = "最大出力リミット", Value = smax, ValueStr = smax.ToString("0.00"), IdealStr = "0.95", ToleranceStr = "0.90〜1.00", HealthLevel = 0 });
+                    paramList.Add(new CalibParamInfo { Name = "MOT_THST_EXPO", Meaning = "推力カーブ指数", Value = expo, ValueStr = expo.ToString("0.00"), IdealStr = "0.65", ToleranceStr = "0.50〜0.80", HealthLevel = 0 });
+
+                    int maxH = Math.Max(armHealth, minHealth);
+
+                    if (maxH == 2)
+                    {
+                        adviceTitle = "🔴 診断結果: モータースピン設定の矛盾 (SPIN_ARM >= SPIN_MIN)";
+                        adviceCause = "【原因】アーム時のアイドリング回転(MOT_SPIN_ARM)が飛行時最小回転(MOT_SPIN_MIN)以上になっています。アーム時とフライト時の制御切り替えが正常に機能しません。";
+                        adviceAction = "【対処法】MOT_SPIN_ARM < MOT_SPIN_MIN となるよう設定してください（例: ARM=0.10, MIN=0.15）。";
+                    }
+                    else if (maxH == 1)
+                    {
+                        adviceTitle = "🟡 診断結果: アイドル回転数設定注意";
+                        adviceCause = "【状態】アイドリングまたは最小フライト回転数が標準より高めまたは低めです。";
+                        adviceAction = "【対処法】プロペラが停止しない適正回転（0.10〜0.15付近）に調整してください。";
+                    }
+                    else
+                    {
+                        adviceTitle = "🟢 診断結果: ESC・モーター設定極めて良好 (OPTIMAL)";
+                        adviceCause = "【状態】PWMパルス幅、アーム時アイドリング、フライト時最小出力がすべて安全範囲に適合しています。";
+                        adviceAction = "【アドバイス】モーター制御系は適正です。再校正は不要です。";
+                    }
+                }
+
+                // Populate Table Rows
+                Stack_Calib_TableRows.Children.Clear();
+                int rowIdx = 0;
+                int overallHealth = 0;
+                foreach (var p in paramList)
+                {
+                    if (p.HealthLevel > overallHealth) overallHealth = p.HealthLevel;
+
+                    var rowGrid = new global::Xamarin.Forms.Grid
+                    {
+                        ColumnDefinitions = new global::Xamarin.Forms.ColumnDefinitionCollection
+                        {
+                            new global::Xamarin.Forms.ColumnDefinition { Width = 130 },
+                            new global::Xamarin.Forms.ColumnDefinition { Width = 120 },
+                            new global::Xamarin.Forms.ColumnDefinition { Width = 70 },
+                            new global::Xamarin.Forms.ColumnDefinition { Width = 60 },
+                            new global::Xamarin.Forms.ColumnDefinition { Width = 85 },
+                            new global::Xamarin.Forms.ColumnDefinition { Width = 60 }
+                        },
+                        ColumnSpacing = 4,
+                        BackgroundColor = (rowIdx % 2 == 0) ? global::Xamarin.Forms.Color.FromHex("#1E293B") : global::Xamarin.Forms.Color.FromHex("#152238"),
+                        Padding = new global::Xamarin.Forms.Thickness(6, 4)
+                    };
+
+                    var lblName = new global::Xamarin.Forms.Label { Text = p.Name, TextColor = global::Xamarin.Forms.Color.FromHex("#E2E8F0"), FontSize = 9, FontAttributes = global::Xamarin.Forms.FontAttributes.Bold, VerticalOptions = global::Xamarin.Forms.LayoutOptions.Center };
+                    var lblMeaning = new global::Xamarin.Forms.Label { Text = p.Meaning, TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8"), FontSize = 9, VerticalOptions = global::Xamarin.Forms.LayoutOptions.Center };
+
+                    var valColor = (p.HealthLevel == 0) ? global::Xamarin.Forms.Color.FromHex("#10B981") : ((p.HealthLevel == 1) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#EF4444"));
+                    var lblVal = new global::Xamarin.Forms.Label { Text = p.ValueStr, TextColor = valColor, FontSize = 9, FontAttributes = global::Xamarin.Forms.FontAttributes.Bold, HorizontalTextAlignment = global::Xamarin.Forms.TextAlignment.End, VerticalOptions = global::Xamarin.Forms.LayoutOptions.Center };
+
+                    var lblIdeal = new global::Xamarin.Forms.Label { Text = p.IdealStr, TextColor = global::Xamarin.Forms.Color.FromHex("#64748B"), FontSize = 9, HorizontalTextAlignment = global::Xamarin.Forms.TextAlignment.End, VerticalOptions = global::Xamarin.Forms.LayoutOptions.Center };
+                    var lblTol = new global::Xamarin.Forms.Label { Text = p.ToleranceStr, TextColor = global::Xamarin.Forms.Color.FromHex("#64748B"), FontSize = 8, HorizontalTextAlignment = global::Xamarin.Forms.TextAlignment.Center, VerticalOptions = global::Xamarin.Forms.LayoutOptions.Center };
+
+                    string statusBadgeText = (p.HealthLevel == 0) ? "🟢 良好" : ((p.HealthLevel == 1) ? "🟡 注意" : "🔴 異常");
+                    var lblStatus = new global::Xamarin.Forms.Label { Text = statusBadgeText, TextColor = valColor, FontSize = 8, FontAttributes = global::Xamarin.Forms.FontAttributes.Bold, HorizontalTextAlignment = global::Xamarin.Forms.TextAlignment.Center, VerticalOptions = global::Xamarin.Forms.LayoutOptions.Center };
+
+                    global::Xamarin.Forms.Grid.SetColumn(lblName, 0);
+                    global::Xamarin.Forms.Grid.SetColumn(lblMeaning, 1);
+                    global::Xamarin.Forms.Grid.SetColumn(lblVal, 2);
+                    global::Xamarin.Forms.Grid.SetColumn(lblIdeal, 3);
+                    global::Xamarin.Forms.Grid.SetColumn(lblTol, 4);
+                    global::Xamarin.Forms.Grid.SetColumn(lblStatus, 5);
+
+                    rowGrid.Children.Add(lblName);
+                    rowGrid.Children.Add(lblMeaning);
+                    rowGrid.Children.Add(lblVal);
+                    rowGrid.Children.Add(lblIdeal);
+                    rowGrid.Children.Add(lblTol);
+                    rowGrid.Children.Add(lblStatus);
+
+                    Stack_Calib_TableRows.Children.Add(rowGrid);
+                    rowIdx++;
+                }
+
+                // Update Overall Status Badge
+                if (overallHealth == 2)
+                {
+                    LBL_calib_status_badge.Text = "🔴 異常 (ERROR)";
+                    LBL_calib_status_badge.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                    Frame_calib_status_badge.BorderColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                    Frame_calib_status_badge.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#450A0A");
+
+                    Frame_calib_advice.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#450A0A");
+                    Frame_calib_advice.BorderColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                    LBL_calib_advice_title.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                }
+                else if (overallHealth == 1)
+                {
+                    LBL_calib_status_badge.Text = "🟡 注意 (WARNING)";
+                    LBL_calib_status_badge.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                    Frame_calib_status_badge.BorderColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                    Frame_calib_status_badge.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#451A03");
+
+                    Frame_calib_advice.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#451A03");
+                    Frame_calib_advice.BorderColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                    LBL_calib_advice_title.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                }
+                else
+                {
+                    LBL_calib_status_badge.Text = "🟢 良好 (OPTIMAL)";
+                    LBL_calib_status_badge.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                    Frame_calib_status_badge.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                    Frame_calib_status_badge.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#064E3B");
+
+                    Frame_calib_advice.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#064E3B");
+                    Frame_calib_advice.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                    LBL_calib_advice_title.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                }
+
+                LBL_calib_advice_title.Text = adviceTitle;
+                LBL_calib_advice_cause.Text = adviceCause;
+                LBL_calib_advice_action.Text = adviceAction;
+
+                UpdateCalibTreeBadges();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("SelectCalibCategory error: " + ex);
+            }
+        }
+
+        private void UpdateCalibTreeBadges()
+        {
+            try
+            {
+                // Accel Health
+                float ax = GetMAVParam("INS_ACCOFFS_X", 0), ay = GetMAVParam("INS_ACCOFFS_Y", 0), az = GetMAVParam("INS_ACCOFFS_Z", 0);
+                float asx = GetMAVParam("INS_ACCSCAL_X", 1), asy = GetMAVParam("INS_ACCSCAL_Y", 1), asz = GetMAVParam("INS_ACCSCAL_Z", 1);
+                int hAccel = (Math.Abs(ax) > 4 || Math.Abs(ay) > 4 || Math.Abs(az) > 4 || asx < 0.8 || asx > 1.2 || asy < 0.8 || asy > 1.2 || asz < 0.8 || asz > 1.2) ? 2
+                           : ((Math.Abs(ax) > 3 || Math.Abs(ay) > 3 || Math.Abs(az) > 3 || asx < 0.85 || asx > 1.15 || asy < 0.85 || asy > 1.15 || asz < 0.85 || asz > 1.15) ? 1 : 0);
+                Badge_Tree_Accel.Text = (hAccel == 0 ? "🟢" : (hAccel == 1 ? "🟡" : "🔴"));
+
+                // Gyro Health
+                float gx = GetMAVParam("INS_GYROFFS_X", 0), gy = GetMAVParam("INS_GYROFFS_Y", 0), gz = GetMAVParam("INS_GYROFFS_Z", 0);
+                int hGyro = (Math.Abs(gx) > 0.05 || Math.Abs(gy) > 0.05 || Math.Abs(gz) > 0.05) ? 2
+                          : ((Math.Abs(gx) > 0.03 || Math.Abs(gy) > 0.03 || Math.Abs(gz) > 0.03) ? 1 : 0);
+                Badge_Tree_Gyro.Text = (hGyro == 0 ? "🟢" : (hGyro == 1 ? "🟡" : "🔴"));
+
+                // Compass Health
+                float ox = GetMAVParam("COMPASS_OFS_X", 0), oy = GetMAVParam("COMPASS_OFS_Y", 0), oz = GetMAVParam("COMPASS_OFS_Z", 0);
+                float tot = (float)Math.Sqrt(ox * ox + oy * oy + oz * oz);
+                int hComp = (tot > 400 || Math.Abs(ox) > 400 || Math.Abs(oy) > 400 || Math.Abs(oz) > 400) ? 2
+                          : ((tot > 300 || Math.Abs(ox) > 250 || Math.Abs(oy) > 250 || Math.Abs(oz) > 250) ? 1 : 0);
+                Badge_Tree_Compass.Text = (hComp == 0 ? "🟢" : (hComp == 1 ? "🟡" : "🔴"));
+
+                // Radio Health
+                float r1min = GetMAVParam("RC1_MIN", 1000), r1max = GetMAVParam("RC1_MAX", 2000);
+                float r3min = GetMAVParam("RC3_MIN", 1000), r3max = GetMAVParam("RC3_MAX", 2000);
+                int hRadio = (r1min > 1100 || r1max < 1900 || r3min > 1100 || r3max < 1900) ? 2
+                           : ((r1min > 1050 || r1max < 1950 || r3min > 1050 || r3max < 1950) ? 1 : 0);
+                Badge_Tree_Radio.Text = (hRadio == 0 ? "🟢" : (hRadio == 1 ? "🟡" : "🔴"));
+
+                // ESC Health
+                float sarm = GetMAVParam("MOT_SPIN_ARM", 0.10f), smin = GetMAVParam("MOT_SPIN_MIN", 0.15f);
+                int hEsc = (sarm >= smin) ? 2 : ((sarm < 0.03 || sarm > 0.20 || smin < 0.05 || smin > 0.30) ? 1 : 0);
+                Badge_Tree_Esc.Text = (hEsc == 0 ? "🟢" : (hEsc == 1 ? "🟡" : "🔴"));
+            }
+            catch { }
+        }
+
+        private void UpdateCalibLive(CurrentState cs)
+        {
+            try
+            {
+                if (cs == null) return;
+
+                if (_selectedCalibCategory == "accel")
+                {
+                    LBL_calib_live_values.Text = $"X: {cs.ax:+0.00;-0.00;0.00}  Y: {cs.ay:+0.00;-0.00;0.00}  Z: {cs.az:+0.00;-0.00;0.00} m/s²";
+                }
+                else if (_selectedCalibCategory == "gyro")
+                {
+                    LBL_calib_live_values.Text = $"X: {cs.gx:+0.0;-0.0;0.0}  Y: {cs.gy:+0.0;-0.0;0.0}  Z: {cs.gz:+0.0;-0.0;0.0} deg/s";
+                }
+                else if (_selectedCalibCategory == "compass")
+                {
+                    LBL_calib_live_values.Text = $"X: {cs.mx:+0;-0;0}  Y: {cs.my:+0;-0;0}  Z: {cs.mz:+0;-0;0} mG (Yaw: {cs.yaw:0.0}°)";
+                }
+                else if (_selectedCalibCategory == "radio")
+                {
+                    // RCパラメータ表示ではプログレスバーとリアルPWM表示は不要（ジョイスティック設定で確認可能）
+                }
+                else if (_selectedCalibCategory == "esc")
+                {
+                    LBL_calib_live_values.Text = $"M1: {cs.ch1out}  M2: {cs.ch2out}  M3: {cs.ch3out}  M4: {cs.ch4out} μs";
+                }
+
+                _calibBadgeUpdateCounter++;
+                if (_calibBadgeUpdateCounter % 10 == 0)
+                {
+                    UpdateCalibTreeBadges();
+                }
+            }
+            catch { }
+        }
+
+        #endregion
 
         #endregion
 

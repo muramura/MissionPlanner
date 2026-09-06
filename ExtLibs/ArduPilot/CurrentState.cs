@@ -787,6 +787,10 @@ namespace MissionPlanner
 
         [GroupText("RadioIn")] public float ch16in { get; set; }
 
+        [GroupText("RadioIn")] public float ch17in { get; set; }
+
+        [GroupText("RadioIn")] public float ch18in { get; set; }
+
         // motors
         [GroupText("RadioOut")] public float ch1out { get; set; }
 
@@ -3522,6 +3526,8 @@ namespace MissionPlanner
                             ch14in = rcin.chan14_raw;
                             ch15in = rcin.chan15_raw;
                             ch16in = rcin.chan16_raw;
+                            ch17in = rcin.chan17_raw;
+                            ch18in = rcin.chan18_raw;
 
                             // As per mavlink, rcin.rssi is 0-254, 0 being the worst and 254 being the best and 255 invalid/unknown
                             // get the percentage

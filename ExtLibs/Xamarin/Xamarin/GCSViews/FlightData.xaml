@@ -1202,32 +1202,35 @@
             </Frame>
         </Grid>
 
-        <!-- ================= 7. TELEMETRY DIAGNOSTICS (EKF & VIBE) MODAL ================= -->
+        <!-- ================= 7. TELEMETRY DIAGNOSTICS & CALIBRATION MODAL ================= -->
         <Grid x:Name="Pnl_DiagModal" Margin="0" Padding="0" BackgroundColor="#E60B1120" IsVisible="False">
-            <Frame Margin="16,14" Padding="14,12" CornerRadius="12" HasShadow="True"
+            <Frame Margin="12,8" Padding="12,10" CornerRadius="12" HasShadow="True"
                    BackgroundColor="#0F172A" BorderColor="#38BDF8"
-                   VerticalOptions="CenterAndExpand" HorizontalOptions="CenterAndExpand"
-                   WidthRequest="620">
+                   VerticalOptions="FillAndExpand" HorizontalOptions="CenterAndExpand"
+                   WidthRequest="740">
                 <Grid RowDefinitions="Auto,Auto,*" RowSpacing="8">
                     <!-- Row 0: Title Bar with Close Button -->
                     <Grid Grid.Row="0" ColumnDefinitions="*,Auto" VerticalOptions="Center">
                         <StackLayout Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
                             <Label Text="📊" FontSize="16" VerticalOptions="Center"/>
-                            <Label Text="Telemetry Diagnostics" TextColor="#38BDF8" FontSize="14" FontAttributes="Bold" VerticalOptions="Center"/>
-                            <Label Text="(EKF &amp; VIBE)" TextColor="#64748B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Label Text="Telemetry Diagnostics &amp; Calibration" TextColor="#38BDF8" FontSize="14" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Label Text="(INSPECTOR)" TextColor="#64748B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                         <Button Grid.Column="1" Text="✕ Close" BackgroundColor="#334155" TextColor="#F1F5F9" FontSize="11" FontAttributes="Bold"
                                 HeightRequest="28" Padding="10,0" CornerRadius="6" Clicked="OnCloseDiagModalClicked"/>
                     </Grid>
 
-                    <!-- Row 1: Sub-tabs (EKF Status / Vibration & Clipping) -->
-                    <Grid Grid.Row="1" ColumnDefinitions="*,*" ColumnSpacing="8">
+                    <!-- Row 1: Sub-tabs (EKF Status / Vibration & Clipping / Sensor Calib Inspector) -->
+                    <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="6">
                         <Button x:Name="Btn_DiagTab_Ekf" Grid.Column="0" Text="🧭 EKF Status"
-                                BackgroundColor="#0284C7" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold"
-                                HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnDiagTabEkfClicked"/>
-                        <Button x:Name="Btn_DiagTab_Vibe" Grid.Column="1" Text="📳 Vibration &amp; Clipping"
-                                BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold"
-                                HeightRequest="32" CornerRadius="6" Padding="0" Clicked="OnDiagTabVibeClicked"/>
+                                BackgroundColor="#0284C7" TextColor="#FFFFFF" FontSize="10" FontAttributes="Bold"
+                                HeightRequest="30" CornerRadius="6" Padding="0" Clicked="OnDiagTabEkfClicked"/>
+                        <Button x:Name="Btn_DiagTab_Vibe" Grid.Column="1" Text="📳 Vibration"
+                                BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"
+                                HeightRequest="30" CornerRadius="6" Padding="0" Clicked="OnDiagTabVibeClicked"/>
+                        <Button x:Name="Btn_DiagTab_Calib" Grid.Column="2" Text="📋 センサ・校正診断"
+                                BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"
+                                HeightRequest="30" CornerRadius="6" Padding="0" Clicked="OnDiagTabCalibClicked"/>
                     </Grid>
 
                     <!-- Row 2: Tab Content Area -->
@@ -1387,6 +1390,138 @@
                                 </Frame>
                             </StackLayout>
                         </ScrollView>
+
+                        <!-- ================= 3. SENSOR & CALIBRATION INSPECTOR VIEW ================= -->
+                        <Grid x:Name="View_Diag_Calib" IsVisible="False" ColumnDefinitions="185,*" ColumnSpacing="8">
+                            <!-- Left Column: Item Tree / Category List -->
+                            <Frame BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="8" Padding="6,8" HasShadow="False">
+                                <ScrollView>
+                                    <StackLayout Spacing="5">
+                                        <!-- 📁 センサー (SENSORS) -->
+                                        <Label Text="📁 センサー (SENSORS)" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" Margin="4,2,0,0"/>
+                                        
+                                        <Frame x:Name="Tree_Item_Accel" BackgroundColor="#0284C7" BorderColor="#38BDF8" CornerRadius="6" Padding="8,6" HasShadow="False">
+                                            <Frame.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnTreeAccelClicked"/>
+                                            </Frame.GestureRecognizers>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalOptions="Center">
+                                                <Label Text="📐" FontSize="11" VerticalOptions="Center"/>
+                                                <Label x:Name="LBL_Tree_Accel" Grid.Column="1" Text="加速度 (Accel)" TextColor="#FFFFFF" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                <Label x:Name="Badge_Tree_Accel" Grid.Column="2" Text="🟢" FontSize="10" VerticalOptions="Center"/>
+                                            </Grid>
+                                        </Frame>
+
+                                        <Frame x:Name="Tree_Item_Gyro" BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="8,6" HasShadow="False">
+                                            <Frame.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnTreeGyroClicked"/>
+                                            </Frame.GestureRecognizers>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalOptions="Center">
+                                                <Label Text="🔄" FontSize="11" VerticalOptions="Center"/>
+                                                <Label x:Name="LBL_Tree_Gyro" Grid.Column="1" Text="ジャイロ (Gyro)" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                <Label x:Name="Badge_Tree_Gyro" Grid.Column="2" Text="🟢" FontSize="10" VerticalOptions="Center"/>
+                                            </Grid>
+                                        </Frame>
+
+                                        <Frame x:Name="Tree_Item_Compass" BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="8,6" HasShadow="False">
+                                            <Frame.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnTreeCompassClicked"/>
+                                            </Frame.GestureRecognizers>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalOptions="Center">
+                                                <Label Text="🧭" FontSize="11" VerticalOptions="Center"/>
+                                                <Label x:Name="LBL_Tree_Compass" Grid.Column="1" Text="コンパス (Compass)" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                <Label x:Name="Badge_Tree_Compass" Grid.Column="2" Text="🟢" FontSize="10" VerticalOptions="Center"/>
+                                            </Grid>
+                                        </Frame>
+
+                                        <BoxView HeightRequest="1" BackgroundColor="#334155" Margin="0,3"/>
+
+                                        <!-- 📁 プロポ / 送信機 (RADIO / RC) -->
+                                        <Label Text="📁 プロポ / 送信機 (RADIO)" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" Margin="4,0,0,0"/>
+
+                                        <Frame x:Name="Tree_Item_Radio" BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="8,6" HasShadow="False">
+                                            <Frame.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnTreeRadioClicked"/>
+                                            </Frame.GestureRecognizers>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalOptions="Center">
+                                                <Label Text="🎮" FontSize="11" VerticalOptions="Center"/>
+                                                <Label x:Name="LBL_Tree_Radio" Grid.Column="1" Text="プロポ / RC (CH1-18)" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                <Label x:Name="Badge_Tree_Radio" Grid.Column="2" Text="🟢" FontSize="10" VerticalOptions="Center"/>
+                                            </Grid>
+                                        </Frame>
+
+                                        <BoxView HeightRequest="1" BackgroundColor="#334155" Margin="0,3"/>
+
+                                        <!-- 📁 ESC / モーター (MOTORS) -->
+                                        <Label Text="📁 ESC / モーター (MOTORS)" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" Margin="4,0,0,0"/>
+
+                                        <Frame x:Name="Tree_Item_Esc" BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="8,6" HasShadow="False">
+                                            <Frame.GestureRecognizers>
+                                                <TapGestureRecognizer Tapped="OnTreeEscClicked"/>
+                                            </Frame.GestureRecognizers>
+                                            <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalOptions="Center">
+                                                <Label Text="⚡" FontSize="11" VerticalOptions="Center"/>
+                                                <Label x:Name="LBL_Tree_Esc" Grid.Column="1" Text="出力レンジ &amp; スピン" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                <Label x:Name="Badge_Tree_Esc" Grid.Column="2" Text="🟢" FontSize="10" VerticalOptions="Center"/>
+                                            </Grid>
+                                        </Frame>
+                                    </StackLayout>
+                                </ScrollView>
+                            </Frame>
+
+                            <!-- Right Column: Details & Advice Panel -->
+                            <ScrollView Grid.Column="1">
+                                <StackLayout Spacing="8">
+                                    <!-- Header Card -->
+                                    <Frame BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="8" Padding="10,8" HasShadow="False">
+                                        <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
+                                            <StackLayout Orientation="Vertical" Spacing="2">
+                                                <Label x:Name="LBL_calib_title" Text="【加速度センサー (IMU 1)】" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold"/>
+                                                <Label x:Name="LBL_calib_subtitle" Text="6面キャリブレーション・ゼロ点補正・水平トリム" TextColor="#94A3B8" FontSize="9"/>
+                                            </StackLayout>
+                                            <Frame Grid.Column="1" x:Name="Frame_calib_status_badge" BackgroundColor="#064E3B" BorderColor="#10B981" CornerRadius="6" Padding="8,3" HasShadow="False" VerticalOptions="Center">
+                                                <Label x:Name="LBL_calib_status_badge" Text="🟢 良好 (OPTIMAL)" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                            </Frame>
+                                        </Grid>
+                                    </Frame>
+
+                                    <!-- Live Telemetry Preview Card -->
+                                    <Frame x:Name="Frame_calib_live" BackgroundColor="#0F172A" BorderColor="#1E293B" CornerRadius="6" Padding="8,5" HasShadow="False">
+                                        <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" VerticalOptions="Center">
+                                            <Label Text="📡 リアルタイム計測値:" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label x:Name="LBL_calib_live_values" Grid.Column="1" Text="X: 0.00  Y: 0.00  Z: -9.80 m/s²" TextColor="#F1F5F9" FontSize="9" VerticalOptions="Center"/>
+                                        </Grid>
+                                    </Frame>
+
+
+
+                                    <!-- Parameter Table Card -->
+                                    <Frame BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="8" Padding="8,8" HasShadow="False">
+                                        <StackLayout Spacing="4">
+                                            <!-- Table Header Row -->
+                                            <Grid ColumnDefinitions="130,120,70,60,85,60" ColumnSpacing="4" BackgroundColor="#0F172A" Padding="6,4">
+                                                <Label Text="パラメータ" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold"/>
+                                                <Label Grid.Column="1" Text="意味・役割" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold"/>
+                                                <Label Grid.Column="2" Text="現在値" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="End"/>
+                                                <Label Grid.Column="3" Text="理想値" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="End"/>
+                                                <Label Grid.Column="4" Text="許容目安" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                                <Label Grid.Column="5" Text="判定" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                            </Grid>
+                                            <!-- Dynamic Table Rows Container -->
+                                            <StackLayout x:Name="Stack_Calib_TableRows" Spacing="2"/>
+                                        </StackLayout>
+                                    </Frame>
+
+                                    <!-- Diagnostic Advice Card -->
+                                    <Frame x:Name="Frame_calib_advice" BackgroundColor="#064E3B" BorderColor="#10B981" CornerRadius="8" Padding="10,8" HasShadow="False">
+                                        <StackLayout Spacing="3">
+                                            <Label x:Name="LBL_calib_advice_title" Text="💡 診断結果: 非常に良好です" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                            <Label x:Name="LBL_calib_advice_cause" Text="【状態】各センサーのゼロ点・感度ともに理想値に極めて近く、高精度に校正されています。" TextColor="#E2E8F0" FontSize="8"/>
+                                            <Label x:Name="LBL_calib_advice_action" Text="【アドバイス】再校正の必要はありません。このまま安全にフライト可能です。" TextColor="#94A3B8" FontSize="8"/>
+                                        </StackLayout>
+                                    </Frame>
+                                </StackLayout>
+                            </ScrollView>
+                        </Grid>
                     </Grid>
                 </Grid>
             </Frame>
