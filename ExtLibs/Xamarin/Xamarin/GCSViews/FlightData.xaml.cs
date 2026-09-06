@@ -153,10 +153,10 @@ namespace Xamarin
             if (s.IndexOf("Btn R1", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnR1", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn R1";
             if (s.IndexOf("Btn L2", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnL2", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn L2";
             if (s.IndexOf("Btn R2", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("BtnR2", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn R2";
-            if (s.IndexOf("Dpad Up", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字上", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Up";
-            if (s.IndexOf("Dpad Down", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字下", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Down";
-            if (s.IndexOf("Dpad Left", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字左", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Left";
-            if (s.IndexOf("Dpad Right", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字右", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Right";
+            if (s.IndexOf("Dpad Up", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Up";
+            if (s.IndexOf("Dpad Down", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Down";
+            if (s.IndexOf("Dpad Left", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Left";
+            if (s.IndexOf("Dpad Right", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Right";
             if (s.IndexOf("Btn Start", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Start";
             if (s.IndexOf("Btn Select", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Select";
             return s;
@@ -325,10 +325,10 @@ namespace Xamarin
             if (s.IndexOf("Btn Mode", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Mode";
 
             // 4. 十字キー (Dpad) - 部分一致の順序を厳密化
-            if (s.IndexOf("Dpad Up", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字上", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Up";
-            if (s.IndexOf("Dpad Down", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字下", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Down";
-            if (s.IndexOf("Dpad Left", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字左", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Left";
-            if (s.IndexOf("Dpad Right", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("十字右", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Right";
+            if (s.IndexOf("Dpad Up", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Up";
+            if (s.IndexOf("Dpad Down", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Down";
+            if (s.IndexOf("Dpad Left", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Left";
+            if (s.IndexOf("Dpad Right", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Right";
 
             if (s.Equals("None", StringComparison.OrdinalIgnoreCase)) return "None";
             return s;
@@ -2667,17 +2667,17 @@ namespace Xamarin
             try
             {
                 string currentMode = MainV2.comPort.MAV?.cs?.mode ?? "STABILIZE";
-                string action = await DisplayActionSheet($"フライトモード選択 (現在: {currentMode})", "キャンセル", null,
-                    "STABILIZE (手動)",
-                    "ALTHOLD (高度維持)",
-                    "LOITER (定点維持)",
-                    "LAND (着陸)",
-                    "RTL (自動帰還)",
-                    "POSHOLD (位置維持)",
-                    "FLOWHOLD (フロー維持)",
-                    "ACRO (アクロ)");
+                string action = await DisplayActionSheet($"Select Flight Mode (Current: {currentMode})", "Cancel", null,
+                    "STABILIZE",
+                    "ALTHOLD",
+                    "LOITER",
+                    "LAND",
+                    "RTL",
+                    "POSHOLD",
+                    "FLOWHOLD",
+                    "ACRO");
 
-                if (string.IsNullOrEmpty(action) || action == "キャンセル")
+                if (string.IsNullOrEmpty(action) || action == "Cancel")
                     return;
 
                 string targetMode = "STABILIZE";
@@ -2696,7 +2696,7 @@ namespace Xamarin
 
                 MainV2.comPort.setMode(1, 1, targetMode);
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, customMode, 0, 0, 0, 0, 0, false);
-                UserDialogs.Instance.Toast($"{targetMode.ToUpper()} モードに変更要求送信", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast($"Mode change to {targetMode.ToUpper()} requested", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {
@@ -2709,30 +2709,30 @@ namespace Xamarin
             try
             {
                 bool isArmed = MainV2.comPort.MAV?.cs?.armed ?? false;
-                string statusStr = isArmed ? "アーム中（ARMED）" : "停止中（DISARMED）";
-                string action = await DisplayActionSheet($"モーター制御 (現在: {statusStr})", "キャンセル", null,
-                    "🟢 ARM（モーター始動）",
-                    "🔴 DISARM（モーター停止）",
-                    "🚨 緊急着陸（LAND）");
+                string statusStr = isArmed ? "ARMED" : "DISARMED";
+                string action = await DisplayActionSheet($"Motor Control (Current: {statusStr})", "Cancel", null,
+                    "🟢 ARM (Start Motors)",
+                    "🔴 DISARM (Stop Motors)",
+                    "🚨 Emergency LAND");
 
-                if (string.IsNullOrEmpty(action) || action == "キャンセル")
+                if (string.IsNullOrEmpty(action) || action == "Cancel")
                     return;
 
-                if (action.Contains("ARM（モーター始動）"))
+                if (action.Contains("ARM"))
                 {
                     await MainV2.comPort.doARMAsync(1, 1, true);
-                    UserDialogs.Instance.Toast("🟢 ARM（始動）コマンド送信", TimeSpan.FromSeconds(1));
+                    UserDialogs.Instance.Toast("🟢 Sending ARM command", TimeSpan.FromSeconds(1));
                 }
-                else if (action.Contains("DISARM（モーター停止）"))
+                else if (action.Contains("DISARM"))
                 {
                     await MainV2.comPort.doARMAsync(1, 1, false);
-                    UserDialogs.Instance.Toast("🔴 DISARM（停止）コマンド送信", TimeSpan.FromSeconds(1));
+                    UserDialogs.Instance.Toast("🔴 Sending DISARM command", TimeSpan.FromSeconds(1));
                 }
-                else if (action.Contains("緊急着陸"))
+                else if (action.Contains("LAND"))
                 {
                     MainV2.comPort.setMode(1, 1, "Land");
                     await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 9, 0, 0, 0, 0, 0, false);
-                    UserDialogs.Instance.Toast("🚨 緊急着陸コマンド送信", TimeSpan.FromSeconds(1));
+                    UserDialogs.Instance.Toast("🚨 Sending LAND command", TimeSpan.FromSeconds(1));
                 }
             }
             catch (Exception ex)
@@ -2750,13 +2750,13 @@ namespace Xamarin
                 if (cs != null && cs.messages != null && cs.messages.Count > 0)
                 {
                     var msgList = cs.messages.Skip(Math.Max(0, cs.messages.Count - 20)).Select(m => $"[{m.time:HH:mm:ss}] {m.message}").ToList();
-                    msgList.Reverse(); // 最新を上に
+                    msgList.Reverse(); // Newest on top
                     string allMsgs = string.Join(Environment.NewLine + Environment.NewLine, msgList);
-                    await DisplayAlert("FC / MP メッセージ履歴", allMsgs, "閉じる");
+                    await DisplayAlert("FC / MP Message History", allMsgs, "Close");
                 }
                 else
                 {
-                    await DisplayAlert("FC / MP メッセージ", "現在、受信したメッセージはありません。", "OK");
+                    await DisplayAlert("FC / MP Messages", "No messages received.", "OK");
                 }
             }
             catch (Exception ex)
@@ -2826,7 +2826,7 @@ namespace Xamarin
             {
                 MainV2.comPort.setMode(1, 1, "Stabilize");
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 0, 0, 0, 0, 0, 0, false);
-                UserDialogs.Instance.Toast("🕹️ STABILIZE モード要求", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("🕹️ STABILIZE mode requested", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex) { log.Error(ex); }
         }
@@ -2837,7 +2837,7 @@ namespace Xamarin
             {
                 MainV2.comPort.setMode(1, 1, "AltHold");
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 2, 0, 0, 0, 0, 0, false);
-                UserDialogs.Instance.Toast("🔒 ALTHOLD (高度維持) 要求", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("🔒 ALTHOLD mode requested", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex) { log.Error(ex); }
         }
@@ -2848,7 +2848,7 @@ namespace Xamarin
             {
                 MainV2.comPort.setMode(1, 1, "Loiter");
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 5, 0, 0, 0, 0, 0, false);
-                UserDialogs.Instance.Toast("📍 LOITER (位置維持) 要求", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("📍 LOITER mode requested", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex) { log.Error(ex); }
         }
@@ -2860,7 +2860,7 @@ namespace Xamarin
                 log.Info("OnQuickLandTapped");
                 MainV2.comPort.setMode(1, 1, "Land");
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 9, 0, 0, 0, 0, 0, false);
-                UserDialogs.Instance.Toast("🛬 着陸（LAND）モード送信", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("🛬 Sending LAND mode", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {
@@ -2875,7 +2875,7 @@ namespace Xamarin
                 log.Info("OnQuickRTLTapped");
                 MainV2.comPort.setMode(1, 1, "RTL");
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 6, 0, 0, 0, 0, 0, false);
-                UserDialogs.Instance.Toast("🏠 自動帰還（RTL）モード送信", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("🏠 Sending RTL mode", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {
@@ -2894,7 +2894,7 @@ namespace Xamarin
                     await Task.Delay(500);
                 }
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.TAKEOFF, 0, 0, 0, 0, 0, 0, 1.0f, false);
-                UserDialogs.Instance.Toast("🛫 離陸（1.0m）コマンド送信", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("🛫 Sending Takeoff (1.0m) command", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {
@@ -2907,30 +2907,30 @@ namespace Xamarin
             try
             {
                 bool isArmed = MainV2.comPort.MAV?.cs?.armed ?? false;
-                string statusStr = isArmed ? "アーム中（ARMED）" : "停止中（DISARMED）";
-                string action = await DisplayActionSheet($"モーター制御 (現在: {statusStr})", "キャンセル", null,
-                    "🟢 ARM（始動）",
-                    "🔴 DISARM（停止）",
-                    "🚨 緊急着陸（LAND）");
+                string statusStr = isArmed ? "ARMED" : "DISARMED";
+                string action = await DisplayActionSheet($"Motor Control (Current: {statusStr})", "Cancel", null,
+                    "🟢 ARM (Start Motors)",
+                    "🔴 DISARM (Stop Motors)",
+                    "🚨 Emergency LAND");
 
-                if (string.IsNullOrEmpty(action) || action == "キャンセル")
+                if (string.IsNullOrEmpty(action) || action == "Cancel")
                     return;
 
-                if (action.Contains("ARM（始動）"))
+                if (action.Contains("ARM"))
                 {
                     await MainV2.comPort.doARMAsync(1, 1, true);
-                    UserDialogs.Instance.Toast("🟢 ARM（始動）コマンド送信", TimeSpan.FromSeconds(1));
+                    UserDialogs.Instance.Toast("🟢 Sending ARM command", TimeSpan.FromSeconds(1));
                 }
-                else if (action.Contains("DISARM（停止）"))
+                else if (action.Contains("DISARM"))
                 {
                     await MainV2.comPort.doARMAsync(1, 1, false);
-                    UserDialogs.Instance.Toast("🔴 DISARM（停止）コマンド送信", TimeSpan.FromSeconds(1));
+                    UserDialogs.Instance.Toast("🔴 Sending DISARM command", TimeSpan.FromSeconds(1));
                 }
-                else if (action.Contains("緊急着陸"))
+                else if (action.Contains("LAND"))
                 {
                     MainV2.comPort.setMode(1, 1, "Land");
                     await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 9, 0, 0, 0, 0, 0, false);
-                    UserDialogs.Instance.Toast("🚨 緊急着陸コマンド送信", TimeSpan.FromSeconds(1));
+                    UserDialogs.Instance.Toast("🚨 Sending LAND command", TimeSpan.FromSeconds(1));
                 }
             }
             catch (Exception ex)
@@ -2946,7 +2946,7 @@ namespace Xamarin
                 log.Info("Land_OnClicked");
                 MainV2.comPort.setMode(1, 1, "Land");
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 9, 0, 0, 0, 0, 0, false);
-                UserDialogs.Instance.Toast("緊急着陸（LAND）送信", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("Sending LAND mode", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {
@@ -2961,7 +2961,7 @@ namespace Xamarin
                 log.Info("Btn_AltHold_Clicked");
                 MainV2.comPort.setMode(1, 1, "AltHold");
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 2, 0, 0, 0, 0, 0, false);
-                UserDialogs.Instance.Toast("ALTHOLD モード要求送信", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("Sending ALTHOLD mode", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {
@@ -2976,7 +2976,7 @@ namespace Xamarin
                 log.Info("Btn_Loiter_Clicked");
                 MainV2.comPort.setMode(1, 1, "Loiter");
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 5, 0, 0, 0, 0, 0, false);
-                UserDialogs.Instance.Toast("LOITER モード要求送信", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("Sending LOITER mode", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {
@@ -2991,7 +2991,7 @@ namespace Xamarin
                 log.Info("Btn_Stabilize_Clicked");
                 MainV2.comPort.setMode(1, 1, "Stabilize");
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 0, 0, 0, 0, 0, 0, false);
-                UserDialogs.Instance.Toast("STABILIZE モード要求送信", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("Sending STABILIZE mode", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {
@@ -3006,7 +3006,7 @@ namespace Xamarin
                 log.Info("Btn_RTL_Clicked");
                 MainV2.comPort.setMode(1, 1, "RTL");
                 await MainV2.comPort.doCommandAsync(1, 1, MAVLink.MAV_CMD.DO_SET_MODE, (float)MAVLink.MAV_MODE_FLAG.CUSTOM_MODE_ENABLED, 6, 0, 0, 0, 0, 0, false);
-                UserDialogs.Instance.Toast("RTL モード要求送信", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("Sending RTL mode", TimeSpan.FromSeconds(1));
             }
             catch (Exception ex)
             {
@@ -3020,7 +3020,7 @@ namespace Xamarin
             {
                 log.Info("Arm_OnClicked");
                 await MainV2.comPort.doARMAsync(1, 1, true);
-                UserDialogs.Instance.Toast("ARM（始動）送信", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("Sending ARM command", TimeSpan.FromSeconds(1));
             }
             catch (Exception exception)
             {
@@ -3035,7 +3035,7 @@ namespace Xamarin
             {
                 log.Info("Disarm_OnClicked");
                 await MainV2.comPort.doARMAsync(1, 1, false);
-                UserDialogs.Instance.Toast("DISARM（停止）送信", TimeSpan.FromSeconds(1));
+                UserDialogs.Instance.Toast("Sending DISARM command", TimeSpan.FromSeconds(1));
             }
             catch (Exception exception)
             {
@@ -3330,7 +3330,7 @@ namespace Xamarin
                 global::Xamarin.Essentials.Preferences.Set("MP_Vibe_Pattern_BattCrit", Config_Pattern_BattCrit);
                 global::Xamarin.Essentials.Preferences.Set("MP_Vibe_Pattern_Anomaly", Config_Pattern_Anomaly);
 
-                UserDialogs.Instance.Toast("💾 バイブレーション設定を保存しました", TimeSpan.FromSeconds(1.5));
+                UserDialogs.Instance.Toast("💾 Vibration settings saved", TimeSpan.FromSeconds(1.5));
             }
             catch (Exception ex)
             {
@@ -3354,7 +3354,7 @@ namespace Xamarin
                 if (Picker_Vibe_Anomaly != null) Picker_Vibe_Anomaly.SelectedIndex = 4;
 
                 SaveVibeSettings();
-                UserDialogs.Instance.Toast("🔄 アンの提案（デフォルト設定）にリセットしました", TimeSpan.FromSeconds(2.0));
+                UserDialogs.Instance.Toast("🔄 Reset to default vibration patterns", TimeSpan.FromSeconds(2.0));
             }
             catch (Exception ex)
             {
@@ -3387,11 +3387,11 @@ namespace Xamarin
             int sel = Picker_Vibe_Arm != null && Picker_Vibe_Arm.SelectedIndex >= 0 ? Picker_Vibe_Arm.SelectedIndex : Config_Pattern_Arm;
             if (!VibrateMasterEnabled)
             {
-                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                UserDialogs.Instance.Toast("⚠️ Master haptics is OFF", TimeSpan.FromSeconds(1.2));
                 return;
             }
             TriggerHapticForChoice(sel);
-            UserDialogs.Instance.Toast(sel == 5 ? "🚫 ARM: 振動なし (OFF)" : $"🟢 ARM: パターン {sel + 1} テスト再生", TimeSpan.FromSeconds(1.2));
+            UserDialogs.Instance.Toast(sel == 5 ? "🚫 ARM: Haptics OFF" : $"🟢 ARM: Testing Pattern {sel + 1}", TimeSpan.FromSeconds(1.2));
         }
 
         private void TestVibe_Disarm_Clicked(object sender, EventArgs e)
@@ -3403,11 +3403,11 @@ namespace Xamarin
             int sel = Picker_Vibe_Disarm != null && Picker_Vibe_Disarm.SelectedIndex >= 0 ? Picker_Vibe_Disarm.SelectedIndex : Config_Pattern_Disarm;
             if (!VibrateMasterEnabled)
             {
-                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                UserDialogs.Instance.Toast("⚠️ Master haptics is OFF", TimeSpan.FromSeconds(1.2));
                 return;
             }
             TriggerHapticForChoice(sel);
-            UserDialogs.Instance.Toast(sel == 5 ? "🚫 DISARM: 振動なし (OFF)" : $"🔴 DISARM: パターン {sel + 1} テスト再生", TimeSpan.FromSeconds(1.2));
+            UserDialogs.Instance.Toast(sel == 5 ? "🚫 DISARM: Haptics OFF" : $"🔴 DISARM: Testing Pattern {sel + 1}", TimeSpan.FromSeconds(1.2));
         }
 
         private void TestVibe_BattWarn_Clicked(object sender, EventArgs e)
@@ -3419,11 +3419,11 @@ namespace Xamarin
             int sel = Picker_Vibe_BattWarn != null && Picker_Vibe_BattWarn.SelectedIndex >= 0 ? Picker_Vibe_BattWarn.SelectedIndex : Config_Pattern_BattWarn;
             if (!VibrateMasterEnabled)
             {
-                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                UserDialogs.Instance.Toast("⚠️ Master haptics is OFF", TimeSpan.FromSeconds(1.2));
                 return;
             }
             TriggerHapticForChoice(sel);
-            UserDialogs.Instance.Toast(sel == 5 ? "🚫 バッテリー警告: 振動なし (OFF)" : $"🔋 バッテリー警告: パターン {sel + 1} テスト再生", TimeSpan.FromSeconds(1.2));
+            UserDialogs.Instance.Toast(sel == 5 ? "🚫 Battery Warning: Haptics OFF" : $"🔋 Battery Warning: Testing Pattern {sel + 1}", TimeSpan.FromSeconds(1.2));
         }
 
         private void TestVibe_BattCrit_Clicked(object sender, EventArgs e)
@@ -3435,11 +3435,11 @@ namespace Xamarin
             int sel = Picker_Vibe_BattCrit != null && Picker_Vibe_BattCrit.SelectedIndex >= 0 ? Picker_Vibe_BattCrit.SelectedIndex : Config_Pattern_BattCrit;
             if (!VibrateMasterEnabled)
             {
-                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                UserDialogs.Instance.Toast("⚠️ Master haptics is OFF", TimeSpan.FromSeconds(1.2));
                 return;
             }
             TriggerHapticForChoice(sel);
-            UserDialogs.Instance.Toast(sel == 5 ? "🚫 バッテリー危険: 振動なし (OFF)" : $"⚠️ バッテリー危険: パターン {sel + 1} テスト再生", TimeSpan.FromSeconds(1.2));
+            UserDialogs.Instance.Toast(sel == 5 ? "🚫 Battery Critical: Haptics OFF" : $"⚠️ Battery Critical: Testing Pattern {sel + 1}", TimeSpan.FromSeconds(1.2));
         }
 
         private void TestVibe_Anomaly_Clicked(object sender, EventArgs e)
@@ -3451,11 +3451,11 @@ namespace Xamarin
             int sel = Picker_Vibe_Anomaly != null && Picker_Vibe_Anomaly.SelectedIndex >= 0 ? Picker_Vibe_Anomaly.SelectedIndex : Config_Pattern_Anomaly;
             if (!VibrateMasterEnabled)
             {
-                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                UserDialogs.Instance.Toast("⚠️ Master haptics is OFF", TimeSpan.FromSeconds(1.2));
                 return;
             }
             TriggerHapticForChoice(sel);
-            UserDialogs.Instance.Toast(sel == 5 ? "🚫 異常/FS: 振動なし (OFF)" : $"🚨 異常/FS: パターン {sel + 1} テスト再生", TimeSpan.FromSeconds(1.2));
+            UserDialogs.Instance.Toast(sel == 5 ? "🚫 Anomaly/FS: Haptics OFF" : $"🚨 Anomaly/FS: Testing Pattern {sel + 1}", TimeSpan.FromSeconds(1.2));
         }
 
         private void TestVibe_PlayAll_Clicked(object sender, EventArgs e)
@@ -3466,7 +3466,7 @@ namespace Xamarin
 
             if (!VibrateMasterEnabled)
             {
-                UserDialogs.Instance.Toast("⚠️ 全体有効(Master)がOFFです", TimeSpan.FromSeconds(1.2));
+                UserDialogs.Instance.Toast("⚠️ Master haptics is OFF", TimeSpan.FromSeconds(1.2));
                 return;
             }
 
@@ -3474,7 +3474,7 @@ namespace Xamarin
             {
                 try
                 {
-                    UserDialogs.Instance.Toast("🔁 5パターン連続テスト開始...", TimeSpan.FromSeconds(1.5));
+                    UserDialogs.Instance.Toast("🔁 Playing all 5 vibration patterns...", TimeSpan.FromSeconds(1.5));
                     TriggerHaptic(HapticPattern.Arm);
                     await Task.Delay(1000);
                     TriggerHaptic(HapticPattern.Disarm);
@@ -3774,19 +3774,19 @@ namespace Xamarin
         {
             switch (action?.ToUpperInvariant())
             {
-                case "LAND": return global::Xamarin.Forms.Color.FromHex("#DC2626"); // 赤
-                case "POSHOLD": return global::Xamarin.Forms.Color.FromHex("#059669"); // 緑
-                case "LOITER": return global::Xamarin.Forms.Color.FromHex("#0284C7"); // 青
-                case "ALTHOLD": return global::Xamarin.Forms.Color.FromHex("#D97706"); // 橙
-                case "STABILIZE": return global::Xamarin.Forms.Color.FromHex("#475569"); // 灰
-                case "RTL": return global::Xamarin.Forms.Color.FromHex("#DB2777"); // ピンク
-                case "AUTO": return global::Xamarin.Forms.Color.FromHex("#7C3AED"); // 紫
-                case "ACRO": return global::Xamarin.Forms.Color.FromHex("#DC2626"); // 赤
+                case "LAND": return global::Xamarin.Forms.Color.FromHex("#DC2626"); // Red
+                case "POSHOLD": return global::Xamarin.Forms.Color.FromHex("#059669"); // Green
+                case "LOITER": return global::Xamarin.Forms.Color.FromHex("#0284C7"); // Blue
+                case "ALTHOLD": return global::Xamarin.Forms.Color.FromHex("#D97706"); // Orange
+                case "STABILIZE": return global::Xamarin.Forms.Color.FromHex("#475569"); // Gray
+                case "RTL": return global::Xamarin.Forms.Color.FromHex("#DB2777"); // Pink
+                case "AUTO": return global::Xamarin.Forms.Color.FromHex("#7C3AED"); // Purple
+                case "ACRO": return global::Xamarin.Forms.Color.FromHex("#DC2626"); // Red
                 case "ARM / DISARM":
                 case "ARM":
-                case "DISARM": return global::Xamarin.Forms.Color.FromHex("#7C3AED"); // 紫
-                case "TAKEOFF": return global::Xamarin.Forms.Color.FromHex("#2563EB"); // 青
-                default: return global::Xamarin.Forms.Color.FromHex("#334155"); // 濃灰 (None)
+                case "DISARM": return global::Xamarin.Forms.Color.FromHex("#7C3AED"); // Purple
+                case "TAKEOFF": return global::Xamarin.Forms.Color.FromHex("#2563EB"); // Blue
+                default: return global::Xamarin.Forms.Color.FromHex("#334155"); // Dark Gray (None)
             }
         }
 
@@ -3903,7 +3903,7 @@ namespace Xamarin
                         command = (ushort)MAVLink.MAV_CMD.SET_MESSAGE_INTERVAL,
                         confirmation = 0,
                         param1 = 65,        // RC_CHANNELS
-                        param2 = 100000,    // 100,000 µs = 10.0 Hz (StampFly Wi-Fi に最適な黄金比)
+                        param2 = 100000,    // 100,000 µs = 10.0 Hz (Optimal rate for StampFly Wi-Fi)
                         param3 = 0,
                         param4 = 0,
                         param5 = 0,
@@ -4014,7 +4014,7 @@ namespace Xamarin
         }
 
         // 📡 RC_CHANNELS_OVERRIDE パケット送信処理 (60Hz 同期・将来の V2 拡張対応)
-        public static bool UseRCOverrideV2 = false; // 🚀 将来の RC_CHANNELS_OVERRIDE-V2 移行用フラグ
+        public static bool UseRCOverrideV2 = false; // Flag for future RC_CHANNELS_OVERRIDE-V2
 
         private void SendRCOverridePacket()
         {
@@ -4169,7 +4169,7 @@ namespace Xamarin
                     "Dpad Right",
                     "None");
 
-                if (!string.IsNullOrEmpty(result) && result != "キャンセル")
+                if (!string.IsNullOrEmpty(result) && result != "Cancel")
                 {
                     string cleanName = result.Split('(')[0].Trim();
                     btn.Text = cleanName + " ▾";
@@ -4291,7 +4291,7 @@ namespace Xamarin
                     }
 
                     detectTicks++;
-                    if (detectTicks > 160) // 4秒タイムアウト
+                    if (detectTicks > 160) // 4s timeout
                     {
                         ActiveDetectingButton = null;
                         btn.Text = "DETECT";
@@ -4636,8 +4636,8 @@ namespace Xamarin
             // 2. 緯度・経度ワイヤーフレーム（点線/半透明）
             using (var wirePaint = new SkiaSharp.SKPaint { Color = SkiaSharp.SKColor.Parse("#1E3A8A").WithAlpha(120), Style = SkiaSharp.SKPaintStyle.Stroke, StrokeWidth = 1f, IsAntialias = true })
             {
-                canvas.DrawOval(cx, cy, R, R * 0.4f, wirePaint); // 赤道
-                canvas.DrawOval(cx, cy, R * 0.4f, R, wirePaint); // 本初子午線
+                canvas.DrawOval(cx, cy, R, R * 0.4f, wirePaint); // Red道
+                canvas.DrawOval(cx, cy, R * 0.4f, R, wirePaint); // Prime meridian
             }
 
             // 3. 3D 回転変換マトリクス準備
@@ -5008,7 +5008,7 @@ namespace Xamarin
         }
 
         
-        #region Sensor & Calibration Inspector (センサ・校正診断) Handlers & Evaluation
+        #region Sensor & Calibration Inspector Handlers & Evaluation
 
         private string _selectedCalibCategory = "accel";
         private int _calibBadgeUpdateCounter = 0;
@@ -5069,27 +5069,27 @@ namespace Xamarin
         {
             switch (opt)
             {
-                case 0: return "未設定 (Do Nothing)";
-                case 2: return "高度保持 (AltHold)";
-                case 3: return "簡易モード (Simple)";
-                case 4: return "RTL (自動帰還)";
-                case 7: return "WP保存 (Save WP)";
-                case 9: return "カメラシャッター";
-                case 10: return "カメラマウント";
-                case 14: return "フリップ (Flip Mode)";
-                case 17: return "ブレーキ (Brake)";
-                case 18: return "スロー起動 (Throw)";
-                case 28: return "リレー制御 (Relay)";
-                case 31: return "モーターテスト";
-                case 41: return "アーム/ディスアーム";
-                case 46: return "RCオーバーライド";
-                case 55: return "Auto (自動航行)";
-                case 56: return "Guided (誘導モード)";
-                case 57: return "RTL (帰還モード)";
-                case 58: return "Smart RTL (安全帰還)";
-                case 62: return "Land (自動着陸)";
-                case 70: return "VTOLモード切替";
-                case 153: return "緊急モーター停止 (E-Stop)";
+                case 0: return "Do Nothing (0)";
+                case 2: return "AltHold (2)";
+                case 3: return "Simple (3)";
+                case 4: return "RTL (4)";
+                case 7: return "Save WP (7)";
+                case 9: return "Camera Shutter (9)";
+                case 10: return "Camera Mount (10)";
+                case 14: return "Flip Mode (14)";
+                case 17: return "Brake (17)";
+                case 18: return "Throw (18)";
+                case 28: return "Relay (28)";
+                case 31: return "Motor Test (31)";
+                case 41: return "Arm/Disarm (41)";
+                case 46: return "RC Override (46)";
+                case 55: return "Auto (55)";
+                case 56: return "Guided (56)";
+                case 57: return "RTL (57)";
+                case 58: return "Smart RTL (58)";
+                case 62: return "Land (62)";
+                case 70: return "VTOL Mode (70)";
+                case 153: return "Emergency Motor Stop (153)";
                 default: return $"Option {opt}";
             }
         }
@@ -5122,8 +5122,8 @@ namespace Xamarin
 
                 if (category == "accel")
                 {
-                    LBL_calib_title.Text = "【加速度センサー (IMU 1)】";
-                    LBL_calib_subtitle.Text = "6面キャリブレーション・ゼロ点補正・水平トリム";
+                    LBL_calib_title.Text = "[ Accelerometer (IMU 1) ]";
+                    LBL_calib_subtitle.Text = "6-Point Calibration, Offsets & Level Trim";
 
                     float ax_ofs = GetMAVParam("INS_ACCOFFS_X", 0);
                     float ay_ofs = GetMAVParam("INS_ACCOFFS_Y", 0);
@@ -5138,43 +5138,43 @@ namespace Xamarin
                     Func<float, int> sclHealth = val => (val < 0.80f || val > 1.20f) ? 2 : ((val < 0.85f || val > 1.15f) ? 1 : 0);
                     Func<float, int> trimHealth = val => Math.Abs(val) > 0.087f ? 2 : (Math.Abs(val) > 0.050f ? 1 : 0);
 
-                    paramList.Add(new CalibParamInfo { Name = "INS_ACCOFFS_X", Meaning = "X軸 ゼロ点ズレ", Value = ax_ofs, ValueStr = ax_ofs.ToString("+0.00;-0.00;0.00") + " m/s²", IdealStr = "0.00", ToleranceStr = "±3.00以内", HealthLevel = ofsHealth(ax_ofs) });
-                    paramList.Add(new CalibParamInfo { Name = "INS_ACCOFFS_Y", Meaning = "Y軸 ゼロ点ズレ", Value = ay_ofs, ValueStr = ay_ofs.ToString("+0.00;-0.00;0.00") + " m/s²", IdealStr = "0.00", ToleranceStr = "±3.00以内", HealthLevel = ofsHealth(ay_ofs) });
-                    paramList.Add(new CalibParamInfo { Name = "INS_ACCOFFS_Z", Meaning = "Z軸 ゼロ点ズレ", Value = az_ofs, ValueStr = az_ofs.ToString("+0.00;-0.00;0.00") + " m/s²", IdealStr = "0.00", ToleranceStr = "±3.00以内", HealthLevel = ofsHealth(az_ofs) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCOFFS_X", Meaning = "X-axis Offset", Value = ax_ofs, ValueStr = ax_ofs.ToString("+0.00;-0.00;0.00") + " m/s²", IdealStr = "0.00", ToleranceStr = "Within ±3.00", HealthLevel = ofsHealth(ax_ofs) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCOFFS_Y", Meaning = "Y-axis Offset", Value = ay_ofs, ValueStr = ay_ofs.ToString("+0.00;-0.00;0.00") + " m/s²", IdealStr = "0.00", ToleranceStr = "Within ±3.00", HealthLevel = ofsHealth(ay_ofs) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCOFFS_Z", Meaning = "Z-axis Offset", Value = az_ofs, ValueStr = az_ofs.ToString("+0.00;-0.00;0.00") + " m/s²", IdealStr = "0.00", ToleranceStr = "Within ±3.00", HealthLevel = ofsHealth(az_ofs) });
 
-                    paramList.Add(new CalibParamInfo { Name = "INS_ACCSCAL_X", Meaning = "X軸 感度スケール", Value = ax_scl, ValueStr = ax_scl.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.85〜1.15", HealthLevel = sclHealth(ax_scl) });
-                    paramList.Add(new CalibParamInfo { Name = "INS_ACCSCAL_Y", Meaning = "Y軸 感度スケール", Value = ay_scl, ValueStr = ay_scl.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.85〜1.15", HealthLevel = sclHealth(ay_scl) });
-                    paramList.Add(new CalibParamInfo { Name = "INS_ACCSCAL_Z", Meaning = "Z軸 感度スケール", Value = az_scl, ValueStr = az_scl.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.85〜1.15", HealthLevel = sclHealth(az_scl) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCSCAL_X", Meaning = "X-axis Scale", Value = ax_scl, ValueStr = ax_scl.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.85 to 1.15", HealthLevel = sclHealth(ax_scl) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCSCAL_Y", Meaning = "Y-axis Scale", Value = ay_scl, ValueStr = ay_scl.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.85 to 1.15", HealthLevel = sclHealth(ay_scl) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_ACCSCAL_Z", Meaning = "Z-axis Scale", Value = az_scl, ValueStr = az_scl.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.85 to 1.15", HealthLevel = sclHealth(az_scl) });
 
-                    paramList.Add(new CalibParamInfo { Name = "AHRS_TRIM_X", Meaning = "水平ロールトリム", Value = trim_x, ValueStr = trim_x.ToString("+0.000;-0.000;0.000") + " rad", IdealStr = "0.000", ToleranceStr = "±0.050以内", HealthLevel = trimHealth(trim_x) });
-                    paramList.Add(new CalibParamInfo { Name = "AHRS_TRIM_Y", Meaning = "水平ピッチトリム", Value = trim_y, ValueStr = trim_y.ToString("+0.000;-0.000;0.000") + " rad", IdealStr = "0.000", ToleranceStr = "±0.050以内", HealthLevel = trimHealth(trim_y) });
+                    paramList.Add(new CalibParamInfo { Name = "AHRS_TRIM_X", Meaning = "Level Roll Trim", Value = trim_x, ValueStr = trim_x.ToString("+0.000;-0.000;0.000") + " rad", IdealStr = "0.000", ToleranceStr = "Within ±0.050", HealthLevel = trimHealth(trim_x) });
+                    paramList.Add(new CalibParamInfo { Name = "AHRS_TRIM_Y", Meaning = "Level Pitch Trim", Value = trim_y, ValueStr = trim_y.ToString("+0.000;-0.000;0.000") + " rad", IdealStr = "0.000", ToleranceStr = "Within ±0.050", HealthLevel = trimHealth(trim_y) });
 
                     int maxH = 0;
                     foreach (var p in paramList) if (p.HealthLevel > maxH) maxH = p.HealthLevel;
 
                     if (maxH == 2)
                     {
-                        adviceTitle = "🔴 診断結果: 加速度キャリブレーション異常 (要再校正)";
-                        adviceCause = "【原因】ゼロ点ズレが4.0m/s²以上、または感度スケールが0.80〜1.20の安全限界を逸脱しています。6面校正中に機体が動いたか、傾いた面で校正された可能性があります。";
-                        adviceAction = "【対処法】平らで水平な場所に置き、SETUP画面から再度「6面加速度キャリブレーション」を実施してください。";
+                        adviceTitle = "🔴 Diagnosis: Accelerometer Calibration Error (Recalibration Required)";
+                        adviceCause = "[Cause] Zero offsets exceed 4.0 m/s² or scaling is outside safe bounds (0.80-1.20). Vehicle may have moved or was tilted during 6-point calibration.";
+                        adviceAction = "[Action] Place vehicle on a level, flat surface and rerun 6-axis calibration in SETUP.";
                     }
                     else if (maxH == 1)
                     {
-                        adviceTitle = "🟡 診断結果: 加速度パラメータ注意";
-                        adviceCause = "【状態】一部の軸でオフセットまたはトリムが許容境界付近です。ホバリング時に僅かに流れる可能性があります。";
-                        adviceAction = "【対処法】機体を水平に静置して「水平キャリブレーション (Level)」を実施すると改善します。";
+                        adviceTitle = "🟡 Diagnosis: Accelerometer Parameters Warning";
+                        adviceCause = "[Status] Some axis offsets or trim are near tolerance boundaries. Minor drift may occur during hover.";
+                        adviceAction = "[Action] Place vehicle on a level surface and perform Level Calibration.";
                     }
                     else
                     {
-                        adviceTitle = "🟢 診断結果: 加速度センサー極めて良好 (OPTIMAL)";
-                        adviceCause = "【状態】オフセット・スケール・水平トリムの全パラメータが理想値に極めて近く、正確に校正されています。";
-                        adviceAction = "【アドバイス】再校正の必要はありません。このまま安全にフライト可能です。";
+                        adviceTitle = "🟢 Diagnosis: Accelerometer Optimal";
+                        adviceCause = "[Status] Offset, scaling, and level trim parameters are all within ideal limits.";
+                        adviceAction = "[Advice] Calibration is valid and accurate. No recalibration needed.";
                     }
                 }
                 else if (category == "gyro")
                 {
-                    LBL_calib_title.Text = "【ジャイロセンサー (IMU 1)】";
-                    LBL_calib_subtitle.Text = "静止時ドリフトオフセット補正 (起動時自動校正)";
+                    LBL_calib_title.Text = "[ Gyroscope (IMU 1) ]";
+                    LBL_calib_subtitle.Text = "Static Drift Offsets (Boot Auto-Calibration)";
 
                     float gx = GetMAVParam("INS_GYROFFS_X", 0);
                     float gy = GetMAVParam("INS_GYROFFS_Y", 0);
@@ -5182,36 +5182,36 @@ namespace Xamarin
 
                     Func<float, int> gyroHealth = val => Math.Abs(val) > 0.050f ? 2 : (Math.Abs(val) > 0.030f ? 1 : 0);
 
-                    paramList.Add(new CalibParamInfo { Name = "INS_GYROFFS_X", Meaning = "X軸 角速度ドリフト", Value = gx, ValueStr = gx.ToString("+0.0000;-0.0000;0.0000") + " r/s", IdealStr = "0.0000", ToleranceStr = "±0.030以内", HealthLevel = gyroHealth(gx) });
-                    paramList.Add(new CalibParamInfo { Name = "INS_GYROFFS_Y", Meaning = "Y軸 角速度ドリフト", Value = gy, ValueStr = gy.ToString("+0.0000;-0.0000;0.0000") + " r/s", IdealStr = "0.0000", ToleranceStr = "±0.030以内", HealthLevel = gyroHealth(gy) });
-                    paramList.Add(new CalibParamInfo { Name = "INS_GYROFFS_Z", Meaning = "Z軸 角速度ドリフト", Value = gz, ValueStr = gz.ToString("+0.0000;-0.0000;0.0000") + " r/s", IdealStr = "0.0000", ToleranceStr = "±0.030以内", HealthLevel = gyroHealth(gz) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_GYROFFS_X", Meaning = "X-axis Gyro Drift", Value = gx, ValueStr = gx.ToString("+0.0000;-0.0000;0.0000") + " r/s", IdealStr = "0.0000", ToleranceStr = "Within ±0.030", HealthLevel = gyroHealth(gx) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_GYROFFS_Y", Meaning = "Y-axis Gyro Drift", Value = gy, ValueStr = gy.ToString("+0.0000;-0.0000;0.0000") + " r/s", IdealStr = "0.0000", ToleranceStr = "Within ±0.030", HealthLevel = gyroHealth(gy) });
+                    paramList.Add(new CalibParamInfo { Name = "INS_GYROFFS_Z", Meaning = "Z-axis Gyro Drift", Value = gz, ValueStr = gz.ToString("+0.0000;-0.0000;0.0000") + " r/s", IdealStr = "0.0000", ToleranceStr = "Within ±0.030", HealthLevel = gyroHealth(gz) });
 
                     int maxH = 0;
                     foreach (var p in paramList) if (p.HealthLevel > maxH) maxH = p.HealthLevel;
 
                     if (maxH == 2)
                     {
-                        adviceTitle = "🔴 診断結果: ジャイロドリフト過大 (Bad Gyro Health)";
-                        adviceCause = "【原因】電源投入直後の自動初期化中に機体が動かされたため、静止時の角速度ドリフトが大きく記録されています。";
-                        adviceAction = "【対処法】機体を完全に静止した安定した台に置き、バッテリー（電源）を再接続して再起動してください。";
+                        adviceTitle = "🔴 Diagnosis: Excessive Gyro Drift (Bad Gyro Health)";
+                        adviceCause = "[Cause] Vehicle moved during startup auto-calibration, resulting in large drift offsets.";
+                        adviceAction = "[Action] Keep vehicle stationary on a solid surface and reboot / reconnect battery.";
                     }
                     else if (maxH == 1)
                     {
-                        adviceTitle = "🟡 診断結果: ジャイロドリフトやや高め";
-                        adviceCause = "【状態】ドリフト値が注意水準です。長時間の静止時に姿勢が僅かにドリフトする可能性があります。";
-                        adviceAction = "【対処法】飛行前に水平校正を実行するか、静止状態で再起動してください。";
+                        adviceTitle = "🟡 Diagnosis: Gyro Drift Warning";
+                        adviceCause = "[Status] Gyro drift is slightly elevated. Attitude may slowly drift during prolonged hovering.";
+                        adviceAction = "[Action] Perform level calibration before flight or reboot while stationary.";
                     }
                     else
                     {
-                        adviceTitle = "🟢 診断結果: ジャイロセンサー極めて良好 (OPTIMAL)";
-                        adviceCause = "【状態】3軸すべての静止ドリフトがゼロ付近で安定しており、姿勢角の積分誤差は生じません。";
-                        adviceAction = "【アドバイス】姿勢制御系は完全に正常です。再校正は不要です。";
+                        adviceTitle = "🟢 Diagnosis: Gyroscope Optimal";
+                        adviceCause = "[Status] All 3-axis stationary drift offsets are near zero. No attitude integration error.";
+                        adviceAction = "[Advice] Attitude rate tracking is healthy. No recalibration needed.";
                     }
                 }
                 else if (category == "compass")
                 {
-                    LBL_calib_title.Text = "【地磁気コンパス (Compass 1)】";
-                    LBL_calib_subtitle.Text = "硬磁性オフセット・軟磁性感度補正・歪み補正";
+                    LBL_calib_title.Text = "[ Compass (Mag 1) ]";
+                    LBL_calib_subtitle.Text = "Hard-Iron Offsets, Soft-Iron Diagonals & Off-Diagonals";
 
                     float ox = GetMAVParam("COMPASS_OFS_X", 0);
                     float oy = GetMAVParam("COMPASS_OFS_Y", 0);
@@ -5229,42 +5229,42 @@ namespace Xamarin
                     Func<float, int> diaHealth = val => (val < 0.70f || val > 1.30f) ? 2 : ((val < 0.80f || val > 1.20f) ? 1 : 0);
                     int odiHealth = Math.Abs(odx) > 0.25f ? 2 : (Math.Abs(odx) > 0.15f ? 1 : 0);
 
-                    paramList.Add(new CalibParamInfo { Name = "COMPASS_OFS_X", Meaning = "X軸 磁気オフセット", Value = ox, ValueStr = ox.ToString("+0;-0;0") + " mG", IdealStr = "0 mG", ToleranceStr = "±200以内", HealthLevel = ofsHealth(ox) });
-                    paramList.Add(new CalibParamInfo { Name = "COMPASS_OFS_Y", Meaning = "Y軸 磁気オフセット", Value = oy, ValueStr = oy.ToString("+0;-0;0") + " mG", IdealStr = "0 mG", ToleranceStr = "±200以内", HealthLevel = ofsHealth(oy) });
-                    paramList.Add(new CalibParamInfo { Name = "COMPASS_OFS_Z", Meaning = "Z軸 磁気オフセット", Value = oz, ValueStr = oz.ToString("+0;-0;0") + " mG", IdealStr = "0 mG", ToleranceStr = "±200以内", HealthLevel = ofsHealth(oz) });
-                    paramList.Add(new CalibParamInfo { Name = "OFS_TOTAL_LEN", Meaning = "合成磁気オフセット長", Value = tot, ValueStr = tot.ToString("0") + " mG", IdealStr = "< 200", ToleranceStr = "< 350 mG", HealthLevel = totHealth });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_OFS_X", Meaning = "X-axis Mag Offset", Value = ox, ValueStr = ox.ToString("+0;-0;0") + " mG", IdealStr = "0 mG", ToleranceStr = "Within ±200", HealthLevel = ofsHealth(ox) });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_OFS_Y", Meaning = "Y-axis Mag Offset", Value = oy, ValueStr = oy.ToString("+0;-0;0") + " mG", IdealStr = "0 mG", ToleranceStr = "Within ±200", HealthLevel = ofsHealth(oy) });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_OFS_Z", Meaning = "Z-axis Mag Offset", Value = oz, ValueStr = oz.ToString("+0;-0;0") + " mG", IdealStr = "0 mG", ToleranceStr = "Within ±200", HealthLevel = ofsHealth(oz) });
+                    paramList.Add(new CalibParamInfo { Name = "OFS_TOTAL_LEN", Meaning = "Total Mag Offset", Value = tot, ValueStr = tot.ToString("0") + " mG", IdealStr = "< 200", ToleranceStr = "< 350 mG", HealthLevel = totHealth });
 
-                    paramList.Add(new CalibParamInfo { Name = "COMPASS_DIA_X", Meaning = "X軸 軟磁性感度", Value = dx, ValueStr = dx.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.80〜1.20", HealthLevel = diaHealth(dx) });
-                    paramList.Add(new CalibParamInfo { Name = "COMPASS_DIA_Y", Meaning = "Y軸 軟磁性感度", Value = dy, ValueStr = dy.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.80〜1.20", HealthLevel = diaHealth(dy) });
-                    paramList.Add(new CalibParamInfo { Name = "COMPASS_DIA_Z", Meaning = "Z軸 軟磁性感度", Value = dz, ValueStr = dz.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.80〜1.20", HealthLevel = diaHealth(dz) });
-                    paramList.Add(new CalibParamInfo { Name = "COMPASS_ODI_X", Meaning = "XY軸 歪み補正", Value = odx, ValueStr = odx.ToString("+0.000;-0.000;0.000"), IdealStr = "0.000", ToleranceStr = "±0.15以内", HealthLevel = odiHealth });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_DIA_X", Meaning = "X-axis Soft-Iron Scale", Value = dx, ValueStr = dx.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.80 to 1.20", HealthLevel = diaHealth(dx) });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_DIA_Y", Meaning = "Y-axis Soft-Iron Scale", Value = dy, ValueStr = dy.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.80 to 1.20", HealthLevel = diaHealth(dy) });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_DIA_Z", Meaning = "Z-axis Soft-Iron Scale", Value = dz, ValueStr = dz.ToString("0.000"), IdealStr = "1.000", ToleranceStr = "0.80 to 1.20", HealthLevel = diaHealth(dz) });
+                    paramList.Add(new CalibParamInfo { Name = "COMPASS_ODI_X", Meaning = "XY-axis Off-Diagonal", Value = odx, ValueStr = odx.ToString("+0.000;-0.000;0.000"), IdealStr = "0.000", ToleranceStr = "Within ±0.15", HealthLevel = odiHealth });
 
                     int maxH = 0;
                     foreach (var p in paramList) if (p.HealthLevel > maxH) maxH = p.HealthLevel;
 
                     if (maxH == 2)
                     {
-                        adviceTitle = "🔴 診断結果: 磁気オフセット過大 (PreArm: Compass Offsets High)";
-                        adviceCause = "【原因】磁気オフセット合成値が400mGを超えています。機体フレーム内部のネジ、電源配線、スピーカー等の磁気干渉を受けています。";
-                        adviceAction = "【対処法】金属・鉄筋建物を避けた屋外で、SETUP画面から「コンパスキャリブレーション」を実施してください。";
+                        adviceTitle = "🔴 Diagnosis: High Compass Offsets (PreArm: Compass Offsets High)";
+                        adviceCause = "[Cause] Total magnetic offset exceeds 400 mG. Structural screws, power wiring, or speakers may be interfering.";
+                        adviceAction = "[Action] Calibrate compass outdoors away from reinforced concrete buildings and metal structures.";
                     }
                     else if (maxH == 1)
                     {
-                        adviceTitle = "🟡 診断結果: 磁気オフセット注意";
-                        adviceCause = "【状態】オフセット値が300〜400mGとやや高めです。旋回時に方位推定の微小なブレが生じる可能性があります。";
-                        adviceAction = "【対処法】配線をコンパスから離すか、屋外で再校正を行うとより良好になります。";
+                        adviceTitle = "🟡 Diagnosis: Compass Offsets Warning";
+                        adviceCause = "[Status] Offset magnitude is moderately high (300-400 mG). Minor heading fluctuations may occur in turns.";
+                        adviceAction = "[Action] Move high-current wiring away from compass or recalibrate outdoors.";
                     }
                     else
                     {
-                        adviceTitle = "🟢 診断結果: 地磁気コンパス極めて良好 (OPTIMAL)";
-                        adviceCause = "【状態】硬磁性・軟磁性補正値ともに理想的で、磁気干渉のないクリアな環境が保たれています。";
-                        adviceAction = "【アドバイス】方位（Yaw）推定は極めて高精度です。再校正は不要です。";
+                        adviceTitle = "🟢 Diagnosis: Compass Optimal";
+                        adviceCause = "[Status] Hard-iron and soft-iron corrections are optimal with a clean magnetic environment.";
+                        adviceAction = "[Advice] Yaw heading estimation is accurate. No recalibration needed.";
                     }
                 }
                 else if (category == "radio")
                 {
-                    LBL_calib_title.Text = "【プロポ / 送信機 (Radio CH1-18)】";
-                    LBL_calib_subtitle.Text = "リアルタイム入力モニター・可動域・AUX機能割当 (OPTION)";
+                    LBL_calib_title.Text = "[ Transmitter RC (CH1-18) ]";
+                    LBL_calib_subtitle.Text = "Real-time Monitor, Endpoint Travel & AUX Options";
 
                     string[] chStickNames = { "Roll (CH1)", "Pitch (CH2)", "Throttle (CH3)", "Yaw (CH4)" };
                     for (int i = 1; i <= 4; i++)
@@ -5277,9 +5277,9 @@ namespace Xamarin
                         int maxH = rmax < 1900 ? 2 : (rmax < 1950 ? 1 : 0);
                         int trimH = (i != 3 && Math.Abs(rtrim - 1500) > 50) ? 1 : 0;
 
-                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MIN", Meaning = $"{chStickNames[i-1]} 最小PWM", Value = rmin, ValueStr = rmin.ToString("0") + " μs", IdealStr = "1000", ToleranceStr = "950〜1050", HealthLevel = minH });
-                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MAX", Meaning = $"{chStickNames[i-1]} 最大PWM", Value = rmax, ValueStr = rmax.ToString("0") + " μs", IdealStr = "2000", ToleranceStr = "1950〜2050", HealthLevel = maxH });
-                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_TRIM", Meaning = $"{chStickNames[i-1]} 中立PWM", Value = rtrim, ValueStr = rtrim.ToString("0") + " μs", IdealStr = (i == 3 ? "1000" : "1500"), ToleranceStr = (i == 3 ? "1000付近" : "1480〜1520"), HealthLevel = trimH });
+                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MIN", Meaning = $"{chStickNames[i-1]} Min PWM", Value = rmin, ValueStr = rmin.ToString("0") + " μs", IdealStr = "1000", ToleranceStr = "950 to 1050", HealthLevel = minH });
+                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MAX", Meaning = $"{chStickNames[i-1]} Max PWM", Value = rmax, ValueStr = rmax.ToString("0") + " μs", IdealStr = "2000", ToleranceStr = "1950 to 2050", HealthLevel = maxH });
+                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_TRIM", Meaning = $"{chStickNames[i-1]} Trim PWM", Value = rtrim, ValueStr = rtrim.ToString("0") + " μs", IdealStr = (i == 3 ? "1000" : "1500"), ToleranceStr = (i == 3 ? "Near 1000" : "1480 to 1520"), HealthLevel = trimH });
                     }
 
                     for (int i = 5; i <= 18; i++)
@@ -5296,11 +5296,11 @@ namespace Xamarin
                         {
                             int optInt = (int)optVal;
                             string optName = GetRcOptionName(optInt);
-                            paramList.Add(new CalibParamInfo { Name = optParamName, Meaning = $"{chRole} 機能割当", Value = optVal, ValueStr = $"{optInt}: {optName}", IdealStr = "-", ToleranceStr = "有効設定", HealthLevel = 0 });
+                            paramList.Add(new CalibParamInfo { Name = optParamName, Meaning = $"{chRole} Function", Value = optVal, ValueStr = $"{optInt}: {optName}", IdealStr = "-", ToleranceStr = "Enabled", HealthLevel = 0 });
                         }
 
-                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MIN", Meaning = $"{chRole} 最小", Value = rmin, ValueStr = rmin.ToString("0") + " μs", IdealStr = "1000", ToleranceStr = "900〜1100", HealthLevel = (rmin > 1150 || rmin < 850) ? 1 : 0 });
-                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MAX", Meaning = $"{chRole} 最大", Value = rmax, ValueStr = rmax.ToString("0") + " μs", IdealStr = "2000", ToleranceStr = "1900〜2100", HealthLevel = (rmax < 1850 || rmax > 2150) ? 1 : 0 });
+                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MIN", Meaning = $"{chRole} Min", Value = rmin, ValueStr = rmin.ToString("0") + " μs", IdealStr = "1000", ToleranceStr = "900 to 1100", HealthLevel = (rmin > 1150 || rmin < 850) ? 1 : 0 });
+                        paramList.Add(new CalibParamInfo { Name = $"RC{i}_MAX", Meaning = $"{chRole} Max", Value = rmax, ValueStr = rmax.ToString("0") + " μs", IdealStr = "2000", ToleranceStr = "1900 to 2100", HealthLevel = (rmax < 1850 || rmax > 2150) ? 1 : 0 });
                     }
 
                     int maxHAll = 0;
@@ -5308,27 +5308,27 @@ namespace Xamarin
 
                     if (maxHAll == 2)
                     {
-                        adviceTitle = "🔴 診断結果: スティック可動域（エンドポイント）不足";
-                        adviceCause = "【原因】MINが1100以上、またはMAXが1900未満です。プロポのスティックを全開に倒してもアーム操作や全開スロットルが認識されない恐れがあります。";
-                        adviceAction = "【対処法】送信機側のエンドポイント(Travel)が100%になっているか確認し、プロポキャリブレーションを実施してください。";
+                        adviceTitle = "🔴 Diagnosis: Insufficient Stick Travel (Endpoints)";
+                        adviceCause = "[Cause] Min > 1100 or Max < 1900. Transmitter sticks may fail to reach full travel for arming or full throttle.";
+                        adviceAction = "[Action] Verify transmitter travel/endpoints are set to 100% and perform radio calibration.";
                     }
                     else if (maxHAll == 1)
                     {
-                        adviceTitle = "🟡 診断結果: スティック中立トリムズレ注意";
-                        adviceCause = "【状態】Roll/Pitch/Yawの中立トリムが1500からズレています。スティックから手を離しても機体がゆっくり流れる可能性があります。";
-                        adviceAction = "【対処法】プロポ側のトリムボタンを中央に戻し、再度キャリブレーションを行ってください。";
+                        adviceTitle = "🟡 Diagnosis: Center Stick Trim Offset Warning";
+                        adviceCause = "[Status] Roll/Pitch/Yaw center trim is offset from 1500. Vehicle may drift slowly when sticks are centered.";
+                        adviceAction = "[Action] Reset transmitter sub-trims to center and recalibrate radio.";
                     }
                     else
                     {
-                        adviceTitle = "🟢 診断結果: プロポ入力レンジ極めて良好 (OPTIMAL)";
-                        adviceCause = "【状態】1000〜2000μsのフルレンジが認識されており、中立トリムおよびAUX機能割当も正常です。";
-                        adviceAction = "【アドバイス】全18チャンネルの操縦レスポンスは万全です。再校正は不要です。";
+                        adviceTitle = "🟢 Diagnosis: RC Input Ranges Optimal";
+                        adviceCause = "[Status] Full 1000-2000 µs range detected with correct center trim and AUX function assignments.";
+                        adviceAction = "[Advice] Flight control response is optimal across all 18 channels. No recalibration needed.";
                     }
                 }
                 else if (category == "esc")
                 {
-                    LBL_calib_title.Text = "【ESC / モーター制御 (Motors & ESC)】";
-                    LBL_calib_subtitle.Text = "PWM出力レンジ・スピン・アイドル回転設定";
+                    LBL_calib_title.Text = "[ Motors & ESC Control ]";
+                    LBL_calib_subtitle.Text = "PWM Output Range, Spin & Idle Speed Settings";
 
                     float pmin = GetMAVParam("MOT_PWM_MIN", 1000);
                     float pmax = GetMAVParam("MOT_PWM_MAX", 2000);
@@ -5340,32 +5340,32 @@ namespace Xamarin
                     int armHealth = (sarm >= smin) ? 2 : ((sarm < 0.03f || sarm > 0.20f) ? 1 : 0);
                     int minHealth = (smin <= sarm) ? 2 : ((smin < 0.05f || smin > 0.30f) ? 1 : 0);
 
-                    paramList.Add(new CalibParamInfo { Name = "MOT_PWM_MIN", Meaning = "ESC最小パルス", Value = pmin, ValueStr = pmin.ToString("0") + " μs", IdealStr = "1000", ToleranceStr = "1000", HealthLevel = 0 });
-                    paramList.Add(new CalibParamInfo { Name = "MOT_PWM_MAX", Meaning = "ESC最大パルス", Value = pmax, ValueStr = pmax.ToString("0") + " μs", IdealStr = "2000", ToleranceStr = "2000", HealthLevel = 0 });
-                    paramList.Add(new CalibParamInfo { Name = "MOT_SPIN_ARM", Meaning = "アーム時回転比率", Value = sarm, ValueStr = sarm.ToString("0.00"), IdealStr = "0.10", ToleranceStr = "0.05〜0.15", HealthLevel = armHealth });
-                    paramList.Add(new CalibParamInfo { Name = "MOT_SPIN_MIN", Meaning = "飛行時最小回転比率", Value = smin, ValueStr = smin.ToString("0.00"), IdealStr = "0.15", ToleranceStr = "0.10〜0.20", HealthLevel = minHealth });
-                    paramList.Add(new CalibParamInfo { Name = "MOT_SPIN_MAX", Meaning = "最大出力リミット", Value = smax, ValueStr = smax.ToString("0.00"), IdealStr = "0.95", ToleranceStr = "0.90〜1.00", HealthLevel = 0 });
-                    paramList.Add(new CalibParamInfo { Name = "MOT_THST_EXPO", Meaning = "推力カーブ指数", Value = expo, ValueStr = expo.ToString("0.00"), IdealStr = "0.65", ToleranceStr = "0.50〜0.80", HealthLevel = 0 });
+                    paramList.Add(new CalibParamInfo { Name = "MOT_PWM_MIN", Meaning = "ESC Min Pulse", Value = pmin, ValueStr = pmin.ToString("0") + " μs", IdealStr = "1000", ToleranceStr = "1000", HealthLevel = 0 });
+                    paramList.Add(new CalibParamInfo { Name = "MOT_PWM_MAX", Meaning = "ESC Max Pulse", Value = pmax, ValueStr = pmax.ToString("0") + " μs", IdealStr = "2000", ToleranceStr = "2000", HealthLevel = 0 });
+                    paramList.Add(new CalibParamInfo { Name = "MOT_SPIN_ARM", Meaning = "Spin Armed Ratio", Value = sarm, ValueStr = sarm.ToString("0.00"), IdealStr = "0.10", ToleranceStr = "0.05 to 0.15", HealthLevel = armHealth });
+                    paramList.Add(new CalibParamInfo { Name = "MOT_SPIN_MIN", Meaning = "Spin Min Ratio", Value = smin, ValueStr = smin.ToString("0.00"), IdealStr = "0.15", ToleranceStr = "0.10 to 0.20", HealthLevel = minHealth });
+                    paramList.Add(new CalibParamInfo { Name = "MOT_SPIN_MAX", Meaning = "Spin Max Limit", Value = smax, ValueStr = smax.ToString("0.00"), IdealStr = "0.95", ToleranceStr = "0.90 to 1.00", HealthLevel = 0 });
+                    paramList.Add(new CalibParamInfo { Name = "MOT_THST_EXPO", Meaning = "Thrust Curve Expo", Value = expo, ValueStr = expo.ToString("0.00"), IdealStr = "0.65", ToleranceStr = "0.50 to 0.80", HealthLevel = 0 });
 
                     int maxH = Math.Max(armHealth, minHealth);
 
                     if (maxH == 2)
                     {
-                        adviceTitle = "🔴 診断結果: モータースピン設定の矛盾 (SPIN_ARM >= SPIN_MIN)";
-                        adviceCause = "【原因】アーム時のアイドリング回転(MOT_SPIN_ARM)が飛行時最小回転(MOT_SPIN_MIN)以上になっています。アーム時とフライト時の制御切り替えが正常に機能しません。";
-                        adviceAction = "【対処法】MOT_SPIN_ARM < MOT_SPIN_MIN となるよう設定してください（例: ARM=0.10, MIN=0.15）。";
+                        adviceTitle = "🔴 Diagnosis: Spin Settings Conflict (SPIN_ARM >= SPIN_MIN)";
+                        adviceCause = "[Cause] MOT_SPIN_ARM is greater than or equal to MOT_SPIN_MIN. Arming idle vs flight transitions will malfunction.";
+                        adviceAction = "[Action] Ensure MOT_SPIN_ARM < MOT_SPIN_MIN (e.g. ARM=0.10, MIN=0.15).";
                     }
                     else if (maxH == 1)
                     {
-                        adviceTitle = "🟡 診断結果: アイドル回転数設定注意";
-                        adviceCause = "【状態】アイドリングまたは最小フライト回転数が標準より高めまたは低めです。";
-                        adviceAction = "【対処法】プロペラが停止しない適正回転（0.10〜0.15付近）に調整してください。";
+                        adviceTitle = "🟡 Diagnosis: Idle Spin Speed Warning";
+                        adviceCause = "[Status] Arming or minimum flight spin ratios are outside typical ranges.";
+                        adviceAction = "[Action] Adjust spin ratio so motors spin smoothly without stalling (approx 0.10-0.15).";
                     }
                     else
                     {
-                        adviceTitle = "🟢 診断結果: ESC・モーター設定極めて良好 (OPTIMAL)";
-                        adviceCause = "【状態】PWMパルス幅、アーム時アイドリング、フライト時最小出力がすべて安全範囲に適合しています。";
-                        adviceAction = "【アドバイス】モーター制御系は適正です。再校正は不要です。";
+                        adviceTitle = "🟢 Diagnosis: ESC & Motor Settings Optimal";
+                        adviceCause = "[Status] PWM pulse range, arming idle, and minimum flight output are all within safe limits.";
+                        adviceAction = "[Advice] Motor control configuration is healthy. No recalibration needed.";
                     }
                 }
 
@@ -5402,7 +5402,7 @@ namespace Xamarin
                     var lblIdeal = new global::Xamarin.Forms.Label { Text = p.IdealStr, TextColor = global::Xamarin.Forms.Color.FromHex("#64748B"), FontSize = 9, HorizontalTextAlignment = global::Xamarin.Forms.TextAlignment.End, VerticalOptions = global::Xamarin.Forms.LayoutOptions.Center };
                     var lblTol = new global::Xamarin.Forms.Label { Text = p.ToleranceStr, TextColor = global::Xamarin.Forms.Color.FromHex("#64748B"), FontSize = 8, HorizontalTextAlignment = global::Xamarin.Forms.TextAlignment.Center, VerticalOptions = global::Xamarin.Forms.LayoutOptions.Center };
 
-                    string statusBadgeText = (p.HealthLevel == 0) ? "🟢 良好" : ((p.HealthLevel == 1) ? "🟡 注意" : "🔴 異常");
+                    string statusBadgeText = (p.HealthLevel == 0) ? "🟢 GOOD" : ((p.HealthLevel == 1) ? "🟡 WARN" : "🔴 BAD");
                     var lblStatus = new global::Xamarin.Forms.Label { Text = statusBadgeText, TextColor = valColor, FontSize = 8, FontAttributes = global::Xamarin.Forms.FontAttributes.Bold, HorizontalTextAlignment = global::Xamarin.Forms.TextAlignment.Center, VerticalOptions = global::Xamarin.Forms.LayoutOptions.Center };
 
                     global::Xamarin.Forms.Grid.SetColumn(lblName, 0);
@@ -5426,7 +5426,7 @@ namespace Xamarin
                 // Update Overall Status Badge
                 if (overallHealth == 2)
                 {
-                    LBL_calib_status_badge.Text = "🔴 異常 (ERROR)";
+                    LBL_calib_status_badge.Text = "🔴 ERROR";
                     LBL_calib_status_badge.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
                     Frame_calib_status_badge.BorderColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
                     Frame_calib_status_badge.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#450A0A");
@@ -5437,7 +5437,7 @@ namespace Xamarin
                 }
                 else if (overallHealth == 1)
                 {
-                    LBL_calib_status_badge.Text = "🟡 注意 (WARNING)";
+                    LBL_calib_status_badge.Text = "🟡 WARNING";
                     LBL_calib_status_badge.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
                     Frame_calib_status_badge.BorderColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
                     Frame_calib_status_badge.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#451A03");
@@ -5448,7 +5448,7 @@ namespace Xamarin
                 }
                 else
                 {
-                    LBL_calib_status_badge.Text = "🟢 良好 (OPTIMAL)";
+                    LBL_calib_status_badge.Text = "🟢 OPTIMAL";
                     LBL_calib_status_badge.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
                     Frame_calib_status_badge.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
                     Frame_calib_status_badge.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#064E3B");

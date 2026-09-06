@@ -904,7 +904,7 @@
                                                 <Frame BackgroundColor="#1E293B" BorderColor="#EC4899" CornerRadius="4" Padding="6,2" HasShadow="False">
                                                     <Label Text="Dpad Up" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"/>
                                                 </Frame>
-                                                <Label Text="⬆️ 十字キー上" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                                <Label Text="⬆️ Dpad Up" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
                                             </StackLayout>
                                             <Frame x:Name="Frame_JoyPress_DpadUp" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
                                                 <Label x:Name="LBL_JoyPress_DpadUp" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
@@ -920,7 +920,7 @@
                                                 <Frame BackgroundColor="#1E293B" BorderColor="#EC4899" CornerRadius="4" Padding="6,2" HasShadow="False">
                                                     <Label Text="Dpad Down" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"/>
                                                 </Frame>
-                                                <Label Text="⬇️ 十字キー下" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                                <Label Text="⬇️ Dpad Down" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
                                             </StackLayout>
                                             <Frame x:Name="Frame_JoyPress_DpadDown" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
                                                 <Label x:Name="LBL_JoyPress_DpadDown" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
@@ -936,7 +936,7 @@
                                                 <Frame BackgroundColor="#1E293B" BorderColor="#EC4899" CornerRadius="4" Padding="6,2" HasShadow="False">
                                                     <Label Text="Dpad Left" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"/>
                                                 </Frame>
-                                                <Label Text="⬅️ 十字キー左" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                                <Label Text="⬅️ Dpad Left" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
                                             </StackLayout>
                                             <Frame x:Name="Frame_JoyPress_DpadLeft" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
                                                 <Label x:Name="LBL_JoyPress_DpadLeft" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
@@ -952,7 +952,7 @@
                                                 <Frame BackgroundColor="#1E293B" BorderColor="#EC4899" CornerRadius="4" Padding="6,2" HasShadow="False">
                                                     <Label Text="Dpad Right" TextColor="#EC4899" FontSize="10" FontAttributes="Bold"/>
                                                 </Frame>
-                                                <Label Text="➡️ 十字キー右" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                                                <Label Text="➡️ Dpad Right" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
                                             </StackLayout>
                                             <Frame x:Name="Frame_JoyPress_DpadRight" Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="4" Padding="4,2" HasShadow="False" HorizontalOptions="Center" VerticalOptions="Center">
                                                 <Label x:Name="LBL_JoyPress_DpadRight" Text="RELEASED" TextColor="#64748B" FontSize="8" FontAttributes="Bold"/>
@@ -1501,7 +1501,7 @@
                         <Button x:Name="Btn_DiagTab_Vibe" Grid.Column="1" Text="📳 Vibration"
                                 BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"
                                 HeightRequest="30" CornerRadius="6" Padding="0" Clicked="OnDiagTabVibeClicked"/>
-                        <Button x:Name="Btn_DiagTab_Calib" Grid.Column="2" Text="📋 センサ・校正診断"
+                        <Button x:Name="Btn_DiagTab_Calib" Grid.Column="2" Text="📋 Sensor Diagnostics"
                                 BackgroundColor="#1E293B" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold"
                                 HeightRequest="30" CornerRadius="6" Padding="0" Clicked="OnDiagTabCalibClicked"/>
                     </Grid>
@@ -1656,9 +1656,9 @@
                                 <Frame BackgroundColor="#0F172A" BorderColor="#1E293B" CornerRadius="8" Padding="10,6" HasShadow="False">
                                     <StackLayout Spacing="2">
                                         <Label Text="💡 VIBRATION GUIDELINES:" TextColor="#CBD5E1" FontSize="9" FontAttributes="Bold"/>
-                                        <Label Text="• X / Y 振動: 30 m/s² 以下が安全基準です。プロペラの変形・バランス崩れを確認してください。" TextColor="#94A3B8" FontSize="8"/>
-                                        <Label Text="• Z 振動: 60 m/s² 以下が安全基準です。モーター軸のブレやフレームの緩みを確認してください。" TextColor="#94A3B8" FontSize="8"/>
-                                        <Label Text="• クリッピング: センサ測定限界(±16G等)超過です。クリッピングが増加するとEKF姿勢推定が発散します。" TextColor="#94A3B8" FontSize="8"/>
+                                        <Label Text="• X / Y Vibration: Under 30 m/s² is normal. Check propeller balance and deformation." TextColor="#94A3B8" FontSize="8"/>
+                                        <Label Text="• Z Vibration: Under 60 m/s² is normal. Check motor shaft wobble and frame rigidity." TextColor="#94A3B8" FontSize="8"/>
+                                        <Label Text="• Clipping: IMU sensor saturation (±16G). Excessive clipping causes EKF attitude divergence." TextColor="#94A3B8" FontSize="8"/>
                                     </StackLayout>
                                 </Frame>
                             </StackLayout>
@@ -1670,8 +1670,8 @@
                             <Frame BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="8" Padding="6,8" HasShadow="False">
                                 <ScrollView>
                                     <StackLayout Spacing="5">
-                                        <!-- 📁 センサー (SENSORS) -->
-                                        <Label Text="📁 センサー (SENSORS)" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" Margin="4,2,0,0"/>
+                                        <!-- 📁 SENSORS -->
+                                        <Label Text="📁 SENSORS" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" Margin="4,2,0,0"/>
                                         
                                         <Frame x:Name="Tree_Item_Accel" BackgroundColor="#0284C7" BorderColor="#38BDF8" CornerRadius="6" Padding="8,6" HasShadow="False">
                                             <Frame.GestureRecognizers>
@@ -1679,7 +1679,7 @@
                                             </Frame.GestureRecognizers>
                                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalOptions="Center">
                                                 <Label Text="📐" FontSize="11" VerticalOptions="Center"/>
-                                                <Label x:Name="LBL_Tree_Accel" Grid.Column="1" Text="加速度 (Accel)" TextColor="#FFFFFF" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                <Label x:Name="LBL_Tree_Accel" Grid.Column="1" Text="Accelerometer (Accel)" TextColor="#FFFFFF" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
                                                 <Label x:Name="Badge_Tree_Accel" Grid.Column="2" Text="🟢" FontSize="10" VerticalOptions="Center"/>
                                             </Grid>
                                         </Frame>
@@ -1690,7 +1690,7 @@
                                             </Frame.GestureRecognizers>
                                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalOptions="Center">
                                                 <Label Text="🔄" FontSize="11" VerticalOptions="Center"/>
-                                                <Label x:Name="LBL_Tree_Gyro" Grid.Column="1" Text="ジャイロ (Gyro)" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                <Label x:Name="LBL_Tree_Gyro" Grid.Column="1" Text="Gyroscope (Gyro)" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
                                                 <Label x:Name="Badge_Tree_Gyro" Grid.Column="2" Text="🟢" FontSize="10" VerticalOptions="Center"/>
                                             </Grid>
                                         </Frame>
@@ -1701,7 +1701,7 @@
                                             </Frame.GestureRecognizers>
                                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalOptions="Center">
                                                 <Label Text="🧭" FontSize="11" VerticalOptions="Center"/>
-                                                <Label x:Name="LBL_Tree_Compass" Grid.Column="1" Text="コンパス (Compass)" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                <Label x:Name="LBL_Tree_Compass" Grid.Column="1" Text="Compass (Mag)" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
                                                 <Label x:Name="Badge_Tree_Compass" Grid.Column="2" Text="🟢" FontSize="10" VerticalOptions="Center"/>
                                             </Grid>
                                         </Frame>
@@ -1709,7 +1709,7 @@
                                         <BoxView HeightRequest="1" BackgroundColor="#334155" Margin="0,3"/>
 
                                         <!-- 📁 プロポ / 送信機 (RADIO / RC) -->
-                                        <Label Text="📁 プロポ / 送信機 (RADIO)" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" Margin="4,0,0,0"/>
+                                        <Label Text="📁 RADIO / RC" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" Margin="4,0,0,0"/>
 
                                         <Frame x:Name="Tree_Item_Radio" BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="8,6" HasShadow="False">
                                             <Frame.GestureRecognizers>
@@ -1717,15 +1717,15 @@
                                             </Frame.GestureRecognizers>
                                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalOptions="Center">
                                                 <Label Text="🎮" FontSize="11" VerticalOptions="Center"/>
-                                                <Label x:Name="LBL_Tree_Radio" Grid.Column="1" Text="プロポ / RC (CH1-18)" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                <Label x:Name="LBL_Tree_Radio" Grid.Column="1" Text="Transmitter RC (CH1-18)" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
                                                 <Label x:Name="Badge_Tree_Radio" Grid.Column="2" Text="🟢" FontSize="10" VerticalOptions="Center"/>
                                             </Grid>
                                         </Frame>
 
                                         <BoxView HeightRequest="1" BackgroundColor="#334155" Margin="0,3"/>
 
-                                        <!-- 📁 ESC / モーター (MOTORS) -->
-                                        <Label Text="📁 ESC / モーター (MOTORS)" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" Margin="4,0,0,0"/>
+                                        <!-- 📁 MOTORS & ESC -->
+                                        <Label Text="📁 MOTORS &amp; ESC" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" Margin="4,0,0,0"/>
 
                                         <Frame x:Name="Tree_Item_Esc" BackgroundColor="#0F172A" BorderColor="#334155" CornerRadius="6" Padding="8,6" HasShadow="False">
                                             <Frame.GestureRecognizers>
@@ -1733,7 +1733,7 @@
                                             </Frame.GestureRecognizers>
                                             <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="6" VerticalOptions="Center">
                                                 <Label Text="⚡" FontSize="11" VerticalOptions="Center"/>
-                                                <Label x:Name="LBL_Tree_Esc" Grid.Column="1" Text="出力レンジ &amp; スピン" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                <Label x:Name="LBL_Tree_Esc" Grid.Column="1" Text="PWM Range &amp; Spin" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
                                                 <Label x:Name="Badge_Tree_Esc" Grid.Column="2" Text="🟢" FontSize="10" VerticalOptions="Center"/>
                                             </Grid>
                                         </Frame>
@@ -1748,11 +1748,11 @@
                                     <Frame BackgroundColor="#1E293B" BorderColor="#334155" CornerRadius="8" Padding="10,8" HasShadow="False">
                                         <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
                                             <StackLayout Orientation="Vertical" Spacing="2">
-                                                <Label x:Name="LBL_calib_title" Text="【加速度センサー (IMU 1)】" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold"/>
-                                                <Label x:Name="LBL_calib_subtitle" Text="6面キャリブレーション・ゼロ点補正・水平トリム" TextColor="#94A3B8" FontSize="9"/>
+                                                <Label x:Name="LBL_calib_title" Text="[ Accelerometer (IMU 1) ]" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold"/>
+                                                <Label x:Name="LBL_calib_subtitle" Text="6-Point Calibration, Offsets &amp; Level Trim" TextColor="#94A3B8" FontSize="9"/>
                                             </StackLayout>
                                             <Frame Grid.Column="1" x:Name="Frame_calib_status_badge" BackgroundColor="#064E3B" BorderColor="#10B981" CornerRadius="6" Padding="8,3" HasShadow="False" VerticalOptions="Center">
-                                                <Label x:Name="LBL_calib_status_badge" Text="🟢 良好 (OPTIMAL)" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                                <Label x:Name="LBL_calib_status_badge" Text="🟢 OPTIMAL" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
                                             </Frame>
                                         </Grid>
                                     </Frame>
@@ -1760,7 +1760,7 @@
                                     <!-- Live Telemetry Preview Card -->
                                     <Frame x:Name="Frame_calib_live" BackgroundColor="#0F172A" BorderColor="#1E293B" CornerRadius="6" Padding="8,5" HasShadow="False">
                                         <Grid ColumnDefinitions="Auto,*" ColumnSpacing="6" VerticalOptions="Center">
-                                            <Label Text="📡 リアルタイム計測値:" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            <Label Text="📡 Live Sensor Values:" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
                                             <Label x:Name="LBL_calib_live_values" Grid.Column="1" Text="X: 0.00  Y: 0.00  Z: -9.80 m/s²" TextColor="#F1F5F9" FontSize="9" VerticalOptions="Center"/>
                                         </Grid>
                                     </Frame>
@@ -1772,12 +1772,12 @@
                                         <StackLayout Spacing="4">
                                             <!-- Table Header Row -->
                                             <Grid ColumnDefinitions="130,120,70,60,85,60" ColumnSpacing="4" BackgroundColor="#0F172A" Padding="6,4">
-                                                <Label Text="パラメータ" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold"/>
-                                                <Label Grid.Column="1" Text="意味・役割" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold"/>
-                                                <Label Grid.Column="2" Text="現在値" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="End"/>
-                                                <Label Grid.Column="3" Text="理想値" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="End"/>
-                                                <Label Grid.Column="4" Text="許容目安" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
-                                                <Label Grid.Column="5" Text="判定" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                                <Label Text="Parameter" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold"/>
+                                                <Label Grid.Column="1" Text="Description" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold"/>
+                                                <Label Grid.Column="2" Text="Value" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="End"/>
+                                                <Label Grid.Column="3" Text="Ideal" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="End"/>
+                                                <Label Grid.Column="4" Text="Tolerance" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
+                                                <Label Grid.Column="5" Text="Status" TextColor="#94A3B8" FontSize="9" FontAttributes="Bold" HorizontalTextAlignment="Center"/>
                                             </Grid>
                                             <!-- Dynamic Table Rows Container -->
                                             <StackLayout x:Name="Stack_Calib_TableRows" Spacing="2"/>
@@ -1787,9 +1787,9 @@
                                     <!-- Diagnostic Advice Card -->
                                     <Frame x:Name="Frame_calib_advice" BackgroundColor="#064E3B" BorderColor="#10B981" CornerRadius="8" Padding="10,8" HasShadow="False">
                                         <StackLayout Spacing="3">
-                                            <Label x:Name="LBL_calib_advice_title" Text="💡 診断結果: 非常に良好です" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
-                                            <Label x:Name="LBL_calib_advice_cause" Text="【状態】各センサーのゼロ点・感度ともに理想値に極めて近く、高精度に校正されています。" TextColor="#E2E8F0" FontSize="8"/>
-                                            <Label x:Name="LBL_calib_advice_action" Text="【アドバイス】再校正の必要はありません。このまま安全にフライト可能です。" TextColor="#94A3B8" FontSize="8"/>
+                                            <Label x:Name="LBL_calib_advice_title" Text="💡 Diagnosis: Optimal" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                            <Label x:Name="LBL_calib_advice_cause" Text="[Status] Sensor offsets and scaling are within ideal limits." TextColor="#E2E8F0" FontSize="8"/>
+                                            <Label x:Name="LBL_calib_advice_action" Text="[Advice] Calibration is valid and safe for flight. No recalibration needed." TextColor="#94A3B8" FontSize="8"/>
                                         </StackLayout>
                                     </Frame>
                                 </StackLayout>
@@ -1816,7 +1816,7 @@
                     <Grid ColumnDefinitions="*,Auto" VerticalOptions="Center">
                         <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
                             <Label Text="📳" FontSize="16" VerticalOptions="Center"/>
-                            <Label Text="バイブレーション設定 &amp; パターン選択" TextColor="#38BDF8" FontSize="13" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Label Text="Vibration &amp; Haptic Settings" TextColor="#38BDF8" FontSize="13" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                         <Button Grid.Column="1" Text="✕" FontSize="11" FontAttributes="Bold"
                                 BackgroundColor="#EF4444" TextColor="#FFFFFF" CornerRadius="4"
@@ -1824,7 +1824,7 @@
                     </Grid>
 
                     <!-- Subtitle & Description -->
-                    <Label Text="フライトイベントごとの振動パターン割り当ておよび有効/無効を設定できます（設定は自動保存されます）。"
+                    <Label Text="Configure vibration haptic patterns for flight events (settings saved automatically)."
                            TextColor="#94A3B8" FontSize="8"/>
 
                     <!-- Master & Device Switches Bar -->
@@ -1833,7 +1833,7 @@
                             <!-- Master Switch -->
                             <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
                                 <CheckBox x:Name="CHK_Vibe_MasterEnabled" Color="#10B981" VerticalOptions="Center"/>
-                                <Label Text="全体有効 (Master)" TextColor="#F1F5F9" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                <Label Text="Master Enable" TextColor="#F1F5F9" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
                             </StackLayout>
 
                             <BoxView Grid.Column="1" WidthRequest="1" BackgroundColor="#334155" HorizontalOptions="Center" HeightRequest="20"/>
@@ -1841,7 +1841,7 @@
                             <!-- Gamepad Switch -->
                             <StackLayout Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
                                 <CheckBox x:Name="CHK_Vibe_Gamepad" Color="#38BDF8" VerticalOptions="Center"/>
-                                <Label Text="🎮 コントローラー" TextColor="#CBD5E1" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                <Label Text="🎮 Gamepad" TextColor="#CBD5E1" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
                             </StackLayout>
 
                             <BoxView Grid.Column="3" WidthRequest="1" BackgroundColor="#334155" HorizontalOptions="Center" HeightRequest="20"/>
@@ -1849,7 +1849,7 @@
                             <!-- Phone Switch -->
                             <StackLayout Grid.Column="4" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
                                 <CheckBox x:Name="CHK_Vibe_Phone" Color="#F59E0B" VerticalOptions="Center"/>
-                                <Label Text="📱 スマホ本体" TextColor="#CBD5E1" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                <Label Text="📱 Phone / Tablet" TextColor="#CBD5E1" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
                             </StackLayout>
                         </Grid>
                     </Frame>
@@ -1861,21 +1861,21 @@
                             <Frame BackgroundColor="#1E293B" BorderColor="#10B981" CornerRadius="6" Padding="8,4" HasShadow="False">
                                 <Grid ColumnDefinitions="140,*,65" ColumnSpacing="6" VerticalOptions="Center">
                                     <StackLayout Grid.Column="0" VerticalOptions="Center" Spacing="1">
-                                        <Label Text="🟢 ARM（始動）" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
-                                        <Label Text="モーター回転開始" TextColor="#94A3B8" FontSize="7"/>
+                                        <Label Text="🟢 ARM (Motors Spin)" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                        <Label Text="Motors started" TextColor="#94A3B8" FontSize="7"/>
                                     </StackLayout>
                                     <Picker x:Name="Picker_Vibe_Arm" Grid.Column="1" TextColor="#F1F5F9" FontSize="9" HeightRequest="32" VerticalOptions="Center">
                                         <Picker.Items>
-                                            <x:String>🟢 パターン1: ARM短パルス (140ms×2)</x:String>
-                                            <x:String>🔴 パターン2: DISARM中パルス (280ms×1)</x:String>
-                                            <x:String>🔋 パターン3: 低電圧パルス (180ms×2)</x:String>
-                                            <x:String>⚠️ パターン4: 危険電圧 (300ms×3)</x:String>
-                                            <x:String>🚨 パターン5: 異常/FS (450ms×3)</x:String>
-                                            <x:String>🚫 なし (振動OFF)</x:String>
+                                            <x:String>🟢 Pattern 1: ARM Short Pulse (140ms x2)</x:String>
+                                            <x:String>🔴 Pattern 2: DISARM Mid Pulse (280ms x1)</x:String>
+                                            <x:String>🔋 Pattern 3: Low Battery Pulse (180ms x2)</x:String>
+                                            <x:String>⚠️ Pattern 4: Critical Battery (300ms x3)</x:String>
+                                            <x:String>🚨 Pattern 5: Anomaly / Failsafe (450ms x3)</x:String>
+                                            <x:String>🚫 None (Haptics OFF)</x:String>
                                         </Picker.Items>
                                         <Picker.SelectedIndex>0</Picker.SelectedIndex>
                                     </Picker>
-                                    <Button Grid.Column="2" Text="📳 テスト" BackgroundColor="#059669" TextColor="#FFFFFF"
+                                    <Button Grid.Column="2" Text="📳 Test" BackgroundColor="#059669" TextColor="#FFFFFF"
                                             FontSize="8" FontAttributes="Bold" HeightRequest="26" Padding="0" CornerRadius="4"
                                             Clicked="TestVibe_Arm_Clicked"/>
                                 </Grid>
@@ -1885,21 +1885,21 @@
                             <Frame BackgroundColor="#1E293B" BorderColor="#EF4444" CornerRadius="6" Padding="8,4" HasShadow="False">
                                 <Grid ColumnDefinitions="140,*,65" ColumnSpacing="6" VerticalOptions="Center">
                                     <StackLayout Grid.Column="0" VerticalOptions="Center" Spacing="1">
-                                        <Label Text="🔴 DISARM（停止）" TextColor="#F87171" FontSize="10" FontAttributes="Bold"/>
-                                        <Label Text="モーター完全停止" TextColor="#94A3B8" FontSize="7"/>
+                                        <Label Text="🔴 DISARM (Motors Stop)" TextColor="#F87171" FontSize="10" FontAttributes="Bold"/>
+                                        <Label Text="Motors stopped" TextColor="#94A3B8" FontSize="7"/>
                                     </StackLayout>
                                     <Picker x:Name="Picker_Vibe_Disarm" Grid.Column="1" TextColor="#F1F5F9" FontSize="9" HeightRequest="32" VerticalOptions="Center">
                                         <Picker.Items>
-                                            <x:String>🟢 パターン1: ARM短パルス (140ms×2)</x:String>
-                                            <x:String>🔴 パターン2: DISARM中パルス (280ms×1)</x:String>
-                                            <x:String>🔋 パターン3: 低電圧パルス (180ms×2)</x:String>
-                                            <x:String>⚠️ パターン4: 危険電圧 (300ms×3)</x:String>
-                                            <x:String>🚨 パターン5: 異常/FS (450ms×3)</x:String>
-                                            <x:String>🚫 なし (振動OFF)</x:String>
+                                            <x:String>🟢 Pattern 1: ARM Short Pulse (140ms x2)</x:String>
+                                            <x:String>🔴 Pattern 2: DISARM Mid Pulse (280ms x1)</x:String>
+                                            <x:String>🔋 Pattern 3: Low Battery Pulse (180ms x2)</x:String>
+                                            <x:String>⚠️ Pattern 4: Critical Battery (300ms x3)</x:String>
+                                            <x:String>🚨 Pattern 5: Anomaly / Failsafe (450ms x3)</x:String>
+                                            <x:String>🚫 None (Haptics OFF)</x:String>
                                         </Picker.Items>
                                         <Picker.SelectedIndex>1</Picker.SelectedIndex>
                                     </Picker>
-                                    <Button Grid.Column="2" Text="📳 テスト" BackgroundColor="#DC2626" TextColor="#FFFFFF"
+                                    <Button Grid.Column="2" Text="📳 Test" BackgroundColor="#DC2626" TextColor="#FFFFFF"
                                             FontSize="8" FontAttributes="Bold" HeightRequest="26" Padding="0" CornerRadius="4"
                                             Clicked="TestVibe_Disarm_Clicked"/>
                                 </Grid>
@@ -1909,21 +1909,21 @@
                             <Frame BackgroundColor="#1E293B" BorderColor="#F59E0B" CornerRadius="6" Padding="8,4" HasShadow="False">
                                 <Grid ColumnDefinitions="140,*,65" ColumnSpacing="6" VerticalOptions="Center">
                                     <StackLayout Grid.Column="0" VerticalOptions="Center" Spacing="1">
-                                        <Label Text="🔋 バッテリー警告" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"/>
-                                        <Label Text="低電圧 &lt; 3.55V (7秒間隔)" TextColor="#94A3B8" FontSize="7"/>
+                                        <Label Text="🔋 Battery Warning" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"/>
+                                        <Label Text="Low Voltage &lt; 3.55V (7s interval)" TextColor="#94A3B8" FontSize="7"/>
                                     </StackLayout>
                                     <Picker x:Name="Picker_Vibe_BattWarn" Grid.Column="1" TextColor="#F1F5F9" FontSize="9" HeightRequest="32" VerticalOptions="Center">
                                         <Picker.Items>
-                                            <x:String>🟢 パターン1: ARM短パルス (140ms×2)</x:String>
-                                            <x:String>🔴 パターン2: DISARM中パルス (280ms×1)</x:String>
-                                            <x:String>🔋 パターン3: 低電圧パルス (180ms×2)</x:String>
-                                            <x:String>⚠️ パターン4: 危険電圧 (300ms×3)</x:String>
-                                            <x:String>🚨 パターン5: 異常/FS (450ms×3)</x:String>
-                                            <x:String>🚫 なし (振動OFF)</x:String>
+                                            <x:String>🟢 Pattern 1: ARM Short Pulse (140ms x2)</x:String>
+                                            <x:String>🔴 Pattern 2: DISARM Mid Pulse (280ms x1)</x:String>
+                                            <x:String>🔋 Pattern 3: Low Battery Pulse (180ms x2)</x:String>
+                                            <x:String>⚠️ Pattern 4: Critical Battery (300ms x3)</x:String>
+                                            <x:String>🚨 Pattern 5: Anomaly / Failsafe (450ms x3)</x:String>
+                                            <x:String>🚫 None (Haptics OFF)</x:String>
                                         </Picker.Items>
                                         <Picker.SelectedIndex>2</Picker.SelectedIndex>
                                     </Picker>
-                                    <Button Grid.Column="2" Text="📳 テスト" BackgroundColor="#D97706" TextColor="#FFFFFF"
+                                    <Button Grid.Column="2" Text="📳 Test" BackgroundColor="#D97706" TextColor="#FFFFFF"
                                             FontSize="8" FontAttributes="Bold" HeightRequest="26" Padding="0" CornerRadius="4"
                                             Clicked="TestVibe_BattWarn_Clicked"/>
                                 </Grid>
@@ -1933,21 +1933,21 @@
                             <Frame BackgroundColor="#1E293B" BorderColor="#F97316" CornerRadius="6" Padding="8,4" HasShadow="False">
                                 <Grid ColumnDefinitions="140,*,65" ColumnSpacing="6" VerticalOptions="Center">
                                     <StackLayout Grid.Column="0" VerticalOptions="Center" Spacing="1">
-                                        <Label Text="⚠️ バッテリー危険" TextColor="#F97316" FontSize="10" FontAttributes="Bold"/>
-                                        <Label Text="限界電圧 &lt; 3.30V (3.5秒間隔)" TextColor="#94A3B8" FontSize="7"/>
+                                        <Label Text="⚠️ Battery Critical" TextColor="#F97316" FontSize="10" FontAttributes="Bold"/>
+                                        <Label Text="Critical Voltage &lt; 3.30V (3.5s interval)" TextColor="#94A3B8" FontSize="7"/>
                                     </StackLayout>
                                     <Picker x:Name="Picker_Vibe_BattCrit" Grid.Column="1" TextColor="#F1F5F9" FontSize="9" HeightRequest="32" VerticalOptions="Center">
                                         <Picker.Items>
-                                            <x:String>🟢 パターン1: ARM短パルス (140ms×2)</x:String>
-                                            <x:String>🔴 パターン2: DISARM中パルス (280ms×1)</x:String>
-                                            <x:String>🔋 パターン3: 低電圧パルス (180ms×2)</x:String>
-                                            <x:String>⚠️ パターン4: 危険電圧 (300ms×3)</x:String>
-                                            <x:String>🚨 パターン5: 異常/FS (450ms×3)</x:String>
-                                            <x:String>🚫 なし (振動OFF)</x:String>
+                                            <x:String>🟢 Pattern 1: ARM Short Pulse (140ms x2)</x:String>
+                                            <x:String>🔴 Pattern 2: DISARM Mid Pulse (280ms x1)</x:String>
+                                            <x:String>🔋 Pattern 3: Low Battery Pulse (180ms x2)</x:String>
+                                            <x:String>⚠️ Pattern 4: Critical Battery (300ms x3)</x:String>
+                                            <x:String>🚨 Pattern 5: Anomaly / Failsafe (450ms x3)</x:String>
+                                            <x:String>🚫 None (Haptics OFF)</x:String>
                                         </Picker.Items>
                                         <Picker.SelectedIndex>3</Picker.SelectedIndex>
                                     </Picker>
-                                    <Button Grid.Column="2" Text="📳 テスト" BackgroundColor="#EA580C" TextColor="#FFFFFF"
+                                    <Button Grid.Column="2" Text="📳 Test" BackgroundColor="#EA580C" TextColor="#FFFFFF"
                                             FontSize="8" FontAttributes="Bold" HeightRequest="26" Padding="0" CornerRadius="4"
                                             Clicked="TestVibe_BattCrit_Clicked"/>
                                 </Grid>
@@ -1957,21 +1957,21 @@
                             <Frame BackgroundColor="#1E293B" BorderColor="#DC2626" CornerRadius="6" Padding="8,4" HasShadow="False">
                                 <Grid ColumnDefinitions="140,*,65" ColumnSpacing="6" VerticalOptions="Center">
                                     <StackLayout Grid.Column="0" VerticalOptions="Center" Spacing="1">
-                                        <Label Text="🚨 異常検知 / FS" TextColor="#EF4444" FontSize="10" FontAttributes="Bold"/>
-                                        <Label Text="EKF・振動過大・FS発動" TextColor="#94A3B8" FontSize="7"/>
+                                        <Label Text="🚨 Anomaly / Failsafe" TextColor="#EF4444" FontSize="10" FontAttributes="Bold"/>
+                                        <Label Text="EKF, High Vibe, or Failsafe" TextColor="#94A3B8" FontSize="7"/>
                                     </StackLayout>
                                     <Picker x:Name="Picker_Vibe_Anomaly" Grid.Column="1" TextColor="#F1F5F9" FontSize="9" HeightRequest="32" VerticalOptions="Center">
                                         <Picker.Items>
-                                            <x:String>🟢 パターン1: ARM短パルス (140ms×2)</x:String>
-                                            <x:String>🔴 パターン2: DISARM中パルス (280ms×1)</x:String>
-                                            <x:String>🔋 パターン3: 低電圧パルス (180ms×2)</x:String>
-                                            <x:String>⚠️ パターン4: 危険電圧 (300ms×3)</x:String>
-                                            <x:String>🚨 パターン5: 異常/FS (450ms×3)</x:String>
-                                            <x:String>🚫 なし (振動OFF)</x:String>
+                                            <x:String>🟢 Pattern 1: ARM Short Pulse (140ms x2)</x:String>
+                                            <x:String>🔴 Pattern 2: DISARM Mid Pulse (280ms x1)</x:String>
+                                            <x:String>🔋 Pattern 3: Low Battery Pulse (180ms x2)</x:String>
+                                            <x:String>⚠️ Pattern 4: Critical Battery (300ms x3)</x:String>
+                                            <x:String>🚨 Pattern 5: Anomaly / Failsafe (450ms x3)</x:String>
+                                            <x:String>🚫 None (Haptics OFF)</x:String>
                                         </Picker.Items>
                                         <Picker.SelectedIndex>4</Picker.SelectedIndex>
                                     </Picker>
-                                    <Button Grid.Column="2" Text="📳 テスト" BackgroundColor="#991B1B" TextColor="#FEE2E2"
+                                    <Button Grid.Column="2" Text="📳 Test" BackgroundColor="#991B1B" TextColor="#FEE2E2"
                                             FontSize="8" FontAttributes="Bold" HeightRequest="26" Padding="0" CornerRadius="4"
                                             Clicked="TestVibe_Anomaly_Clicked"/>
                                 </Grid>
@@ -1981,13 +1981,13 @@
 
                     <!-- Bottom Action Buttons -->
                     <Grid ColumnDefinitions="Auto,*,Auto" ColumnSpacing="8" Margin="0,2,0,0">
-                        <Button Grid.Column="0" Text="🔄 デフォルトに戻す" BackgroundColor="#334155" TextColor="#F1F5F9"
+                        <Button Grid.Column="0" Text="🔄 Reset Defaults" BackgroundColor="#334155" TextColor="#F1F5F9"
                                 FontSize="9" FontAttributes="Bold" HeightRequest="28" Padding="8,0" CornerRadius="4"
                                 Clicked="Btn_Vibe_ResetDefaults_Clicked"/>
-                        <Button Grid.Column="1" Text="🔁 5パターン連続テスト" BackgroundColor="#0D9488" TextColor="#FFFFFF"
+                        <Button Grid.Column="1" Text="🔁 Play All Patterns" BackgroundColor="#0D9488" TextColor="#FFFFFF"
                                 FontSize="9" FontAttributes="Bold" HeightRequest="28" Padding="6,0" CornerRadius="4"
                                 Clicked="TestVibe_PlayAll_Clicked"/>
-                        <Button Grid.Column="2" Text="💾 保存して閉じる" BackgroundColor="#2563EB" TextColor="#FFFFFF"
+                        <Button Grid.Column="2" Text="💾 Save &amp; Close" BackgroundColor="#2563EB" TextColor="#FFFFFF"
                                 FontSize="9" FontAttributes="Bold" HeightRequest="28" Padding="12,0" CornerRadius="4"
                                 Clicked="CloseVibeTestPopup_Clicked"/>
                     </Grid>
