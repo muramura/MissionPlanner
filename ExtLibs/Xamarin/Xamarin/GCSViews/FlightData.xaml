@@ -213,11 +213,11 @@
                                     <Label x:Name="LBL_quick_curr" Text="0.0 A" TextColor="#FACC15" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
-                            <!-- 8. 衛星数 -->
+                            <!-- 8. ToF (Rangefinder) Distance -->
                             <Frame Grid.Row="3" Grid.Column="1" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
                                 <StackLayout Spacing="0">
-                                    <Label Text="Satellites" TextColor="#94A3B8" FontSize="8"/>
-                                    <Label x:Name="LBL_quick_sats" Text="0 sats" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold"/>
+                                    <Label Text="ToF Distance" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_tof" Text="-- m" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
                             <!-- 9. CPU Load (SYS_STATUS) -->
@@ -1217,9 +1217,26 @@
                         </Grid>
 
                         <!-- ================= B. コンパスキャリブレーション (Compass) ================= -->
-                        <Grid x:Name="View_Setup_Compass" IsVisible="False" RowDefinitions="Auto,*,Auto" RowSpacing="8">
-                            <!-- Top: Progress Bars for Compass 1, 2, 3 -->
-                            <Grid Grid.Row="0" ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                        <Grid x:Name="View_Setup_Compass" IsVisible="False" RowDefinitions="Auto,Auto,*,Auto" RowSpacing="8">
+                            <!-- Row 0: Compass Enable / Disable Feature Toggle -->
+                            <Frame Grid.Row="0" BackgroundColor="#1E293B" BorderColor="#0284C7" Padding="10,6" CornerRadius="8" HasShadow="False">
+                                <Grid ColumnDefinitions="Auto,*,Auto,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                                    <Label Text="🧭 Compass Feature (COMPASS_ENABLE):" TextColor="#F8FAFC" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                                    <Label x:Name="LBL_compass_state_text" Grid.Column="1" Text="Checking..." TextColor="#38BDF8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                                    <Button Grid.Column="2" Text="🔄 Refresh" BackgroundColor="#334155" TextColor="#F1F5F9"
+                                            FontSize="9" FontAttributes="Bold" HeightRequest="26" CornerRadius="4" Padding="8,0"
+                                            Clicked="OnRefreshCompassClicked"/>
+                                    <Button x:Name="Btn_Compass_Enable" Grid.Column="3" Text="🟢 Enable (1)" BackgroundColor="#10B981" TextColor="#FFFFFF"
+                                            FontSize="10" FontAttributes="Bold" HeightRequest="28" CornerRadius="6" Padding="10,0"
+                                            Clicked="OnCompassEnableClicked"/>
+                                    <Button x:Name="Btn_Compass_Disable" Grid.Column="4" Text="🚫 Disable (0)" BackgroundColor="#EF4444" TextColor="#FFFFFF"
+                                            FontSize="10" FontAttributes="Bold" HeightRequest="28" CornerRadius="6" Padding="10,0"
+                                            Clicked="OnCompassDisableClicked"/>
+                                </Grid>
+                            </Frame>
+
+                            <!-- Row 1: Progress Bars for Compass 1, 2, 3 -->
+                            <Grid Grid.Row="1" ColumnDefinitions="*,*,*" ColumnSpacing="8">
                                 <!-- Compass 1 -->
                                 <Frame Grid.Column="0" BackgroundColor="#1E293B" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
                                     <StackLayout Spacing="3">
@@ -1253,7 +1270,7 @@
                             </Grid>
 
                             <!-- Center: 3D Point Sampling / Status Card -->
-                            <Grid Grid.Row="1" ColumnDefinitions="Auto,*" ColumnSpacing="12" VerticalOptions="CenterAndExpand">
+                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*" ColumnSpacing="12" VerticalOptions="CenterAndExpand">
                                 <!-- 80 Points Interactive 3D Sphere Point Cloud Canvas -->
                                 <Frame Grid.Column="0" BackgroundColor="#020617" BorderColor="#0284C7" Padding="6,4" CornerRadius="8" HasShadow="False"
                                        WidthRequest="240" HeightRequest="210" HorizontalOptions="Center" VerticalOptions="Center">
@@ -1299,7 +1316,7 @@
                             </Grid>
 
                             <!-- Bottom Actions -->
-                            <Grid Grid.Row="2" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                            <Grid Grid.Row="3" ColumnDefinitions="Auto,*,Auto,Auto" ColumnSpacing="8" VerticalOptions="Center">
                                 <Button x:Name="Btn_Compass_Start" Grid.Column="0" Text="🚀 Start Mag Cal" BackgroundColor="#0284C7" TextColor="#FFFFFF"
                                         FontSize="11" FontAttributes="Bold" HeightRequest="34" CornerRadius="6" Padding="12,0" Clicked="OnCompassStartClicked"/>
                                 <Label Grid.Column="1"/>
@@ -1697,6 +1714,24 @@
                                                     <Button x:Name="Btn_Check_Skip" Grid.Column="1" Text="⚠️ Skip Checks (0)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnArmingCheckClicked"/>
                                                 </Grid>
                                             </StackLayout>
+                                        </Grid>
+                                    </Frame>
+
+                                    <!-- 4. Compass Feature Enable / Disable -->
+                                    <Frame BackgroundColor="#1E293B" BorderColor="#334155" Padding="10,8" CornerRadius="8" HasShadow="False">
+                                        <Grid ColumnDefinitions="*,Auto" ColumnSpacing="8" VerticalOptions="Center">
+                                            <StackLayout Spacing="2">
+                                                <Grid ColumnDefinitions="Auto,Auto,*">
+                                                    <Label Text="🧭 Compass Feature" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                    <Label Grid.Column="1" Text="(COMPASS_ENABLE)" TextColor="#64748B" FontSize="8" FontAttributes="Bold" Margin="6,0,0,0" VerticalOptions="Center"/>
+                                                    <Label x:Name="LBL_arming_compass_state" Grid.Column="2" Text="Checking..." TextColor="#10B981" FontSize="10" FontAttributes="Bold" HorizontalTextAlignment="End"/>
+                                                </Grid>
+                                                <Label Text="Enable or disable onboard magnetometer (reduces CPU load &amp; bypasses indoor compass check):" TextColor="#64748B" FontSize="8"/>
+                                            </StackLayout>
+                                            <Grid Grid.Column="1" ColumnDefinitions="Auto,Auto" ColumnSpacing="6" VerticalOptions="Center">
+                                                <Button x:Name="Btn_Arming_Compass_Enable" Grid.Column="0" Text="🟢 Enable (1)" FontSize="9" FontAttributes="Bold" HeightRequest="26" Padding="8,0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnCompassEnableClicked"/>
+                                                <Button x:Name="Btn_Arming_Compass_Disable" Grid.Column="1" Text="🚫 Disable (0)" FontSize="9" FontAttributes="Bold" HeightRequest="26" Padding="8,0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnCompassDisableClicked"/>
+                                            </Grid>
                                         </Grid>
                                     </Frame>
 

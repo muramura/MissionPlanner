@@ -949,7 +949,8 @@ namespace Xamarin
                                 LBL_quick_climb.Text = $"{cs.verticalspeed:0.0} m/s";
                                 LBL_quick_volt.Text = $"{cs.battery_voltage:0.00} V";
                                 LBL_quick_curr.Text = $"{cs.current:0.0} A";
-                                LBL_quick_sats.Text = $"{cs.satcount} sats";
+                                float distM = (cs.rangefinder1 > 0.001f) ? (cs.rangefinder1 * 0.01f) : cs.sonarrange;
+                                LBL_quick_tof.Text = (distM > 0.0005f) ? $"{distM:0.00} m" : "-- m";
 
                                 // 9. CPU Load (from SYS_STATUS msg)
                                 float cpuLoad = cs.load;
@@ -5610,6 +5611,10 @@ namespace Xamarin
                 {
                     UpdateAccelOrientationUI(MAVLink.ACCELCAL_VEHICLE_POS.LEVEL);
                 }
+                else if (tab == "compass")
+                {
+                    LoadCompassParameters();
+                }
                 else if (tab == "arming")
                 {
                     LoadArmingSafetyParameters();
@@ -5921,6 +5926,126 @@ namespace Xamarin
         #endregion
 
         #region --- 2. COMPASS CALIBRATION ---
+
+        private void OnCompassEnableClicked(object sender, EventArgs e)
+        {
+            SetCompassState(true);
+        }
+
+        private void OnCompassDisableClicked(object sender, EventArgs e)
+        {
+            SetCompassState(false);
+        }
+
+        private void OnRefreshCompassClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                var mav = MainV2.comPort?.MAV;
+                if (mav == null || mav.param == null || mav.param.Count == 0)
+                {
+                    _ = Task.Run(() =>
+                    {
+                        try { MainV2.comPort.getParamList(); } catch { }
+                    });
+                }
+                LoadCompassParameters();
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnRefreshCompassClicked error: " + ex);
+            }
+        }
+
+        private void SetCompassState(bool enable)
+        {
+            try
+            {
+                if (MainV2.comPort == null || !MainV2.comPort.BaseStream.IsOpen)
+                {
+                    Acr.UserDialogs.UserDialogs.Instance.Toast("⚠️ Flight Controller not connected", TimeSpan.FromSeconds(1.5));
+                    return;
+                }
+
+                float val = enable ? 1.0f : 0.0f;
+                Acr.UserDialogs.UserDialogs.Instance.Toast(enable ? "🟢 Sent COMPASS_ENABLE=1 to FC. Tap Refresh to verify." : "🚫 Sent COMPASS_ENABLE=0 to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
+
+                Task.Run(() =>
+                {
+                    try
+                    {
+                        byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                        byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+
+                        EnsureParamKey(sysid, compid, "COMPASS_ENABLE", 1f);
+                        EnsureParamKey(sysid, compid, "COMPASS_USE", 1f);
+
+                        bool res1 = MainV2.comPort.setParam(sysid, compid, "COMPASS_ENABLE", val, true);
+                        bool res2 = MainV2.comPort.setParam(sysid, compid, "COMPASS_USE", val, true);
+
+                        log.Info($"[SetCompassState] sysid={sysid}, compid={compid}, val={val}, res1={res1}, res2={res2}");
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Error("[SetCompassState] Error: " + ex);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex);
+            }
+        }
+
+        private void LoadCompassParameters()
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    float compEnable = GetMAVParam("COMPASS_ENABLE", 1);
+                    bool isEnabled = (compEnable > 0.5f);
+
+                    // 1. Compass Tab Controls
+                    if (LBL_compass_state_text != null)
+                    {
+                        LBL_compass_state_text.Text = isEnabled ? "🟢 Enabled (1)" : "🚫 Disabled (0)";
+                        LBL_compass_state_text.TextColor = isEnabled ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#EF4444");
+                    }
+                    if (Btn_Compass_Enable != null)
+                    {
+                        Btn_Compass_Enable.BackgroundColor = isEnabled ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                        Btn_Compass_Enable.TextColor = isEnabled ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+                    }
+                    if (Btn_Compass_Disable != null)
+                    {
+                        Btn_Compass_Disable.BackgroundColor = (!isEnabled) ? global::Xamarin.Forms.Color.FromHex("#EF4444") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                        Btn_Compass_Disable.TextColor = (!isEnabled) ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+                    }
+
+                    // 2. Arming & Safety Tab Controls
+                    if (LBL_arming_compass_state != null)
+                    {
+                        LBL_arming_compass_state.Text = isEnabled ? "🟢 Enabled (1)" : "🚫 Disabled (0)";
+                        LBL_arming_compass_state.TextColor = isEnabled ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#EF4444");
+                    }
+                    if (Btn_Arming_Compass_Enable != null)
+                    {
+                        Btn_Arming_Compass_Enable.BackgroundColor = isEnabled ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                        Btn_Arming_Compass_Enable.TextColor = isEnabled ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+                    }
+                    if (Btn_Arming_Compass_Disable != null)
+                    {
+                        Btn_Arming_Compass_Disable.BackgroundColor = (!isEnabled) ? global::Xamarin.Forms.Color.FromHex("#EF4444") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                        Btn_Arming_Compass_Disable.TextColor = (!isEnabled) ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    log.Error("LoadCompassParameters error: " + ex);
+                }
+            });
+        }
 
         private void OnCompassStartClicked(object sender, EventArgs e)
         {
@@ -6376,6 +6501,8 @@ namespace Xamarin
                     if (LBL_arming_check_fc != null) LBL_arming_check_fc.Text = (armingCheck == 0) ? "Skip (0)" : "All (1)";
                     HighlightPresetButton(Btn_Check_All, armingCheck != 0);
                     HighlightPresetButton(Btn_Check_Skip, armingCheck == 0);
+
+                    LoadCompassParameters();
                 }
                 catch (Exception ex)
                 {
@@ -6401,6 +6528,11 @@ namespace Xamarin
                     if (pList != null && !pList.ContainsKey(paramName))
                     {
                         pList[paramName] = new MAVLink.MAVLinkParam(paramName, defaultVal, MAVLink.MAV_PARAM_TYPE.REAL32);
+                    }
+                    var pTypes = MainV2.comPort.MAVlist[sysid, compid].param_types;
+                    if (pTypes != null && !pTypes.ContainsKey(paramName))
+                    {
+                        pTypes[paramName] = MAVLink.MAV_PARAM_TYPE.REAL32;
                     }
                 }
             }

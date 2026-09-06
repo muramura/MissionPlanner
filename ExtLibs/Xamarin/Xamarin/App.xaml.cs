@@ -96,6 +96,7 @@ namespace Xamarin
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 1);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 1);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, 1);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA3, 1);
 
                             // Populate parameter cache in background upon connection
                             _ = Task.Run(() =>

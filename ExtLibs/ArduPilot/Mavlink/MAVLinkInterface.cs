@@ -1,4 +1,4 @@
-﻿using log4net;
+using log4net;
 using MissionPlanner.ArduPilot;
 using MissionPlanner.ArduPilot.Mavlink;
 using MissionPlanner.Comms;
@@ -1656,12 +1656,18 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
 
             giveComport = true;
 
+            MAV_PARAM_TYPE ptype = MAV_PARAM_TYPE.REAL32;
+            if (MAVlist[sysid, compid].param_types != null && MAVlist[sysid, compid].param_types.TryGetValue(paramname, out var detectedType))
+            {
+                ptype = detectedType;
+            }
+
             // param type is set here, however it is always sent over the air as a float 100int = 100f.
             var req = new mavlink_param_set_t
             {
                 target_system = sysid,
                 target_component = compid,
-                param_type = (byte) MAVlist[sysid, compid].param_types[paramname]
+                param_type = (byte) ptype
             };
 
             char[] temp = paramname.ToCharArray();
@@ -1675,8 +1681,7 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
             }
             else
             {
-                req.param_value = new MAVLinkParam(paramname, value,
-                    (MAV_PARAM_TYPE) MAVlist[sysid, compid].param_types[paramname]).float_value;
+                req.param_value = new MAVLinkParam(paramname, value, ptype).float_value;
             }
 
             int currentparamcount = MAVlist[sysid, compid].param.Count;
