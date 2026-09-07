@@ -249,18 +249,27 @@ namespace Xamarin
                         break;
                     case "ARM / DISARM":
                         bool currentArmed = (MainV2.comPort != null && MainV2.comPort.MAV != null && MainV2.comPort.MAV.cs != null && MainV2.comPort.MAV.cs.armed);
-                        MainV2.comPort.doARM(!currentArmed);
-                        ShowButtonActionToast(currentArmed ? $"DISARMED ({btnName})" : $"ARMED ({btnName})", currentArmed ? "#D97706" : "#059669");
-                        TriggerHapticForChoice(currentArmed ? Config_Pattern_Disarm : Config_Pattern_Arm);
+                        if (currentArmed)
+                        {
+                            MainV2.comPort.doARM(false, force: true);
+                            ShowButtonActionToast($"🛑 FORCE DISARMED ({btnName})", "#DC2626");
+                            TriggerHapticForChoice(Config_Pattern_Disarm);
+                        }
+                        else
+                        {
+                            MainV2.comPort.doARM(true, force: false);
+                            ShowButtonActionToast($"ARMED ({btnName})", "#059669");
+                            TriggerHapticForChoice(Config_Pattern_Arm);
+                        }
                         break;
                     case "ARM":
-                        MainV2.comPort.doARM(true);
+                        MainV2.comPort.doARM(true, force: false);
                         ShowButtonActionToast($"ARMED ({btnName})", "#059669");
                         TriggerHapticForChoice(Config_Pattern_Arm);
                         break;
                     case "DISARM":
-                        MainV2.comPort.doARM(false);
-                        ShowButtonActionToast($"DISARMED ({btnName})", "#D97706");
+                        MainV2.comPort.doARM(false, force: true);
+                        ShowButtonActionToast($"🛑 FORCE DISARMED ({btnName})", "#DC2626");
                         TriggerHapticForChoice(Config_Pattern_Disarm);
                         break;
                     case "TAKEOFF":
@@ -996,11 +1005,13 @@ namespace Xamarin
                             {
                                 LBL_arm_val.Text = "🟢 ARMED ▾";
                                 LBL_arm_val.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                                Frame_arm_status.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
                             }
                             else
                             {
                                 LBL_arm_val.Text = "🔴 DISARMED ▾";
                                 LBL_arm_val.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                                Frame_arm_status.BorderColor = global::Xamarin.Forms.Color.FromHex("#475569");
                             }
 
                             // EKF & VIBE Dock Badges Update
@@ -2712,15 +2723,15 @@ namespace Xamarin
             }
         }
 
-                        private async void OnMotorControlTapped(object sender, EventArgs e)
+        private async void OnMotorControlTapped(object sender, EventArgs e)
         {
             try
             {
                 bool isArmed = MainV2.comPort.MAV?.cs?.armed ?? false;
-                string statusStr = isArmed ? "ARMED" : "DISARMED";
+                string statusStr = isArmed ? "ARMED (Motors ON)" : "DISARMED (Motors OFF)";
                 string action = await DisplayActionSheet($"Motor Control (Current: {statusStr})", "Cancel", null,
                     "🟢 ARM (Start Motors)",
-                    "🔴 DISARM (Stop Motors)",
+                    "🛑 FORCE DISARM (Stop Motors Immediately)",
                     "🚨 Emergency LAND",
                     "🛡️ Arming & Stick Safety Settings");
 
@@ -2731,15 +2742,15 @@ namespace Xamarin
                 {
                     OpenArmingSafetySettings();
                 }
-                else if (action.Contains("ARM"))
+                else if (action.Contains("ARM") && !action.Contains("DISARM"))
                 {
                     await MainV2.comPort.doARMAsync(1, 1, true);
                     UserDialogs.Instance.Toast("🟢 Sending ARM command", TimeSpan.FromSeconds(1));
                 }
                 else if (action.Contains("DISARM"))
                 {
-                    await MainV2.comPort.doARMAsync(1, 1, false);
-                    UserDialogs.Instance.Toast("🔴 Sending DISARM command", TimeSpan.FromSeconds(1));
+                    await MainV2.comPort.doARMAsync(1, 1, false, force: true);
+                    UserDialogs.Instance.Toast("🛑 Sending FORCE DISARM command", TimeSpan.FromSeconds(2));
                 }
                 else if (action.Contains("LAND"))
                 {
@@ -2751,6 +2762,20 @@ namespace Xamarin
             catch (Exception ex)
             {
                 log.Error(ex);
+            }
+        }
+
+        private async void OnEmergencyForceDisarmTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                log.Info("OnEmergencyForceDisarmTapped: STOP MOTORS requested - Sending FORCE DISARM");
+                await MainV2.comPort.doARMAsync(1, 1, false, force: true);
+                UserDialogs.Instance.Toast("🛑 FORCE DISARM: Motors stopped!", TimeSpan.FromSeconds(2));
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnEmergencyForceDisarmTapped error: " + ex);
             }
         }
 
@@ -2920,10 +2945,10 @@ namespace Xamarin
             try
             {
                 bool isArmed = MainV2.comPort.MAV?.cs?.armed ?? false;
-                string statusStr = isArmed ? "ARMED" : "DISARMED";
+                string statusStr = isArmed ? "ARMED (Motors ON)" : "DISARMED (Motors OFF)";
                 string action = await DisplayActionSheet($"Motor Control (Current: {statusStr})", "Cancel", null,
                     "🟢 ARM (Start Motors)",
-                    "🔴 DISARM (Stop Motors)",
+                    "🛑 FORCE DISARM (Stop Motors Immediately)",
                     "🚨 Emergency LAND",
                     "🛡️ Arming & Stick Safety Settings");
 
@@ -2934,15 +2959,15 @@ namespace Xamarin
                 {
                     OpenArmingSafetySettings();
                 }
-                else if (action.Contains("ARM"))
+                else if (action.Contains("ARM") && !action.Contains("DISARM"))
                 {
                     await MainV2.comPort.doARMAsync(1, 1, true);
                     UserDialogs.Instance.Toast("🟢 Sending ARM command", TimeSpan.FromSeconds(1));
                 }
                 else if (action.Contains("DISARM"))
                 {
-                    await MainV2.comPort.doARMAsync(1, 1, false);
-                    UserDialogs.Instance.Toast("🔴 Sending DISARM command", TimeSpan.FromSeconds(1));
+                    await MainV2.comPort.doARMAsync(1, 1, false, force: true);
+                    UserDialogs.Instance.Toast("🛑 Sending FORCE DISARM command", TimeSpan.FromSeconds(2));
                 }
                 else if (action.Contains("LAND"))
                 {
@@ -3051,9 +3076,9 @@ namespace Xamarin
         {
             try
             {
-                log.Info("Disarm_OnClicked");
-                await MainV2.comPort.doARMAsync(1, 1, false);
-                UserDialogs.Instance.Toast("Sending DISARM command", TimeSpan.FromSeconds(1));
+                log.Info("Disarm_OnClicked: Sending FORCE DISARM");
+                await MainV2.comPort.doARMAsync(1, 1, false, force: true);
+                UserDialogs.Instance.Toast("🛑 Sending FORCE DISARM command", TimeSpan.FromSeconds(2));
             }
             catch (Exception exception)
             {
@@ -3158,9 +3183,10 @@ namespace Xamarin
                 }
                 catch { }
 
-                // 画面上の全UI（軸割り当て・リバース・エクスポ・モード）を保存設定と同期
+                // 画面上の全UI（軸割り当て・リバース・エクスポ・モード・FCパラメータ）を保存設定と同期
                 LoadJoystickSettings();
                 LoadVibeSettings();
+                LoadRCOptionsFromCache();
             }
         }
 
@@ -3721,6 +3747,7 @@ namespace Xamarin
             }
             if (View_Joy_Axes != null) View_Joy_Axes.IsVisible = true;
             if (View_Joy_Buttons != null) View_Joy_Buttons.IsVisible = false;
+            LoadRCOptionsFromCache();
         }
 
         public void OnJoyTabButtonsClicked(object sender, EventArgs e)
@@ -4323,6 +4350,246 @@ namespace Xamarin
             catch (Exception ex)
             {
                 Console.WriteLine("OnJoystickDetectClicked error: " + ex);
+            }
+        }
+
+        // =========================================================================
+        // 🎮 RC AUXILIARY FUNCTIONS (RCn_OPTION) - FC PARAMETER CACHE INTEGRATION
+        // =========================================================================
+
+        public static readonly Dictionary<int, string> CommonRCAuxFunctions = new Dictionary<int, string>
+        {
+            { 0, "0: Do Nothing" },
+            { 188, "188: Arm" },
+            { 81, "81: Disarm" },
+            { 153, "153: Arm / Disarm" },
+            { 31, "31: Motor Emergency Stop" },
+            { 18, "18: Land" },
+            { 69, "69: PosHold" },
+            { 56, "56: Loiter" },
+            { 70, "70: AltHold" },
+            { 68, "68: Stabilize" },
+            { 4, "4: RTL" },
+            { 33, "33: Brake" },
+            { 17, "17: AutoTune" },
+            { 16, "16: Auto" },
+            { 2, "2: Flip" },
+            { 30, "30: Lost Vehicle Sound" },
+            { 28, "28: Relay" },
+            { 29, "29: Landing Gear" },
+            { 46, "46: RC Override Enable" },
+            { 65, "65: GPS Disable" }
+        };
+
+        private readonly Dictionary<int, int> _pendingRCOptions = new Dictionary<int, int>();
+
+        public void LoadRCOptionsFromCache()
+        {
+            try
+            {
+                var sysid = MainV2.comPort?.MAV?.sysid ?? 1;
+                var compid = MainV2.comPort?.MAV?.compid ?? 1;
+                var paramDict = MainV2.comPort?.MAVlist[sysid, compid]?.param;
+
+                for (int ch = 5; ch <= 18; ch++)
+                {
+                    var btn = this.FindByName<Button>($"Btn_RCOption_{ch}");
+                    if (btn == null) continue;
+
+                    // 1. 未書き込みの保留値がある場合は保留値を優先表示（オレンジ）
+                    if (_pendingRCOptions.ContainsKey(ch))
+                    {
+                        int pendingVal = _pendingRCOptions[ch];
+                        string label = CommonRCAuxFunctions.TryGetValue(pendingVal, out var name) ? name : $"{pendingVal}: Custom";
+                        btn.Text = label + " ▾";
+                        btn.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                        continue;
+                    }
+
+                    // 2. キャッシュから読み出し
+                    string pName = $"RC{ch}_OPTION";
+                    if (paramDict != null && paramDict.ContainsKey(pName))
+                    {
+                        int optVal = (int)(float)paramDict[pName];
+                        string label = CommonRCAuxFunctions.TryGetValue(optVal, out var name) ? name : $"{optVal}: Custom";
+                        btn.Text = label + " ▾";
+                        btn.TextColor = global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                    }
+                    else
+                    {
+                        // キャッシュミス時はバックグラウンドでFCへ要求し、UIはグレー表示
+                        btn.Text = "0: Do Nothing ▾";
+                        btn.TextColor = global::Xamarin.Forms.Color.FromHex("#64748B");
+                        if (MainV2.comPort != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
+                        {
+                            string targetParam = pName;
+                            byte sId = (byte)sysid;
+                            byte cId = (byte)compid;
+                            Task.Run(async () =>
+                            {
+                                try { await MainV2.comPort.GetParamAsync(sId, cId, targetParam, -1, false); } catch { }
+                            });
+                        }
+                    }
+                }
+
+                UpdateWriteRCOptionsButtonStyle();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("LoadRCOptionsFromCache error: " + ex);
+            }
+        }
+
+        private void UpdateWriteRCOptionsButtonStyle()
+        {
+            if (Btn_RCOptions_Write == null) return;
+
+            if (_pendingRCOptions.Count > 0)
+            {
+                Btn_RCOptions_Write.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#EA580C");
+                Btn_RCOptions_Write.TextColor = global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+                Btn_RCOptions_Write.Text = $"💾 WRITE TO FC ({_pendingRCOptions.Count})";
+            }
+            else
+            {
+                Btn_RCOptions_Write.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#334155");
+                Btn_RCOptions_Write.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+                Btn_RCOptions_Write.Text = "💾 WRITE TO FC";
+            }
+        }
+
+        public async void OnSelectRCOptionClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                var btn = sender as Button;
+                if (btn == null) return;
+
+                int ch = 0;
+                if (btn.CommandParameter != null) int.TryParse(btn.CommandParameter.ToString(), out ch);
+                if (ch < 5 || ch > 18) return;
+
+                var optionsList = new List<string>();
+                foreach (var kvp in CommonRCAuxFunctions)
+                {
+                    optionsList.Add(kvp.Value);
+                }
+                optionsList.Add("Custom / Enter Number...");
+
+                string result = await DisplayActionSheet($"Select FC Function for RC{ch}", "Cancel", null, optionsList.ToArray());
+                if (string.IsNullOrEmpty(result) || result == "Cancel") return;
+
+                int selectedOption = 0;
+                if (result.StartsWith("Custom"))
+                {
+                    string input = await DisplayPromptAsync($"RC{ch}_OPTION", "Enter ArduPilot AUX_FUNC integer code (e.g. 188 for Arm):", "OK", "Cancel", keyboard: Keyboard.Numeric);
+                    if (string.IsNullOrEmpty(input) || !int.TryParse(input, out selectedOption)) return;
+                }
+                else
+                {
+                    string codeStr = result.Split(':')[0].Trim();
+                    int.TryParse(codeStr, out selectedOption);
+                }
+
+                // 保留リストに記録（直接キャッシュは書き換えない！）
+                _pendingRCOptions[ch] = selectedOption;
+
+                string displayLabel = CommonRCAuxFunctions.TryGetValue(selectedOption, out var n) ? n : $"{selectedOption}: Custom";
+                btn.Text = displayLabel + " ▾";
+                btn.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+
+                UpdateWriteRCOptionsButtonStyle();
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnSelectRCOptionClicked error: " + ex);
+            }
+        }
+
+        public async void OnWriteRCOptionsToFcClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (_pendingRCOptions.Count == 0)
+                {
+                    await DisplayAlert("No Changes", "No FC function changes to write.\nSelect a function first.", "OK");
+                    return;
+                }
+
+                if (MainV2.comPort == null || MainV2.comPort.BaseStream == null || !MainV2.comPort.BaseStream.IsOpen)
+                {
+                    await DisplayAlert("Communication Error", "⚠️ COM ERROR: Vehicle not connected.\nPlease connect via Wi-Fi or USB before writing parameters.", "OK");
+                    return;
+                }
+
+                if (Btn_RCOptions_Write != null)
+                {
+                    Btn_RCOptions_Write.Text = "⏳ WRITING...";
+                    Btn_RCOptions_Write.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#D97706");
+                }
+
+                var pendingCopy = new Dictionary<int, int>(_pendingRCOptions);
+                var sysid = MainV2.comPort?.MAV?.sysid ?? 1;
+                var compid = MainV2.comPort?.MAV?.compid ?? 1;
+
+                await Task.Run(() =>
+                {
+                    foreach (var kvp in pendingCopy)
+                    {
+                        string pName = $"RC{kvp.Key}_OPTION";
+                        EnsureParamKey(sysid, compid, pName, kvp.Value);
+                        try
+                        {
+                            MainV2.comPort.setParam(pName, (float)kvp.Value, force: true);
+                            Thread.Sleep(60);
+                        }
+                        catch (Exception pEx)
+                        {
+                            Console.WriteLine($"setParam {pName} error: {pEx}");
+                        }
+                    }
+                });
+
+                _pendingRCOptions.Clear();
+                UpdateWriteRCOptionsButtonStyle();
+
+                await DisplayAlert("Parameters Sent", $"Successfully transmitted {pendingCopy.Count} RC Option parameter(s) to FC!\nTap [🔄 REFRESH FC] anytime to confirm current values from cache.", "OK");
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnWriteRCOptionsToFcClicked error: " + ex);
+                await DisplayAlert("Write Error", "Failed to write parameters: " + ex.Message, "OK");
+                UpdateWriteRCOptionsButtonStyle();
+            }
+        }
+
+        public void OnRefreshRCOptionsClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                _pendingRCOptions.Clear();
+                LoadRCOptionsFromCache();
+                LoadArmingSafetyParameters();
+
+                // キャッシュ全件が空なら取得トリガー
+                var sysid = MainV2.comPort?.MAV?.sysid ?? 1;
+                var compid = MainV2.comPort?.MAV?.compid ?? 1;
+                var paramDict = MainV2.comPort?.MAVlist[sysid, compid]?.param;
+                if (paramDict == null || paramDict.Count == 0)
+                {
+                    if (MainV2.comPort != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
+                    {
+                        Task.Run(() =>
+                        {
+                            try { MainV2.comPort.getParamList(); } catch { }
+                        });
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine("OnRefreshRCOptionsClicked error: " + ex);
             }
         }
 
@@ -5088,8 +5355,8 @@ namespace Xamarin
             switch (opt)
             {
                 case 0: return "Do Nothing (0)";
-                case 2: return "AltHold (2)";
-                case 3: return "Simple (3)";
+                case 2: return "Flip (2)";
+                case 3: return "Simple Mode (3)";
                 case 4: return "RTL (4)";
                 case 7: return "Save WP (7)";
                 case 9: return "Camera Shutter (9)";
@@ -5098,16 +5365,29 @@ namespace Xamarin
                 case 17: return "Brake (17)";
                 case 18: return "Throw (18)";
                 case 28: return "Relay (28)";
-                case 31: return "Motor Test (31)";
-                case 41: return "Arm/Disarm (41)";
+                case 31: return "Motor E-Stop (31)";
+                case 32: return "Motor Interlock (32)";
+                case 33: return "Brake (33)";
+                case 41: return "Unused (41)";
                 case 46: return "RC Override (46)";
-                case 55: return "Auto (55)";
-                case 56: return "Guided (56)";
-                case 57: return "RTL (57)";
-                case 58: return "Smart RTL (58)";
-                case 62: return "Land (62)";
-                case 70: return "VTOL Mode (70)";
-                case 153: return "Emergency Motor Stop (153)";
+                case 51: return "Manual (51)";
+                case 52: return "Acro (52)";
+                case 55: return "Guided (55)";
+                case 56: return "Loiter (56)";
+                case 57: return "Follow (57)";
+                case 58: return "Clear WP (58)";
+                case 59: return "Simple (59)";
+                case 68: return "Stabilize Mode (68)";
+                case 69: return "PosHold Mode (69)";
+                case 70: return "AltHold Mode (70)";
+                case 71: return "FlowHold Mode (71)";
+                case 72: return "Circle Mode (72)";
+                case 73: return "Drift Mode (73)";
+                case 81: return "Disarm Only (81)";
+                case 153: return "Arm / Disarm (153)";
+                case 154: return "Arm / Disarm AirMode (154)";
+                case 165: return "Arm / Emergency Stop (165)";
+                case 188: return "Arm Only (188)";
                 default: return $"Option {opt}";
             }
         }
@@ -6422,27 +6702,7 @@ namespace Xamarin
                     float rudderVal = GetMAVParam("ARMING_RUDDER", 2);
                     int rudderMode = (int)Math.Round(rudderVal);
 
-                    if (Card_Arming_Disabled != null)
-                    {
-                        bool isDis = (rudderMode == 0);
-                        Card_Arming_Disabled.BorderColor = isDis ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#334155");
-                        Card_Arming_Disabled.BackgroundColor = isDis ? global::Xamarin.Forms.Color.FromHex("#064E3B") : global::Xamarin.Forms.Color.FromHex("#0F172A");
-                        if (Badge_Arming_Disabled != null) Badge_Arming_Disabled.IsVisible = isDis;
-                    }
-                    if (Card_Arming_ArmOnly != null)
-                    {
-                        bool isArmOnly = (rudderMode == 1);
-                        Card_Arming_ArmOnly.BorderColor = isArmOnly ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
-                        Card_Arming_ArmOnly.BackgroundColor = isArmOnly ? global::Xamarin.Forms.Color.FromHex("#451A03") : global::Xamarin.Forms.Color.FromHex("#0F172A");
-                        if (Badge_Arming_ArmOnly != null) Badge_Arming_ArmOnly.IsVisible = isArmOnly;
-                    }
-                    if (Card_Arming_ArmOrDisarm != null)
-                    {
-                        bool isBoth = (rudderMode >= 2);
-                        Card_Arming_ArmOrDisarm.BorderColor = isBoth ? global::Xamarin.Forms.Color.FromHex("#38BDF8") : global::Xamarin.Forms.Color.FromHex("#334155");
-                        Card_Arming_ArmOrDisarm.BackgroundColor = isBoth ? global::Xamarin.Forms.Color.FromHex("#0C4A6E") : global::Xamarin.Forms.Color.FromHex("#0F172A");
-                        if (Badge_Arming_ArmOrDisarm != null) Badge_Arming_ArmOrDisarm.IsVisible = isBoth;
-                    }
+                    UpdateArmingCardsUI(rudderMode);
 
                     string rudderStr = (rudderMode == 0) ? "FC: Disabled (0)" : (rudderMode == 1) ? "FC: Arm Only (1)" : $"FC: Standard ({rudderMode})";
                     if (LBL_arming_rudder_fc_val != null)
@@ -6455,6 +6715,19 @@ namespace Xamarin
                     {
                         LBL_joy_stick_gesture_status.Text = (rudderMode == 0) ? "Disabled (Recommended)" : (rudderMode == 1) ? "Arm Only (1)" : "Standard Enabled (2)";
                         LBL_joy_stick_gesture_status.TextColor = (rudderMode == 0) ? global::Xamarin.Forms.Color.FromHex("#10B981") : (rudderMode == 1) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                    }
+
+                    // 1B. RC7_OPTION (188: Arm, 81: Disarm, 0: Disabled)
+                    float rc7Val = GetMAVParam("RC7_OPTION", 188f);
+                    int rc7Mode = (int)Math.Round(rc7Val);
+
+                    UpdateRC7CardsUI(rc7Mode);
+
+                    if (LBL_rc7_option_fc_val != null)
+                    {
+                        string rc7Str = (rc7Mode == 188) ? "FC: Arm (188)" : (rc7Mode == 81) ? "FC: Disarm (81)" : (rc7Mode == 0) ? "FC: None (0)" : $"FC: Other ({rc7Mode})";
+                        LBL_rc7_option_fc_val.Text = rc7Str;
+                        LBL_rc7_option_fc_val.TextColor = (rc7Mode == 188) ? global::Xamarin.Forms.Color.FromHex("#10B981") : (rc7Mode == 81) ? global::Xamarin.Forms.Color.FromHex("#EF4444") : global::Xamarin.Forms.Color.FromHex("#94A3B8");
                     }
 
                     // 2. Battery Failsafe
@@ -6539,231 +6812,132 @@ namespace Xamarin
             catch { }
         }
 
-        private void SetArmingRudder(float val)
+        private void UpdateArmingCardsUI(int rudderMode)
         {
-            try
+            if (Card_Arming_Disabled != null)
             {
-                if (MainV2.comPort != null)
+                bool isDis = (rudderMode == 0);
+                Card_Arming_Disabled.BorderColor = isDis ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_Arming_Disabled.BackgroundColor = isDis ? global::Xamarin.Forms.Color.FromHex("#064E3B") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_Arming_Disabled != null) Badge_Arming_Disabled.IsVisible = isDis;
+            }
+            if (Card_Arming_ArmOnly != null)
+            {
+                bool isArmOnly = (rudderMode == 1);
+                Card_Arming_ArmOnly.BorderColor = isArmOnly ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_Arming_ArmOnly.BackgroundColor = isArmOnly ? global::Xamarin.Forms.Color.FromHex("#451A03") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_Arming_ArmOnly != null) Badge_Arming_ArmOnly.IsVisible = isArmOnly;
+            }
+            if (Card_Arming_ArmOrDisarm != null)
+            {
+                bool isBoth = (rudderMode >= 2);
+                Card_Arming_ArmOrDisarm.BorderColor = isBoth ? global::Xamarin.Forms.Color.FromHex("#38BDF8") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_Arming_ArmOrDisarm.BackgroundColor = isBoth ? global::Xamarin.Forms.Color.FromHex("#0C4A6E") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_Arming_ArmOrDisarm != null) Badge_Arming_ArmOrDisarm.IsVisible = isBoth;
+            }
+        }
+
+        private void UpdateRC7CardsUI(int rc7Mode)
+        {
+            if (Card_RC7_Arm != null)
+            {
+                bool isArm = (rc7Mode == 188);
+                Card_RC7_Arm.BorderColor = isArm ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_RC7_Arm.BackgroundColor = isArm ? global::Xamarin.Forms.Color.FromHex("#064E3B") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_RC7_Arm != null) Badge_RC7_Arm.IsVisible = isArm;
+            }
+            if (Card_RC7_Disarm != null)
+            {
+                bool isDisarm = (rc7Mode == 81);
+                Card_RC7_Disarm.BorderColor = isDisarm ? global::Xamarin.Forms.Color.FromHex("#EF4444") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_RC7_Disarm.BackgroundColor = isDisarm ? global::Xamarin.Forms.Color.FromHex("#450A0A") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_RC7_Disarm != null) Badge_RC7_Disarm.IsVisible = isDisarm;
+            }
+            if (Card_RC7_Disabled != null)
+            {
+                bool isNone = (rc7Mode == 0);
+                Card_RC7_Disabled.BorderColor = isNone ? global::Xamarin.Forms.Color.FromHex("#94A3B8") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_RC7_Disabled.BackgroundColor = isNone ? global::Xamarin.Forms.Color.FromHex("#1E293B") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_RC7_Disabled != null) Badge_RC7_Disabled.IsVisible = isNone;
+            }
+        }
+
+        // 💾 ステージング（保留）辞書 & 状態管理
+        private readonly Dictionary<string, float> _pendingSafetyParams = new Dictionary<string, float>();
+
+        private void StageParamChange(string paramName, float value, string friendlyDesc)
+        {
+            _pendingSafetyParams[paramName] = value;
+            UpdateWriteButtonState();
+            UserDialogs.Instance.Toast($"Selected: {friendlyDesc}. Tap '💾 WRITE TO FC' to apply.", TimeSpan.FromSeconds(1.5));
+        }
+
+        private void UpdateWriteButtonState()
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                if (Btn_Write_Arming_Params != null)
                 {
-                    if (val == 0)
-                        UserDialogs.Instance.Toast("🛡️ Sent ARMING_RUDDER=0 (Disabled) to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
-                    else if (val == 1)
-                        UserDialogs.Instance.Toast("⚠️ Sent ARMING_RUDDER=1 (Arm Only) to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
+                    int count = _pendingSafetyParams.Count;
+                    if (count > 0)
+                    {
+                        Btn_Write_Arming_Params.Text = $"💾 WRITE TO FC ({count})";
+                        Btn_Write_Arming_Params.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#F59E0B"); // Attention Amber
+                    }
                     else
-                        UserDialogs.Instance.Toast("✅ Sent ARMING_RUDDER=2 (Standard) to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
-
-                    Task.Run(() =>
                     {
-                        try
-                        {
-                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
-                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
-                            EnsureParamKey(sysid, compid, "ARMING_RUDDER", 2f);
-                            bool res = MainV2.comPort.setParam(sysid, compid, "ARMING_RUDDER", val, true);
-                            log.Info($"[SetArmingRudder] sysid={sysid}, compid={compid}, val={val}, result={res}");
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error("[SetArmingRudder] Error: ", ex);
-                        }
-                    });
+                        Btn_Write_Arming_Params.Text = "💾 WRITE TO FC";
+                        Btn_Write_Arming_Params.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#334155"); // Muted Slate
+                    }
                 }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
+            });
         }
 
-        private void SetBattLowVolt(float volt)
+        private void OnArmingCardDisabledClicked(object sender, EventArgs e)
         {
-            try
-            {
-                if (MainV2.comPort != null)
-                {
-                    UserDialogs.Instance.Toast($"🔋 Sent BATT_LOW_VOLT={volt:F2}V to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
-                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
-                            EnsureParamKey(sysid, compid, "BATT_LOW_VOLT", 3.55f);
-                            bool res = MainV2.comPort.setParam(sysid, compid, "BATT_LOW_VOLT", volt, true);
-                            log.Info($"[SetBattLowVolt] sysid={sysid}, compid={compid}, val={volt}, result={res}");
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error("[SetBattLowVolt] Error: ", ex);
-                        }
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
+            StageParamChange("ARMING_RUDDER", 0f, "Stick Gesture: Disabled (0)");
+            UpdateArmingCardsUI(0);
         }
 
-        private void SetBattCrtVolt(float volt)
+        private void OnArmingCardArmOnlyClicked(object sender, EventArgs e)
         {
-            try
-            {
-                if (MainV2.comPort != null)
-                {
-                    UserDialogs.Instance.Toast($"🚨 Sent BATT_CRT_VOLT={volt:F2}V to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
-                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
-                            EnsureParamKey(sysid, compid, "BATT_CRT_VOLT", 3.30f);
-                            bool res = MainV2.comPort.setParam(sysid, compid, "BATT_CRT_VOLT", volt, true);
-                            log.Info($"[SetBattCrtVolt] sysid={sysid}, compid={compid}, val={volt}, result={res}");
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error("[SetBattCrtVolt] Error: ", ex);
-                        }
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
+            StageParamChange("ARMING_RUDDER", 1f, "Stick Gesture: Arm Only (1)");
+            UpdateArmingCardsUI(1);
         }
 
-        private void SetBattLowAct(float act)
+        private void OnArmingCardArmOrDisarmClicked(object sender, EventArgs e)
         {
-            try
-            {
-                if (MainV2.comPort != null)
-                {
-                    UserDialogs.Instance.Toast($"🔋 Sent BATT_FS_LOW_ACT={act} to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
-                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
-                            EnsureParamKey(sysid, compid, "BATT_FS_LOW_ACT", 0f);
-                            bool res = MainV2.comPort.setParam(sysid, compid, "BATT_FS_LOW_ACT", act, true);
-                            log.Info($"[SetBattLowAct] sysid={sysid}, compid={compid}, val={act}, result={res}");
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error("[SetBattLowAct] Error: ", ex);
-                        }
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
+            StageParamChange("ARMING_RUDDER", 2f, "Stick Gesture: Standard (2)");
+            UpdateArmingCardsUI(2);
         }
 
-        private void SetBattCrtAct(float act)
+        private void OnRC7CardArmClicked(object sender, EventArgs e)
         {
-            try
-            {
-                if (MainV2.comPort != null)
-                {
-                    UserDialogs.Instance.Toast($"🚨 Sent BATT_FS_CRT_ACT={act} to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
-                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
-                            EnsureParamKey(sysid, compid, "BATT_FS_CRT_ACT", 1f);
-                            bool res = MainV2.comPort.setParam(sysid, compid, "BATT_FS_CRT_ACT", act, true);
-                            log.Info($"[SetBattCrtAct] sysid={sysid}, compid={compid}, val={act}, result={res}");
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error("[SetBattCrtAct] Error: ", ex);
-                        }
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
+            StageParamChange("RC7_OPTION", 188f, "Aux RC7: Arm (188)");
+            UpdateRC7CardsUI(188);
         }
 
-        private void SetDisarmDelay(float sec)
+        private void OnRC7CardDisarmClicked(object sender, EventArgs e)
         {
-            try
-            {
-                if (MainV2.comPort != null)
-                {
-                    UserDialogs.Instance.Toast($"⏱️ Sent DISARM_DELAY={sec}s to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
-                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
-                            EnsureParamKey(sysid, compid, "DISARM_DELAY", 10f);
-                            bool res = MainV2.comPort.setParam(sysid, compid, "DISARM_DELAY", sec, true);
-                            log.Info($"[SetDisarmDelay] sysid={sysid}, compid={compid}, val={sec}, result={res}");
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error("[SetDisarmDelay] Error: ", ex);
-                        }
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
+            StageParamChange("RC7_OPTION", 81f, "Aux RC7: Disarm (81)");
+            UpdateRC7CardsUI(81);
         }
 
-        private void SetArmingCheck(float check)
+        private void OnRC7CardDisabledClicked(object sender, EventArgs e)
         {
-            try
-            {
-                if (MainV2.comPort != null)
-                {
-                    UserDialogs.Instance.Toast($"🛡️ Sent ARMING_CHECK={check} to FC. Tap Refresh to verify.", TimeSpan.FromSeconds(1.5));
-                    Task.Run(() =>
-                    {
-                        try
-                        {
-                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
-                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
-                            EnsureParamKey(sysid, compid, "ARMING_CHECK", 1f);
-                            bool res = MainV2.comPort.setParam(sysid, compid, "ARMING_CHECK", check, true);
-                            log.Info($"[SetArmingCheck] sysid={sysid}, compid={compid}, val={check}, result={res}");
-                        }
-                        catch (Exception ex)
-                        {
-                            log.Error("[SetArmingCheck] Error: ", ex);
-                        }
-                    });
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex);
-            }
+            StageParamChange("RC7_OPTION", 0f, "Aux RC7: None (0)");
+            UpdateRC7CardsUI(0);
         }
-
-        private void OnArmingCardDisabledClicked(object sender, EventArgs e) => SetArmingRudder(0);
-        private void OnArmingCardArmOnlyClicked(object sender, EventArgs e) => SetArmingRudder(1);
-        private void OnArmingCardArmOrDisarmClicked(object sender, EventArgs e) => SetArmingRudder(2);
 
         private void OnLowVoltPresetClicked(object sender, EventArgs e)
         {
             if (sender is global::Xamarin.Forms.Button btn && float.TryParse(btn.Text.Replace("V", "").Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float v))
             {
-                SetBattLowVolt(v);
+                StageParamChange("BATT_LOW_VOLT", v, $"Low Volt: {v:F2}V");
+                HighlightPresetButton(Btn_LowVolt_360, Math.Abs(v - 3.60f) < 0.02f);
+                HighlightPresetButton(Btn_LowVolt_355, Math.Abs(v - 3.55f) < 0.02f);
+                HighlightPresetButton(Btn_LowVolt_350, Math.Abs(v - 3.50f) < 0.02f);
+                HighlightPresetButton(Btn_LowVolt_340, Math.Abs(v - 3.40f) < 0.02f);
             }
         }
 
@@ -6771,7 +6945,11 @@ namespace Xamarin
         {
             if (sender is global::Xamarin.Forms.Button btn && float.TryParse(btn.Text.Replace("V", "").Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float v))
             {
-                SetBattCrtVolt(v);
+                StageParamChange("BATT_CRT_VOLT", v, $"Critical Volt: {v:F2}V");
+                HighlightPresetButton(Btn_CrtVolt_340, Math.Abs(v - 3.40f) < 0.02f);
+                HighlightPresetButton(Btn_CrtVolt_335, Math.Abs(v - 3.35f) < 0.02f);
+                HighlightPresetButton(Btn_CrtVolt_330, Math.Abs(v - 3.30f) < 0.02f);
+                HighlightPresetButton(Btn_CrtVolt_320, Math.Abs(v - 3.20f) < 0.02f);
             }
         }
 
@@ -6779,9 +6957,12 @@ namespace Xamarin
         {
             if (sender is global::Xamarin.Forms.Button btn)
             {
-                if (btn == Btn_LowAct_0) SetBattLowAct(0);
-                else if (btn == Btn_LowAct_1) SetBattLowAct(1);
-                else if (btn == Btn_LowAct_2) SetBattLowAct(2);
+                float act = (btn == Btn_LowAct_0) ? 0 : (btn == Btn_LowAct_1) ? 1 : 2;
+                string actName = (act == 0) ? "None (0)" : (act == 1) ? "Land (1)" : "RTL (2)";
+                StageParamChange("BATT_FS_LOW_ACT", act, $"Low Action: {actName}");
+                HighlightPresetButton(Btn_LowAct_0, act == 0);
+                HighlightPresetButton(Btn_LowAct_1, act == 1);
+                HighlightPresetButton(Btn_LowAct_2, act == 2);
             }
         }
 
@@ -6789,9 +6970,12 @@ namespace Xamarin
         {
             if (sender is global::Xamarin.Forms.Button btn)
             {
-                if (btn == Btn_CrtAct_0) SetBattCrtAct(0);
-                else if (btn == Btn_CrtAct_1) SetBattCrtAct(1);
-                else if (btn == Btn_CrtAct_2) SetBattCrtAct(2);
+                float act = (btn == Btn_CrtAct_0) ? 0 : (btn == Btn_CrtAct_1) ? 1 : 2;
+                string actName = (act == 0) ? "None (0)" : (act == 1) ? "Land (1)" : "RTL (2)";
+                StageParamChange("BATT_FS_CRT_ACT", act, $"Critical Action: {actName}");
+                HighlightPresetButton(Btn_CrtAct_0, act == 0);
+                HighlightPresetButton(Btn_CrtAct_1, act == 1);
+                HighlightPresetButton(Btn_CrtAct_2, act == 2);
             }
         }
 
@@ -6799,10 +6983,12 @@ namespace Xamarin
         {
             if (sender is global::Xamarin.Forms.Button btn)
             {
-                if (btn == Btn_Delay_0) SetDisarmDelay(0);
-                else if (btn == Btn_Delay_5) SetDisarmDelay(5);
-                else if (btn == Btn_Delay_10) SetDisarmDelay(10);
-                else if (btn == Btn_Delay_15) SetDisarmDelay(15);
+                float sec = (btn == Btn_Delay_0) ? 0 : (btn == Btn_Delay_5) ? 5 : (btn == Btn_Delay_10) ? 10 : 15;
+                StageParamChange("DISARM_DELAY", sec, $"Disarm Delay: {sec}s");
+                HighlightPresetButton(Btn_Delay_0, sec <= 0);
+                HighlightPresetButton(Btn_Delay_5, sec == 5);
+                HighlightPresetButton(Btn_Delay_10, sec == 10);
+                HighlightPresetButton(Btn_Delay_15, sec == 15);
             }
         }
 
@@ -6810,13 +6996,123 @@ namespace Xamarin
         {
             if (sender is global::Xamarin.Forms.Button btn)
             {
-                if (btn == Btn_Check_All) SetArmingCheck(1);
-                else if (btn == Btn_Check_Skip) SetArmingCheck(0);
+                float check = (btn == Btn_Check_All) ? 1 : 0;
+                string checkName = (check == 1) ? "All Checks (1)" : "Skip Checks (0)";
+                StageParamChange("ARMING_CHECK", check, $"Pre-Arm Check: {checkName}");
+                HighlightPresetButton(Btn_Check_All, check != 0);
+                HighlightPresetButton(Btn_Check_Skip, check == 0);
             }
+        }
+
+        // 💾 FCへ変更されたパラメータだけを一括送信（送信中・完了ステータス通知付き）
+        private void OnWriteArmingParamsClicked(object sender, EventArgs e)
+        {
+            if (_pendingSafetyParams.Count == 0)
+            {
+                UserDialogs.Instance.Toast("No changes to write. Select an option first.", TimeSpan.FromSeconds(1.5));
+                return;
+            }
+
+            var changes = new Dictionary<string, float>(_pendingSafetyParams);
+            _pendingSafetyParams.Clear();
+
+            // 1. 送信中表示（ボタンを無効化してスピナー待機色）
+            if (Btn_Write_Arming_Params != null)
+            {
+                Btn_Write_Arming_Params.IsEnabled = false;
+                Btn_Write_Arming_Params.Text = "⏳ WRITING...";
+                Btn_Write_Arming_Params.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#0284C7");
+            }
+
+            UserDialogs.Instance.Toast($"💾 Sending {changes.Count} parameter(s) to FC...", TimeSpan.FromSeconds(1.5));
+
+            Task.Run(() =>
+            {
+                try
+                {
+                    if (MainV2.comPort == null || MainV2.comPort.BaseStream == null || !MainV2.comPort.BaseStream.IsOpen)
+                    {
+                        Device.BeginInvokeOnMainThread(() =>
+                        {
+                            if (Btn_Write_Arming_Params != null)
+                            {
+                                Btn_Write_Arming_Params.IsEnabled = true;
+                                Btn_Write_Arming_Params.Text = "⚠️ COM ERROR";
+                                Btn_Write_Arming_Params.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                            }
+                            UserDialogs.Instance.Toast("⚠️ Communication Error: Telemetry not connected.", TimeSpan.FromSeconds(2.5));
+                        });
+                        Task.Delay(2500).ContinueWith(_ =>
+                        {
+                            Device.BeginInvokeOnMainThread(() =>
+                            {
+                                UpdateWriteButtonState();
+                            });
+                        });
+                        return;
+                    }
+
+                    byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                    byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+
+                    foreach (var kvp in changes)
+                    {
+                        EnsureParamKey(sysid, compid, kvp.Key, kvp.Value);
+                        MainV2.comPort.setParam(sysid, compid, kvp.Key, kvp.Value, true);
+                        log.Info($"[OnWriteArmingParams] Sent to FC: {kvp.Key}={kvp.Value}");
+                        System.Threading.Thread.Sleep(30);
+                    }
+
+                    // ソケットへの送信完了
+                    Device.BeginInvokeOnMainThread(() =>
+                    {
+                        if (Btn_Write_Arming_Params != null)
+                        {
+                            Btn_Write_Arming_Params.IsEnabled = true;
+                            Btn_Write_Arming_Params.Text = "✅ SENT TO FC";
+                            Btn_Write_Arming_Params.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                            UserDialogs.Instance.Toast("✅ Parameters sent to FC. Tap '🔄 REFRESH' to verify.", TimeSpan.FromSeconds(2.5));
+                        }
+                    });
+
+                    // 2.5秒後に通常待機表示へ自動リセット
+                    Task.Delay(2500).ContinueWith(_ =>
+                    {
+                        Device.BeginInvokeOnMainThread(() =>
+                        {
+                            UpdateWriteButtonState();
+                        });
+                    });
+                }
+                catch (Exception ex)
+                {
+                    log.Error("[OnWriteArmingParams] Socket/Comm Error: ", ex);
+                    Device.BeginInvokeOnMainThread(() =>
+                    {
+                        if (Btn_Write_Arming_Params != null)
+                        {
+                            Btn_Write_Arming_Params.IsEnabled = true;
+                            Btn_Write_Arming_Params.Text = "⚠️ COM ERROR";
+                            Btn_Write_Arming_Params.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
+                        }
+                        UserDialogs.Instance.Toast("⚠️ Socket/Communication error during transmission.", TimeSpan.FromSeconds(2.5));
+                    });
+                    Task.Delay(2500).ContinueWith(_ =>
+                    {
+                        Device.BeginInvokeOnMainThread(() =>
+                        {
+                            UpdateWriteButtonState();
+                        });
+                    });
+                }
+            });
         }
 
         private void OnRefreshArmingParamsClicked(object sender, EventArgs e)
         {
+            _pendingSafetyParams.Clear();
+            UpdateWriteButtonState();
+
             try
             {
                 if (MainV2.comPort != null)
@@ -6824,31 +7120,44 @@ namespace Xamarin
                     byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
                     byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
 
-                    // Lightweight pinpoint read requests for only required safety parameters (no bulk download, no FC CPU slowdown)
-                    string[] safetyParams = new[] { "ARMING_RUDDER", "BATT_LOW_VOLT", "BATT_FS_LOW_ACT", "BATT_CRT_VOLT", "BATT_FS_CRT_ACT", "DISARM_DELAY", "ARMING_CHECK" };
-                    Task.Run(async () =>
+                    var mav = MainV2.comPort.MAVlist?[sysid, compid];
+                    string[] safetyParams = new[] { "ARMING_RUDDER", "RC7_OPTION", "BATT_LOW_VOLT", "BATT_FS_LOW_ACT", "BATT_CRT_VOLT", "BATT_FS_CRT_ACT", "DISARM_DELAY", "ARMING_CHECK" };
+
+                    // キャッシュに存在しないパラメータだけを特定
+                    List<string> missingParams = new List<string>();
+                    foreach (var p in safetyParams)
                     {
-                        foreach (var p in safetyParams)
+                        if (mav == null || mav.param == null || !mav.param.ContainsKey(p))
                         {
-                            try
-                            {
-                                await MainV2.comPort.GetParamAsync(sysid, compid, p, -1, false);
-                                await Task.Delay(25);
-                            }
-                            catch { }
+                            missingParams.Add(p);
                         }
-                        await Task.Delay(120);
-                        Device.BeginInvokeOnMainThread(() =>
+                    }
+
+                    // キャッシュにない場合のみ、バックグラウンドでFCへ読み込み要求を発行（即時復帰）
+                    if (missingParams.Count > 0)
+                    {
+                        log.Info($"[OnRefreshArmingParams] Cache miss for {missingParams.Count} param(s). Requesting read from FC: {string.Join(",", missingParams)}");
+                        Task.Run(async () =>
                         {
-                            LoadArmingSafetyParameters();
+                            foreach (var p in missingParams)
+                            {
+                                try
+                                {
+                                    await MainV2.comPort.GetParamAsync(sysid, compid, p, -1, false);
+                                    await Task.Delay(20);
+                                }
+                                catch { }
+                            }
                         });
-                    });
+                    }
                 }
             }
             catch (Exception ex)
             {
                 log.Error(ex);
             }
+
+            // MPのキャッシュから読み込んでUIへ反映（待たずに即時復帰）
             LoadArmingSafetyParameters();
             UserDialogs.Instance.Toast("🔄 Refreshed parameters from cache", TimeSpan.FromSeconds(1));
         }
