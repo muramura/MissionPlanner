@@ -193,9 +193,37 @@ namespace Xamarin
             }
         }
 
+        public static int GetAssignedRCChannelForButton(string btnName)
+        {
+            if (string.IsNullOrEmpty(btnName)) return 0;
+            string normTarget = NormalizeButtonKeyName(btnName);
+            for (int ch = 1; ch <= 18; ch++)
+            {
+                if (ch < ChannelAxisMapping.Length)
+                {
+                    string mapped = ChannelAxisMapping[ch];
+                    if (!string.IsNullOrEmpty(mapped) && !mapped.Equals("None", StringComparison.OrdinalIgnoreCase))
+                    {
+                        if (NormalizeButtonKeyName(mapped).Equals(normTarget, StringComparison.OrdinalIgnoreCase))
+                        {
+                            return ch;
+                        }
+                    }
+                }
+            }
+            return 0;
+        }
+
         public static void ExecuteButtonAction(string btnName)
         {
             if (string.IsNullOrEmpty(btnName)) return;
+
+            // 🔒 判定: RCチャネルに割り当てられているボタンは GCS コマンドを完全遮断 (二重送信・競合防止)
+            if (GetAssignedRCChannelForButton(btnName) > 0)
+            {
+                return;
+            }
+
             if (!ButtonActionMap.TryGetValue(btnName, out string action) || string.IsNullOrEmpty(action) || action == "None")
             {
                 return;
@@ -3775,6 +3803,20 @@ namespace Xamarin
             string btnName = btn.CommandParameter as string;
             if (string.IsNullOrEmpty(btnName)) return;
 
+            // 🔒 判定: RCチャネルに割り当てられている場合は設定不可 (案内アラートを表示)
+            int assignedCh = GetAssignedRCChannelForButton(btnName);
+            if (assignedCh > 0)
+            {
+                string fcOpt = GetFCOptionLabelForChannel(assignedCh);
+                await DisplayAlert(
+                    "Channel Assigned (Locked)",
+                    $"'{btnName}' is currently assigned to Radio Channel RC{assignedCh} in the RC AXES tab.\n\n" +
+                    $"Its function is handled directly by ArduPilot FC parameter RC{assignedCh}_OPTION ({fcOpt}) via 60Hz cyclic control.\n\n" +
+                    $"To assign a GCS command to this button, first unassign it from RC{assignedCh} in the RC AXES tab.",
+                    "OK");
+                return;
+            }
+
             string selected = await DisplayActionSheet(
                 $"Select Action for {btnName}",
                 "Cancel",
@@ -3788,6 +3830,33 @@ namespace Xamarin
                 UpdateButtonActionUI(btnName, selected);
                 ShowButtonActionToast($"{btnName} -> {selected}");
             }
+        }
+
+        // 🎯 RCチャネルの FC ファンクション名を取得
+        public string GetFCOptionLabelForChannel(int ch)
+        {
+            if (ch < 5 || ch > 18)
+            {
+                return "Primary Flight Control";
+            }
+
+            if (_pendingRCOptions != null && _pendingRCOptions.ContainsKey(ch))
+            {
+                int pendingVal = _pendingRCOptions[ch];
+                return CommonRCAuxFunctions.TryGetValue(pendingVal, out var name) ? name : $"{pendingVal}: Custom";
+            }
+
+            var sysid = MainV2.comPort?.MAV?.sysid ?? 1;
+            var compid = MainV2.comPort?.MAV?.compid ?? 1;
+            var paramDict = MainV2.comPort?.MAVlist[sysid, compid]?.param;
+            string pName = $"RC{ch}_OPTION";
+            if (paramDict != null && paramDict.ContainsKey(pName))
+            {
+                int optVal = (int)(float)paramDict[pName];
+                return CommonRCAuxFunctions.TryGetValue(optVal, out var name) ? name : $"{optVal}: Custom";
+            }
+
+            return "0: Do Nothing";
         }
 
         // 🎯 Copter / StampFly 推奨プリセット一括適用 (A=LAND, B=POSHOLD, X=LOITER, Y=ALTHOLD, R1=ARM)
@@ -3843,9 +3912,22 @@ namespace Xamarin
                 var btn = this.FindByName<Button>($"Btn_JoyAction_{cleanId}");
                 if (btn != null)
                 {
-                    btn.Text = action + " ▾";
-                    btn.BackgroundColor = GetActionColor(action);
-                    btn.TextColor = (action == "None") ? global::Xamarin.Forms.Color.FromHex("#94A3B8") : global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+                    int assignedCh = GetAssignedRCChannelForButton(btnName);
+                    if (assignedCh > 0)
+                    {
+                        // 🔒 RCチャネルに割り当て済み -> 設定不可 (FC パラメータ RCn_OPTION でサイクリック制御)
+                        string fcOpt = GetFCOptionLabelForChannel(assignedCh);
+                        btn.Text = $"🔒 RC{assignedCh} ({fcOpt})";
+                        btn.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+                        btn.TextColor = global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                    }
+                    else
+                    {
+                        // 🔓 未割り当て -> GCS コマンド設定可能
+                        btn.Text = action + " ▾";
+                        btn.BackgroundColor = GetActionColor(action);
+                        btn.TextColor = (action == "None") ? global::Xamarin.Forms.Color.FromHex("#94A3B8") : global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+                    }
                 }
             }
             catch { }
@@ -4224,6 +4306,7 @@ namespace Xamarin
                     if (ch >= 1 && ch <= 18)
                     {
                         ChannelAxisMapping[ch] = cleanName;
+                        UpdateAllButtonActionUI();
                     }
                 }
             }
@@ -4305,6 +4388,7 @@ namespace Xamarin
                         if (ch >= 1 && ch <= 18)
                         {
                             ChannelAxisMapping[ch] = detected;
+                            UpdateAllButtonActionUI();
                         }
 
                         // 🎯 2. 画面上のボタン表示を更新
@@ -4434,6 +4518,7 @@ namespace Xamarin
                 }
 
                 UpdateWriteRCOptionsButtonStyle();
+                UpdateAllButtonActionUI();
             }
             catch (Exception ex)
             {
@@ -4500,6 +4585,7 @@ namespace Xamarin
                 btn.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
 
                 UpdateWriteRCOptionsButtonStyle();
+                UpdateAllButtonActionUI();
             }
             catch (Exception ex)
             {
@@ -4553,6 +4639,7 @@ namespace Xamarin
 
                 _pendingRCOptions.Clear();
                 UpdateWriteRCOptionsButtonStyle();
+                UpdateAllButtonActionUI();
 
                 await DisplayAlert("Parameters Sent", $"Successfully transmitted {pendingCopy.Count} RC Option parameter(s) to FC!\nTap [🔄 REFRESH FC] anytime to confirm current values from cache.", "OK");
             }
@@ -4571,6 +4658,7 @@ namespace Xamarin
                 _pendingRCOptions.Clear();
                 LoadRCOptionsFromCache();
                 LoadArmingSafetyParameters();
+                UpdateAllButtonActionUI();
 
                 // キャッシュ全件が空なら取得トリガー
                 var sysid = MainV2.comPort?.MAV?.sysid ?? 1;
@@ -6711,11 +6799,6 @@ namespace Xamarin
                         LBL_arming_rudder_fc_val.TextColor = (rudderMode == 0) ? global::Xamarin.Forms.Color.FromHex("#10B981") : (rudderMode == 1) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#38BDF8");
                     }
 
-                    if (LBL_joy_stick_gesture_status != null)
-                    {
-                        LBL_joy_stick_gesture_status.Text = (rudderMode == 0) ? "Disabled (Recommended)" : (rudderMode == 1) ? "Arm Only (1)" : "Standard Enabled (2)";
-                        LBL_joy_stick_gesture_status.TextColor = (rudderMode == 0) ? global::Xamarin.Forms.Color.FromHex("#10B981") : (rudderMode == 1) ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#38BDF8");
-                    }
 
                     // 1B. RC7_OPTION (188: Arm, 81: Disarm, 0: Disabled)
                     float rc7Val = GetMAVParam("RC7_OPTION", 188f);
