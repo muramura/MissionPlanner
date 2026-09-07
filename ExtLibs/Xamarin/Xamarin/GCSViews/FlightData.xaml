@@ -1664,6 +1664,65 @@
                                         </StackLayout>
                                     </Frame>
 
+                                    <!-- 1C. Safe Bench Testing: Motor Output Inhibit (MOT_OUTPUT_DIS) Section -->
+                                    <Frame BackgroundColor="#1E293B" BorderColor="#334155" Padding="10,8" CornerRadius="8" HasShadow="False">
+                                        <StackLayout Spacing="6">
+                                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6" VerticalOptions="Center">
+                                                <StackLayout Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                    <Label Text="🧪" FontSize="14" VerticalOptions="Center"/>
+                                                    <Label Text="Motor Output Inhibit (Bench Test)" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                    <Label Text="(MOT_OUTPUT_DIS)" TextColor="#64748B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                </StackLayout>
+                                                <Button Grid.Column="1" Text="💾 WRITE" FontSize="9" FontAttributes="Bold"
+                                                        BackgroundColor="#334155" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="26" Padding="8,0"
+                                                        Clicked="OnWriteArmingParamsClicked"/>
+                                                <Button Grid.Column="2" Text="🔄 REFRESH" FontSize="9" FontAttributes="Bold"
+                                                        BackgroundColor="#0284C7" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="26" Padding="8,0"
+                                                        Clicked="OnRefreshArmingParamsClicked"/>
+                                                <Label x:Name="LBL_mot_output_dis_fc_val" Grid.Column="3" Text="FC: Normal (0)" TextColor="#10B981" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            </Grid>
+
+                                            <!-- Info Banner -->
+                                            <Frame BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                                <Label Text="💡 Safe Indoor Testing: When Inhibited (1), physical motor PWM is stopped. Full flight control loops, telemetry rates, and arming run normally without spinning propellers."
+                                                       TextColor="#CBD5E1" FontSize="9"/>
+                                            </Frame>
+
+                                            <!-- 2 Selection Cards for MOT_OUTPUT_DIS -->
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                                                <!-- Card 0: Normal (Motors Spin) -->
+                                                <Frame x:Name="Card_MotOutput_Normal" Grid.Column="0" BackgroundColor="#0F172A" BorderColor="#10B981" Padding="8,8" CornerRadius="8" HasShadow="False">
+                                                    <Frame.GestureRecognizers>
+                                                        <TapGestureRecognizer Tapped="OnMotOutputCardNormalClicked"/>
+                                                    </Frame.GestureRecognizers>
+                                                    <StackLayout Spacing="4">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="🟢 Normal (0)" TextColor="#10B981" FontSize="11" FontAttributes="Bold"/>
+                                                            <Label x:Name="Badge_MotOutput_Normal" Grid.Column="1" Text="● ACTIVE" TextColor="#10B981" FontSize="8" FontAttributes="Bold" IsVisible="False"/>
+                                                        </Grid>
+                                                        <Label Text="Motors spin normally when armed. Default setting for actual flight."
+                                                               TextColor="#94A3B8" FontSize="9"/>
+                                                    </StackLayout>
+                                                </Frame>
+
+                                                <!-- Card 1: Inhibited (Safe Bench Testing) -->
+                                                <Frame x:Name="Card_MotOutput_Inhibited" Grid.Column="1" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,8" CornerRadius="8" HasShadow="False">
+                                                    <Frame.GestureRecognizers>
+                                                        <TapGestureRecognizer Tapped="OnMotOutputCardInhibitClicked"/>
+                                                    </Frame.GestureRecognizers>
+                                                    <StackLayout Spacing="4">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="🚫 Inhibited (1)" TextColor="#EF4444" FontSize="11" FontAttributes="Bold"/>
+                                                            <Label x:Name="Badge_MotOutput_Inhibited" Grid.Column="1" Text="● ACTIVE" TextColor="#EF4444" FontSize="8" FontAttributes="Bold" IsVisible="False"/>
+                                                        </Grid>
+                                                        <Label Text="Physical motor PWM disabled. Full arming &amp; control loop testing without propeller danger."
+                                                               TextColor="#94A3B8" FontSize="9"/>
+                                                    </StackLayout>
+                                                </Frame>
+                                            </Grid>
+                                        </StackLayout>
+                                    </Frame>
+
                                     <!-- 2. Battery Failsafe & Thresholds Section -->
                                     <Frame BackgroundColor="#1E293B" BorderColor="#334155" Padding="10,8" CornerRadius="8" HasShadow="False">
                                         <StackLayout Spacing="6">

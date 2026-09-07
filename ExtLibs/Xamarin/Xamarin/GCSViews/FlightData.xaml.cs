@@ -1028,18 +1028,21 @@ namespace Xamarin
                             }
                             catch { }
 
-                            // Arm / Disarm Status
+                            // Arm / Disarm Status (with MOT_OUTPUT_DIS Bench Test indicator)
+                            float motDisVal = GetMAVParam("MOT_OUTPUT_DIS", 0);
+                            bool isBenchInhibited = (motDisVal > 0.5f);
+
                             if (cs.armed)
                             {
-                                LBL_arm_val.Text = "🟢 ARMED ▾";
-                                LBL_arm_val.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
-                                Frame_arm_status.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                                LBL_arm_val.Text = isBenchInhibited ? "🟡 ARMED (BENCH) ▾" : "🟢 ARMED ▾";
+                                LBL_arm_val.TextColor = isBenchInhibited ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#10B981");
+                                Frame_arm_status.BorderColor = isBenchInhibited ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#10B981");
                             }
                             else
                             {
-                                LBL_arm_val.Text = "🔴 DISARMED ▾";
-                                LBL_arm_val.TextColor = global::Xamarin.Forms.Color.FromHex("#EF4444");
-                                Frame_arm_status.BorderColor = global::Xamarin.Forms.Color.FromHex("#475569");
+                                LBL_arm_val.Text = isBenchInhibited ? "🟠 DISARMED (BENCH) ▾" : "🔴 DISARMED ▾";
+                                LBL_arm_val.TextColor = isBenchInhibited ? global::Xamarin.Forms.Color.FromHex("#FB923C") : global::Xamarin.Forms.Color.FromHex("#EF4444");
+                                Frame_arm_status.BorderColor = isBenchInhibited ? global::Xamarin.Forms.Color.FromHex("#FB923C") : global::Xamarin.Forms.Color.FromHex("#475569");
                             }
 
                             // EKF & VIBE Dock Badges Update
@@ -2757,14 +2760,24 @@ namespace Xamarin
             {
                 bool isArmed = MainV2.comPort.MAV?.cs?.armed ?? false;
                 string statusStr = isArmed ? "ARMED (Motors ON)" : "DISARMED (Motors OFF)";
+                float curDis = GetMAVParam("MOT_OUTPUT_DIS", 0);
+                string benchToggleStr = (curDis > 0.5f) ? "🟢 Enable Motor Output (MOT_OUTPUT_DIS=0)" : "🧪 Inhibit Motor Output (Bench Test: MOT_OUTPUT_DIS=1)";
+
                 string action = await DisplayActionSheet($"Motor Control (Current: {statusStr})", "Cancel", null,
                     "🟢 ARM (Start Motors)",
                     "🛑 FORCE DISARM (Stop Motors Immediately)",
+                    benchToggleStr,
                     "🚨 Emergency LAND",
                     "🛡️ Arming & Stick Safety Settings");
 
                 if (string.IsNullOrEmpty(action) || action == "Cancel")
                     return;
+
+                if (action == benchToggleStr)
+                {
+                    SetMotOutputDisState(curDis <= 0.5f);
+                    return;
+                }
 
                 if (action.Contains("Safety"))
                 {
@@ -5732,6 +5745,8 @@ namespace Xamarin
                     paramList.Add(new CalibParamInfo { Name = "MOT_SPIN_MIN", Meaning = "Spin Min Ratio", Value = smin, ValueStr = smin.ToString("0.00"), IdealStr = "0.15", ToleranceStr = "0.10 to 0.20", HealthLevel = minHealth });
                     paramList.Add(new CalibParamInfo { Name = "MOT_SPIN_MAX", Meaning = "Spin Max Limit", Value = smax, ValueStr = smax.ToString("0.00"), IdealStr = "0.95", ToleranceStr = "0.90 to 1.00", HealthLevel = 0 });
                     paramList.Add(new CalibParamInfo { Name = "MOT_THST_EXPO", Meaning = "Thrust Curve Expo", Value = expo, ValueStr = expo.ToString("0.00"), IdealStr = "0.65", ToleranceStr = "0.50 to 0.80", HealthLevel = 0 });
+                    float odis = GetMAVParam("MOT_OUTPUT_DIS", 0);
+                    paramList.Add(new CalibParamInfo { Name = "MOT_OUTPUT_DIS", Meaning = "Motor Output Inhibit", Value = odis, ValueStr = (odis > 0.5f) ? "1 (Inhibited)" : "0 (Normal)", IdealStr = "0", ToleranceStr = "0 or 1", HealthLevel = (odis > 0.5f ? 1 : 0) });
 
                     int maxH = Math.Max(armHealth, minHealth);
 
@@ -6813,6 +6828,19 @@ namespace Xamarin
                         LBL_rc7_option_fc_val.TextColor = (rc7Mode == 188) ? global::Xamarin.Forms.Color.FromHex("#10B981") : (rc7Mode == 81) ? global::Xamarin.Forms.Color.FromHex("#EF4444") : global::Xamarin.Forms.Color.FromHex("#94A3B8");
                     }
 
+                    // 1C. MOT_OUTPUT_DIS (0: Normal, 1: Inhibited)
+                    float motDis = GetMAVParam("MOT_OUTPUT_DIS", 0f);
+                    int motDisMode = (int)Math.Round(motDis);
+
+                    UpdateMotOutputCardsUI(motDisMode);
+
+                    if (LBL_mot_output_dis_fc_val != null)
+                    {
+                        string motStr = (motDisMode == 0) ? "FC: Normal (0)" : "FC: Inhibited (1)";
+                        LBL_mot_output_dis_fc_val.Text = motStr;
+                        LBL_mot_output_dis_fc_val.TextColor = (motDisMode == 0) ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#EF4444");
+                    }
+
                     // 2. Battery Failsafe
                     float lowVolt = GetMAVParam("BATT_LOW_VOLT", 3.55f);
                     float crtVolt = GetMAVParam("BATT_CRT_VOLT", 3.30f);
@@ -6942,6 +6970,87 @@ namespace Xamarin
                 Card_RC7_Disabled.BorderColor = isNone ? global::Xamarin.Forms.Color.FromHex("#94A3B8") : global::Xamarin.Forms.Color.FromHex("#334155");
                 Card_RC7_Disabled.BackgroundColor = isNone ? global::Xamarin.Forms.Color.FromHex("#1E293B") : global::Xamarin.Forms.Color.FromHex("#0F172A");
                 if (Badge_RC7_Disabled != null) Badge_RC7_Disabled.IsVisible = isNone;
+            }
+        }
+
+        private void UpdateMotOutputCardsUI(int motMode)
+        {
+            if (Card_MotOutput_Normal != null)
+            {
+                bool isNormal = (motMode == 0);
+                Card_MotOutput_Normal.BorderColor = isNormal ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_MotOutput_Normal.BackgroundColor = isNormal ? global::Xamarin.Forms.Color.FromHex("#064E3B") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_MotOutput_Normal != null) Badge_MotOutput_Normal.IsVisible = isNormal;
+            }
+            if (Card_MotOutput_Inhibited != null)
+            {
+                bool isInhibited = (motMode != 0);
+                Card_MotOutput_Inhibited.BorderColor = isInhibited ? global::Xamarin.Forms.Color.FromHex("#EF4444") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_MotOutput_Inhibited.BackgroundColor = isInhibited ? global::Xamarin.Forms.Color.FromHex("#450A0A") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_MotOutput_Inhibited != null) Badge_MotOutput_Inhibited.IsVisible = isInhibited;
+            }
+        }
+
+        private void OnMotOutputCardNormalClicked(object sender, EventArgs e)
+        {
+            _pendingSafetyParams["MOT_OUTPUT_DIS"] = 0f;
+            UpdateMotOutputCardsUI(0);
+            UpdateWriteButtonState();
+            UserDialogs.Instance.Toast("🟢 Normal Motors selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
+        }
+
+        private void OnMotOutputCardInhibitClicked(object sender, EventArgs e)
+        {
+            _pendingSafetyParams["MOT_OUTPUT_DIS"] = 1f;
+            UpdateMotOutputCardsUI(1);
+            UpdateWriteButtonState();
+            UserDialogs.Instance.Toast("🚫 Motor Output Inhibit selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
+        }
+
+        public void SetMotOutputDisState(bool inhibit)
+        {
+            try
+            {
+                float val = inhibit ? 1.0f : 0.0f;
+                _pendingSafetyParams["MOT_OUTPUT_DIS"] = val;
+                UpdateMotOutputCardsUI((int)val);
+                UpdateWriteButtonState();
+
+                if (LBL_mot_output_dis_fc_val != null)
+                {
+                    LBL_mot_output_dis_fc_val.Text = inhibit ? "FC: Inhibited (1) *" : "FC: Normal (0) *";
+                    LBL_mot_output_dis_fc_val.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                }
+
+                if (MainV2.comPort != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
+                {
+                    Task.Run(() =>
+                    {
+                        try
+                        {
+                            byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                            byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+
+                            EnsureParamKey(sysid, compid, "MOT_OUTPUT_DIS", 0f);
+                            MainV2.comPort.setParam(sysid, compid, "MOT_OUTPUT_DIS", val, true);
+                            log.Info($"[SetMotOutputDisState] Sent MOT_OUTPUT_DIS={val}");
+                        }
+                        catch (Exception ex)
+                        {
+                            log.Error("[SetMotOutputDisState] Error: " + ex);
+                        }
+                    });
+
+                    Acr.UserDialogs.UserDialogs.Instance.Toast(inhibit ? "🚫 Sent MOT_OUTPUT_DIS=1 (Inhibited for Bench Test)" : "🟢 Sent MOT_OUTPUT_DIS=0 (Normal Motors)", TimeSpan.FromSeconds(1.5));
+                }
+                else
+                {
+                    Acr.UserDialogs.UserDialogs.Instance.Toast("📝 Staged MOT_OUTPUT_DIS (Tap WRITE TO FC to send)", TimeSpan.FromSeconds(1.5));
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("SetMotOutputDisState error: " + ex);
             }
         }
 
@@ -7204,7 +7313,7 @@ namespace Xamarin
                     byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
 
                     var mav = MainV2.comPort.MAVlist?[sysid, compid];
-                    string[] safetyParams = new[] { "ARMING_RUDDER", "RC7_OPTION", "BATT_LOW_VOLT", "BATT_FS_LOW_ACT", "BATT_CRT_VOLT", "BATT_FS_CRT_ACT", "DISARM_DELAY", "ARMING_CHECK" };
+                    string[] safetyParams = new[] { "ARMING_RUDDER", "RC7_OPTION", "MOT_OUTPUT_DIS", "BATT_LOW_VOLT", "BATT_FS_LOW_ACT", "BATT_CRT_VOLT", "BATT_FS_CRT_ACT", "DISARM_DELAY", "ARMING_CHECK" };
 
                     // キャッシュに存在しないパラメータだけを特定
                     List<string> missingParams = new List<string>();
