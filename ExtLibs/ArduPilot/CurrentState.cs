@@ -1,4 +1,4 @@
-﻿using log4net;
+using log4net;
 using MissionPlanner.ArduPilot;
 using MissionPlanner.Attributes;
 using MissionPlanner.Utilities;
@@ -199,10 +199,10 @@ namespace MissionPlanner
         static CurrentState()
         {
             // set default telemrates
-            rateattitudebackup = 4;
+            rateattitudebackup = 10;
             ratepositionbackup = 2;
             ratestatusbackup = 2;
-            ratesensorsbackup = 2;
+            ratesensorsbackup = 4;
             ratercbackup = 20;
             //Init dictionary for storing names for customfields
             custom_field_names = new Dictionary<string, string>();

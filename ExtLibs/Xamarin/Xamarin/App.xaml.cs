@@ -87,16 +87,24 @@ namespace Xamarin
                         if (!MainV2.Comports.Contains(MainV2.comPort))
                             MainV2.Comports.Add(MainV2.comPort);
 
+                        StartTelemetryLogging(MainV2.comPort);
+
                         _ = Task.Run(() => MainV2.instance.SerialReader());
 
                         try
                         {
-                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA1, 4);
+                            if (MainV2.comPort.MAV?.cs != null)
+                            {
+                                MainV2.comPort.MAV.cs.rateattitude = 10;
+                                MainV2.comPort.MAV.cs.ratesensors = 4;
+                            }
+
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA1, 10);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 1);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 1);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 1);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, 1);
-                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA3, 1);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA3, 4);
 
                             // Populate parameter cache in background upon connection
                             _ = Task.Run(() =>
@@ -204,6 +212,7 @@ namespace Xamarin
         {
             // Handle when your app sleeps
             Log.Warning("", "OnSleep");
+            try { MainV2.comPort?.logfile?.Flush(); } catch { }
         }
 
         protected override void OnResume()
@@ -232,12 +241,68 @@ namespace Xamarin
                 MainV2.Comports.Add(mav);
 
                 mav.Open(false, true);
+                StartTelemetryLogging(mav);
 
             }
             catch (Exception ex)
             {
                 Log.Warning("", ex.ToString());
             }
+        }
+
+        public static void StartTelemetryLogging(MAVLinkInterface mav)
+        {
+            if (mav == null) return;
+            try
+            {
+                CloseTelemetryLogging(mav);
+
+                string logDir = "/sdcard/MissionPlanner/Logs";
+                try
+                {
+                    if (!Directory.Exists(logDir))
+                        Directory.CreateDirectory(logDir);
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("Failed to use /sdcard/MissionPlanner/Logs, falling back: " + ex.Message);
+                    logDir = Path.Combine(Settings.Instance.LogDir, "Logs");
+                    if (!Directory.Exists(logDir))
+                        Directory.CreateDirectory(logDir);
+                }
+
+                string timestamp = DateTime.Now.ToString("yyyy-MM-dd_HH-mm-ss");
+                string tlogPath = Path.Combine(logDir, $"{timestamp}.tlog");
+
+                int seq = 1;
+                while (File.Exists(tlogPath))
+                {
+                    tlogPath = Path.Combine(logDir, $"{timestamp}_{seq}.tlog");
+                    seq++;
+                }
+
+                mav.logfile = new BufferedStream(File.Open(tlogPath, FileMode.CreateNew, FileAccess.ReadWrite, FileShare.ReadWrite));
+                log.Info($"[TelemetryLog] Started tlog recording at: {tlogPath}");
+            }
+            catch (Exception ex)
+            {
+                log.Error("[TelemetryLog] StartTelemetryLogging error: " + ex);
+            }
+        }
+
+        public static void CloseTelemetryLogging(MAVLinkInterface mav)
+        {
+            if (mav == null) return;
+            try
+            {
+                if (mav.logfile != null)
+                {
+                    mav.logfile.Flush();
+                    mav.logfile.Close();
+                    mav.logfile = null;
+                }
+            }
+            catch { }
         }
     }
 
