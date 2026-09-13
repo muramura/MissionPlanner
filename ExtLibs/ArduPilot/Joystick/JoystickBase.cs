@@ -1,4 +1,4 @@
-﻿using log4net;
+using log4net;
 using MissionPlanner.ArduPilot;
 using MissionPlanner.Utilities;
 using Newtonsoft.Json;
@@ -391,6 +391,34 @@ namespace MissionPlanner.Joystick
 
                 switch (but.function)
                 {
+                    case buttonfunction.Slow_Mode:
+                        _context.Send(delegate
+                        {
+                            try
+                            {
+                                Interface.doCommand((byte)Interface.sysidcurrent, (byte)Interface.compidcurrent,
+                                    MAVLink.MAV_CMD.DO_AUX_FUNCTION, 190, 2, 0, 0, 0, 0, 0);
+                            }
+                            catch
+                            {
+                                CustomMessageBox.Show("Failed to activate Slow Mode");
+                            }
+                        }, null);
+                        break;
+                    case buttonfunction.Normal_Mode:
+                        _context.Send(delegate
+                        {
+                            try
+                            {
+                                Interface.doCommand((byte)Interface.sysidcurrent, (byte)Interface.compidcurrent,
+                                    MAVLink.MAV_CMD.DO_AUX_FUNCTION, 191, 2, 0, 0, 0, 0, 0);
+                            }
+                            catch
+                            {
+                                CustomMessageBox.Show("Failed to activate Normal Mode");
+                            }
+                        }, null);
+                        break;
                     case buttonfunction.ChangeMode:
                         string mode = but.mode;
                         if (mode != null)

@@ -1,4 +1,4 @@
-﻿namespace MissionPlanner.Joystick
+namespace MissionPlanner.Joystick
 {
     public enum buttonfunction
     {
@@ -17,5 +17,7 @@
         Mount_Control_0,
         Button_axis0,
         Button_axis1,
+        Slow_Mode,
+        Normal_Mode,
     }
 }

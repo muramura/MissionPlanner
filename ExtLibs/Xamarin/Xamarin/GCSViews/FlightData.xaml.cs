@@ -110,6 +110,11 @@ namespace Xamarin
         // 🎮 18チャンネルのエクスポ設定データ配列 (0〜100%)
         public static float[] ChannelExpoMapping = new float[19];
 
+        // 🐢 MP Slow Mode: アプリ内スティックスケーリング設定
+        public static bool IsSlowModeActive = false;
+        public static float SlowModePct = 25f;
+        public static int SlowModeAxes = 15; // 🐢 Default: Roll(1) + Pitch(2) + Yaw(4) + Throttle(8) = 15 (ALL 4 AXES)
+
         public static int LastPressedButtonCode = 0;
         public static Dictionary<int, bool> PressedButtonMap = new Dictionary<int, bool>();
 
@@ -119,6 +124,13 @@ namespace Xamarin
         public static readonly string[] AvailableButtonActions = new string[]
         {
             "None",
+            "SLOW MODE TOGGLE",
+            "SLOW MODE ON",
+            "SLOW MODE OFF",
+            "190: Slow Mode On (Button)",
+            "191: Slow Mode Off (Button)",
+            "SLOW MODE",
+            "NORMAL MODE",
             "LAND",
             "POSHOLD",
             "LOITER",
@@ -235,6 +247,21 @@ namespace Xamarin
             {
                 switch (action.ToUpperInvariant())
                 {
+                    case "190: SLOW MODE ON (BUTTON)":
+                    case "SLOW MODE ON":
+                        SetSlowMode(true, btnName);
+                        break;
+                    case "191: SLOW MODE OFF (BUTTON)":
+                    case "SLOW MODE OFF":
+                    case "NORMAL MODE":
+                    case "NORMAL":
+                        SetSlowMode(false, btnName);
+                        break;
+                    case "SLOW MODE TOGGLE":
+                    case "SLOW MODE":
+                    case "SLOW":
+                        SetSlowMode(!IsSlowModeActive, btnName);
+                        break;
                     case "LAND":
                         MainV2.comPort.setMode(1, 1, "Land");
                         ShowButtonActionToast($"Mode: LAND ({btnName})", "#DC2626");
@@ -327,6 +354,29 @@ namespace Xamarin
                 });
             }
             catch { }
+        }
+
+        public static void SetSlowMode(bool active, string triggerSource = "")
+        {
+            IsSlowModeActive = active;
+            global::Xamarin.Essentials.Preferences.Set("MP_SlowMode_Active", active);
+
+            string srcInfo = string.IsNullOrEmpty(triggerSource) ? "" : $" ({triggerSource})";
+            if (active)
+            {
+                ShowButtonActionToast($"🐢 Slow Mode ON: {(int)SlowModePct}% [R/P/Y]{srcInfo}", "#10B981");
+                TriggerHapticForChoice(Config_Pattern_Arm);
+            }
+            else
+            {
+                ShowButtonActionToast($"🚀 Normal Mode: 100%{srcInfo}", "#3B82F6");
+                TriggerHapticForChoice(Config_Pattern_Arm);
+            }
+
+            global::Xamarin.Forms.Device.BeginInvokeOnMainThread(() =>
+            {
+                instance?.UpdateSlowModeUI();
+            });
         }
 
         // 🎮 割り当てられた軸・ボタンからリアルタイムPWM値を算出 (1000〜2000µs)
@@ -496,6 +546,36 @@ namespace Xamarin
                 if (isReverse)
                 {
                     rawAxis = -rawAxis;
+                }
+
+                // 🐢 MP Slow Mode: スケーリング適用 (IsSlowModeActive == true かつ対象軸の場合)
+                if (IsSlowModeActive)
+                {
+                    bool applySlow = false;
+                    // ch 1 = Roll (bit 0 = 1), ch 2 = Pitch (bit 1 = 2), ch 4 = Yaw (bit 2 = 4), ch 3 = Throttle (bit 3 = 8)
+                    if (ch == 1 && (SlowModeAxes & 1) != 0) applySlow = true;
+                    else if (ch == 2 && (SlowModeAxes & 2) != 0) applySlow = true;
+                    else if (ch == 4 && (SlowModeAxes & 4) != 0) applySlow = true;
+                    else if (ch == 3 && (SlowModeAxes & 8) != 0)
+                    {
+                        bool isArmed = (MainV2.comPort != null && MainV2.comPort.MAV != null && MainV2.comPort.MAV.cs != null && MainV2.comPort.MAV.cs.armed);
+                        // 🛡️ アーム前(Disarmed)はアームチェック通過のためスロー適用外(1000µs)。
+                        // 飛行中(Armed)はスティック最下端でも急降下させず、設定されたスロー率で穏やかに下降させる。
+                        if (!isArmed)
+                        {
+                            applySlow = false;
+                        }
+                        else
+                        {
+                            applySlow = true;
+                        }
+                    }
+
+                    if (applySlow)
+                    {
+                        float scale = Math.Max(0.20f, Math.Min(1.0f, SlowModePct / 100.0f));
+                        rawAxis *= scale;
+                    }
                 }
 
                 // スロットル (Ch3) かつスティック下端〜上端をフルに使う場合:
@@ -3901,6 +3981,14 @@ namespace Xamarin
         {
             switch (action?.ToUpperInvariant())
             {
+                case "190: SLOW MODE ON (BUTTON)":
+                case "SLOW MODE ON":
+                case "SLOW MODE":
+                case "SLOW": return global::Xamarin.Forms.Color.FromHex("#10B981"); // Emerald Green
+                case "191: SLOW MODE OFF (BUTTON)":
+                case "SLOW MODE OFF":
+                case "NORMAL MODE":
+                case "NORMAL": return global::Xamarin.Forms.Color.FromHex("#3B82F6"); // Blue
                 case "LAND": return global::Xamarin.Forms.Color.FromHex("#DC2626"); // Red
                 case "POSHOLD": return global::Xamarin.Forms.Color.FromHex("#059669"); // Green
                 case "LOITER": return global::Xamarin.Forms.Color.FromHex("#0284C7"); // Blue
@@ -4457,6 +4545,9 @@ namespace Xamarin
         public static readonly Dictionary<int, string> CommonRCAuxFunctions = new Dictionary<int, string>
         {
             { 0, "0: Do Nothing" },
+            { 189, "189: Slow Mode (Switch)" },
+            { 190, "190: Slow Mode On (Button)" },
+            { 191, "191: Slow Mode Off (Button)" },
             { 188, "188: Arm" },
             { 81, "81: Disarm" },
             { 153, "153: Arm / Disarm" },
@@ -5702,6 +5793,9 @@ namespace Xamarin
                         paramList.Add(new CalibParamInfo { Name = $"RC{i}_MAX", Meaning = $"{chRole} Max", Value = rmax, ValueStr = rmax.ToString("0") + " μs", IdealStr = "2000", ToleranceStr = "1900 to 2100", HealthLevel = (rmax < 1850 || rmax > 2150) ? 1 : 0 });
                     }
 
+                    float fltChDiag = GetMAVParam("FLTMODE_CH", 5);
+                    paramList.Add(new CalibParamInfo { Name = "FLTMODE_CH", Meaning = "Flight Mode Channel", Value = fltChDiag, ValueStr = (fltChDiag == 0 ? "0 (None)" : $"Ch {fltChDiag}"), IdealStr = "0 (Gamepad) or 5 (RC)", ToleranceStr = "0, 5..8", HealthLevel = 0 });
+
                     int maxHAll = 0;
                     foreach (var p in paramList) if (p.HealthLevel > maxHAll) maxHAll = p.HealthLevel;
 
@@ -6828,6 +6922,9 @@ namespace Xamarin
                         LBL_rc7_option_fc_val.TextColor = (rc7Mode == 188) ? global::Xamarin.Forms.Color.FromHex("#10B981") : (rc7Mode == 81) ? global::Xamarin.Forms.Color.FromHex("#EF4444") : global::Xamarin.Forms.Color.FromHex("#94A3B8");
                     }
 
+                    // 1B2. Slow Mode Tuning (App-side Stick Scaling)
+                    LoadSlowModeSettings();
+
                     // 1C. MOT_OUTPUT_DIS (0: Normal, 1: Inhibited)
                     float motDis = GetMAVParam("MOT_OUTPUT_DIS", 0f);
                     int motDisMode = (int)Math.Round(motDis);
@@ -6839,6 +6936,51 @@ namespace Xamarin
                         string motStr = (motDisMode == 0) ? "FC: Normal (0)" : "FC: Inhibited (1)";
                         LBL_mot_output_dis_fc_val.Text = motStr;
                         LBL_mot_output_dis_fc_val.TextColor = (motDisMode == 0) ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#EF4444");
+                    }
+
+                    // 1D. FLTMODE_CH (0: None, 5: Ch5, 6: Ch6, 7: Ch7, 8: Ch8)
+                    float fltChVal = GetMAVParam("FLTMODE_CH", 5f);
+                    int fltChMode = (int)Math.Round(fltChVal);
+
+                    UpdateFltModeChCardsUI(fltChMode);
+
+                    if (LBL_fltmode_ch_fc_val != null)
+                    {
+                        string fltChStr = (fltChMode == 0) ? "FC: None (0)" : (fltChMode == 5) ? "FC: Channel 5 (5)" : $"FC: Channel {fltChMode}";
+                        LBL_fltmode_ch_fc_val.Text = fltChStr;
+                        LBL_fltmode_ch_fc_val.TextColor = (fltChMode == 0) ? global::Xamarin.Forms.Color.FromHex("#10B981") : (fltChMode == 5) ? global::Xamarin.Forms.Color.FromHex("#38BDF8") : global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                    }
+
+                    // 1E. RangeFinder & Altitude Control
+                    // EK3_SRC1_POSZ (1: Baro, 2: RangeFinder, 3: GPS)
+                    float ek3Posz = GetMAVParam("EK3_SRC1_POSZ", 1f);
+                    int poszMode = (int)Math.Round(ek3Posz);
+
+                    // SURFTRAK_MODE (0: Disabled, 1: RangeFinder)
+                    float surftrakVal = GetMAVParam("SURFTRAK_MODE", 0f);
+                    int surftrakMode = (int)Math.Round(surftrakVal);
+
+                    // RNGFND1_TYPE (0: None, 49: VL53L3CX)
+                    float rngTypeVal = GetMAVParam("RNGFND1_TYPE", 0f);
+                    int rngTypeMode = (int)Math.Round(rngTypeVal);
+
+                    UpdateRangefinderAltitudeCardsUI(poszMode, surftrakMode, rngTypeMode);
+
+                    if (LBL_rngfnd_alt_fc_summary != null)
+                    {
+                        string sumStr = (poszMode == 2) ? "FC: RangeFinder (2)" : (poszMode == 1) ? "FC: Barometer (1)" : $"FC: PosZ ({poszMode})";
+                        LBL_rngfnd_alt_fc_summary.Text = sumStr;
+                        LBL_rngfnd_alt_fc_summary.TextColor = (poszMode == 2) ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                    }
+                    if (LBL_surftrak_fc_val != null)
+                    {
+                        LBL_surftrak_fc_val.Text = (surftrakMode == 1) ? "RangeFinder (1)" : (surftrakMode == 0) ? "Disabled (0)" : $"{surftrakMode}";
+                        LBL_surftrak_fc_val.TextColor = (surftrakMode == 1) ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+                    }
+                    if (LBL_rngfnd1_type_fc_val != null)
+                    {
+                        LBL_rngfnd1_type_fc_val.Text = (rngTypeMode == 49) ? "VL53L1/3 (49)" : (rngTypeMode == 0) ? "Disabled (0)" : $"{rngTypeMode}";
+                        LBL_rngfnd1_type_fc_val.TextColor = (rngTypeMode == 49) ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#94A3B8");
                     }
 
                     // 2. Battery Failsafe
@@ -6899,6 +7041,125 @@ namespace Xamarin
         {
             if (btn == null) return;
             btn.BackgroundColor = isActive ? global::Xamarin.Forms.Color.FromHex("#0284C7") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+            btn.TextColor = isActive ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+        }
+
+        public void LoadSlowModeSettings()
+        {
+            SlowModePct = global::Xamarin.Essentials.Preferences.Get("MP_SlowMode_Pct", 20f);
+            if (SlowModePct < 20f)
+            {
+                SlowModePct = 20f;
+                global::Xamarin.Essentials.Preferences.Set("MP_SlowMode_Pct", SlowModePct);
+            }
+            SlowModeAxes = global::Xamarin.Essentials.Preferences.Get("MP_SlowMode_Axes", 15);
+            if (SlowModeAxes == 7) // 旧デフォルト(R/P/Yのみ)からの自動更新
+            {
+                SlowModeAxes = 15;
+                global::Xamarin.Essentials.Preferences.Set("MP_SlowMode_Axes", SlowModeAxes);
+            }
+            IsSlowModeActive = global::Xamarin.Essentials.Preferences.Get("MP_SlowMode_Active", false);
+            UpdateSlowModeUI();
+        }
+
+        public void UpdateSlowModeUI()
+        {
+            float pct = SlowModePct;
+            int axes = SlowModeAxes;
+            bool active = IsSlowModeActive;
+
+            // 1. Slow Mode Tuning Section Toggle Button
+            if (Btn_SlowMode_StateToggle != null)
+            {
+                Btn_SlowMode_StateToggle.Text = active ? "🐢 SLOW: ON" : "🐢 SLOW: OFF";
+                Btn_SlowMode_StateToggle.BackgroundColor = active
+                    ? global::Xamarin.Forms.Color.FromHex("#10B981")
+                    : global::Xamarin.Forms.Color.FromHex("#334155");
+                Btn_SlowMode_StateToggle.TextColor = active
+                    ? global::Xamarin.Forms.Color.White
+                    : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            }
+
+            // 2. Slow Mode Tuning Header Label
+            if (LBL_slow_mode_fc_val != null)
+            {
+                string axesShort = GetAxesShortLabel(axes);
+                string actStr = active ? "ON" : "OFF";
+                LBL_slow_mode_fc_val.Text = $"MP: {(int)Math.Round(pct)}% ({axesShort}) [{actStr}]";
+                LBL_slow_mode_fc_val.TextColor = active
+                    ? global::Xamarin.Forms.Color.FromHex("#10B981")
+                    : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            }
+
+            // 3. TopBar Slow Mode Pill
+            if (Frame_SlowMode_Pill != null)
+            {
+                Frame_SlowMode_Pill.BackgroundColor = active
+                    ? global::Xamarin.Forms.Color.FromHex("#064E3B")
+                    : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Frame_SlowMode_Pill.BorderColor = active
+                    ? global::Xamarin.Forms.Color.FromHex("#10B981")
+                    : global::Xamarin.Forms.Color.FromHex("#475569");
+            }
+            if (LBL_slow_mode_topbar != null)
+            {
+                LBL_slow_mode_topbar.Text = active ? $"SLOW: {(int)Math.Round(pct)}%" : "SLOW: OFF";
+                LBL_slow_mode_topbar.TextColor = active
+                    ? global::Xamarin.Forms.Color.FromHex("#10B981")
+                    : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+            }
+
+            // 4. Row 1: Scale percentage presets
+            if (LBL_slow_pct_current != null)
+            {
+                LBL_slow_pct_current.Text = $"{(int)Math.Round(pct)}%";
+            }
+            HighlightPresetButton(Btn_SlowPct_20, Math.Abs(pct - 20f) < 2f);
+            HighlightPresetButton(Btn_SlowPct_25, Math.Abs(pct - 25f) < 2f);
+            HighlightPresetButton(Btn_SlowPct_30, Math.Abs(pct - 30f) < 2f);
+            HighlightPresetButton(Btn_SlowPct_35, Math.Abs(pct - 35f) < 2f);
+            HighlightPresetButton(Btn_SlowPct_40, Math.Abs(pct - 40f) < 2f);
+
+            // 5. Row 2: Target axes
+            if (LBL_slow_axes_current != null)
+            {
+                LBL_slow_axes_current.Text = $"Bitmask: {axes} ({GetAxesShortLabel(axes)})";
+            }
+            HighlightAxisButton(Btn_SlowAxis_Roll, (axes & 1) != 0);
+            HighlightAxisButton(Btn_SlowAxis_Pitch, (axes & 2) != 0);
+            HighlightAxisButton(Btn_SlowAxis_Yaw, (axes & 4) != 0);
+            HighlightAxisButton(Btn_SlowAxis_Thr, (axes & 8) != 0);
+
+            HighlightPresetButton(Btn_SlowAxes_Preset_7, axes == 7);
+            HighlightPresetButton(Btn_SlowAxes_Preset_3, axes == 3);
+            HighlightPresetButton(Btn_SlowAxes_Preset_15, axes == 15);
+        }
+
+        private void UpdateSlowModeTuningUI(float pct, int axes)
+        {
+            SlowModePct = pct;
+            SlowModeAxes = axes;
+            UpdateSlowModeUI();
+        }
+
+        private static string GetAxesShortLabel(int axes)
+        {
+            if (axes == 7) return "R/P/Y";
+            if (axes == 3) return "R/P";
+            if (axes == 15) return "All";
+            if (axes == 0) return "None";
+            List<string> parts = new List<string>();
+            if ((axes & 1) != 0) parts.Add("R");
+            if ((axes & 2) != 0) parts.Add("P");
+            if ((axes & 4) != 0) parts.Add("Y");
+            if ((axes & 8) != 0) parts.Add("T");
+            return string.Join("/", parts);
+        }
+
+        private void HighlightAxisButton(global::Xamarin.Forms.Button btn, bool isActive)
+        {
+            if (btn == null) return;
+            btn.BackgroundColor = isActive ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#1E293B");
             btn.TextColor = isActive ? global::Xamarin.Forms.Color.White : global::Xamarin.Forms.Color.FromHex("#94A3B8");
         }
 
@@ -6971,6 +7232,20 @@ namespace Xamarin
                 Card_RC7_Disabled.BackgroundColor = isNone ? global::Xamarin.Forms.Color.FromHex("#1E293B") : global::Xamarin.Forms.Color.FromHex("#0F172A");
                 if (Badge_RC7_Disabled != null) Badge_RC7_Disabled.IsVisible = isNone;
             }
+            if (Card_RC7_SlowOn != null)
+            {
+                bool isSlowOn = (rc7Mode == 190);
+                Card_RC7_SlowOn.BorderColor = isSlowOn ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_RC7_SlowOn.BackgroundColor = isSlowOn ? global::Xamarin.Forms.Color.FromHex("#064E3B") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_RC7_SlowOn != null) Badge_RC7_SlowOn.IsVisible = isSlowOn;
+            }
+            if (Card_RC7_SlowOff != null)
+            {
+                bool isSlowOff = (rc7Mode == 191);
+                Card_RC7_SlowOff.BorderColor = isSlowOff ? global::Xamarin.Forms.Color.FromHex("#38BDF8") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_RC7_SlowOff.BackgroundColor = isSlowOff ? global::Xamarin.Forms.Color.FromHex("#0369A1") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_RC7_SlowOff != null) Badge_RC7_SlowOff.IsVisible = isSlowOff;
+            }
         }
 
         private void UpdateMotOutputCardsUI(int motMode)
@@ -7005,6 +7280,176 @@ namespace Xamarin
             UpdateMotOutputCardsUI(1);
             UpdateWriteButtonState();
             UserDialogs.Instance.Toast("🚫 Motor Output Inhibit selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
+        }
+
+        private void UpdateFltModeChCardsUI(int fltCh)
+        {
+            bool isNone = (fltCh == 0);
+            bool isCh5 = (fltCh == 5);
+            bool isOther = (fltCh > 0 && fltCh != 5);
+
+            if (Card_FltModeCh_None != null)
+            {
+                Card_FltModeCh_None.BorderColor = isNone ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_FltModeCh_None.BackgroundColor = isNone ? global::Xamarin.Forms.Color.FromHex("#064E3B") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_FltModeCh_None != null) Badge_FltModeCh_None.IsVisible = isNone;
+            }
+            if (Card_FltModeCh_Ch5 != null)
+            {
+                Card_FltModeCh_Ch5.BorderColor = isCh5 ? global::Xamarin.Forms.Color.FromHex("#38BDF8") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_FltModeCh_Ch5.BackgroundColor = isCh5 ? global::Xamarin.Forms.Color.FromHex("#0C4A6E") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_FltModeCh_Ch5 != null) Badge_FltModeCh_Ch5.IsVisible = isCh5;
+            }
+            if (Card_FltModeCh_Other != null)
+            {
+                Card_FltModeCh_Other.BorderColor = isOther ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_FltModeCh_Other.BackgroundColor = isOther ? global::Xamarin.Forms.Color.FromHex("#451A03") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (LBL_fltmode_ch_other_val != null)
+                {
+                    LBL_fltmode_ch_other_val.Text = isOther ? $"Ch {fltCh} ●" : "Custom ▾";
+                    LBL_fltmode_ch_other_val.TextColor = isOther ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#64748B");
+                }
+            }
+        }
+
+        private void OnFltModeChCardNoneClicked(object sender, EventArgs e)
+        {
+            StageParamChange("FLTMODE_CH", 0f, "Flight Mode Channel: None (0)");
+            UpdateFltModeChCardsUI(0);
+            UserDialogs.Instance.Toast("🚫 Mode Channel None (0) selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
+        }
+
+        private void OnFltModeChCardCh5Clicked(object sender, EventArgs e)
+        {
+            StageParamChange("FLTMODE_CH", 5f, "Flight Mode Channel: Ch 5 (5)");
+            UpdateFltModeChCardsUI(5);
+            UserDialogs.Instance.Toast("🕹️ Channel 5 (5) selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
+        }
+
+        private async void OnFltModeChCardOtherClicked(object sender, EventArgs e)
+        {
+            string action = await DisplayActionSheet("Select Flight Mode Channel", "Cancel", null, "None (0) - Gamepad / StampFly", "Channel 5 (5) - Standard RC", "Channel 6 (6)", "Channel 7 (7)", "Channel 8 (8)");
+            if (string.IsNullOrEmpty(action) || action == "Cancel") return;
+
+            float val = 0;
+            if (action.StartsWith("None")) val = 0;
+            else if (action.Contains("5")) val = 5;
+            else if (action.Contains("6")) val = 6;
+            else if (action.Contains("7")) val = 7;
+            else if (action.Contains("8")) val = 8;
+
+            StageParamChange("FLTMODE_CH", val, $"Flight Mode Channel: {(val == 0 ? "None (0)" : $"Ch {val}")}");
+            UpdateFltModeChCardsUI((int)val);
+            UserDialogs.Instance.Toast($"🎛️ FLTMODE_CH = {val} selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
+        }
+
+        private void UpdateRangefinderAltitudeCardsUI(int posz, int surftrak, int rngType)
+        {
+            bool isRngPosZ = (posz == 2);
+            bool isBaroPosZ = (posz == 1);
+
+            if (Card_HgtSrc_Rangefinder != null)
+            {
+                Card_HgtSrc_Rangefinder.BorderColor = isRngPosZ ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_HgtSrc_Rangefinder.BackgroundColor = isRngPosZ ? global::Xamarin.Forms.Color.FromHex("#064E3B") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_HgtSrc_Rangefinder != null) Badge_HgtSrc_Rangefinder.IsVisible = isRngPosZ;
+            }
+            if (Card_HgtSrc_Baro != null)
+            {
+                Card_HgtSrc_Baro.BorderColor = isBaroPosZ ? global::Xamarin.Forms.Color.FromHex("#38BDF8") : global::Xamarin.Forms.Color.FromHex("#334155");
+                Card_HgtSrc_Baro.BackgroundColor = isBaroPosZ ? global::Xamarin.Forms.Color.FromHex("#0C4A6E") : global::Xamarin.Forms.Color.FromHex("#0F172A");
+                if (Badge_HgtSrc_Baro != null) Badge_HgtSrc_Baro.IsVisible = isBaroPosZ;
+            }
+
+            if (Btn_Surftrak_On != null && Btn_Surftrak_Off != null)
+            {
+                bool sOn = (surftrak == 1);
+                Btn_Surftrak_On.BackgroundColor = sOn ? global::Xamarin.Forms.Color.FromHex("#064E3B") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_Surftrak_On.TextColor = sOn ? global::Xamarin.Forms.Color.FromHex("#34D399") : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+                Btn_Surftrak_Off.BackgroundColor = !sOn ? global::Xamarin.Forms.Color.FromHex("#334155") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_Surftrak_Off.TextColor = !sOn ? global::Xamarin.Forms.Color.FromHex("#CBD5E1") : global::Xamarin.Forms.Color.FromHex("#64748B");
+            }
+
+            if (Btn_Rngfnd_Type_VL53 != null && Btn_Rngfnd_Type_Off != null)
+            {
+                bool rVL53 = (rngType == 49);
+                Btn_Rngfnd_Type_VL53.BackgroundColor = rVL53 ? global::Xamarin.Forms.Color.FromHex("#064E3B") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_Rngfnd_Type_VL53.TextColor = rVL53 ? global::Xamarin.Forms.Color.FromHex("#34D399") : global::Xamarin.Forms.Color.FromHex("#94A3B8");
+                Btn_Rngfnd_Type_Off.BackgroundColor = !rVL53 ? global::Xamarin.Forms.Color.FromHex("#334155") : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_Rngfnd_Type_Off.TextColor = !rVL53 ? global::Xamarin.Forms.Color.FromHex("#CBD5E1") : global::Xamarin.Forms.Color.FromHex("#64748B");
+            }
+        }
+
+        private void OnPresetStampflyTofClicked(object sender, EventArgs e)
+        {
+            StageParamChange("EK3_SRC1_POSZ", 2f, "Height Source: RangeFinder (2)");
+            StageParamChange("SURFTRAK_MODE", 1f, "Surface Tracking: RangeFinder (1)");
+            StageParamChange("RNGFND1_TYPE", 49f, "Downward ToF Driver: VL53L1/3 (49)");
+            UpdateRangefinderAltitudeCardsUI(2, 1, 49);
+            UserDialogs.Instance.Toast("✨ Preset: StampFly ToF AltHold selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(2));
+        }
+
+        private void OnPresetStandardBaroClicked(object sender, EventArgs e)
+        {
+            StageParamChange("EK3_SRC1_POSZ", 1f, "Height Source: Barometer (1)");
+            StageParamChange("SURFTRAK_MODE", 0f, "Surface Tracking: Disabled (0)");
+            int r = _pendingSafetyParams.ContainsKey("RNGFND1_TYPE") ? (int)Math.Round(_pendingSafetyParams["RNGFND1_TYPE"]) : (int)Math.Round(GetMAVParam("RNGFND1_TYPE", 0f));
+            UpdateRangefinderAltitudeCardsUI(1, 0, r);
+            UserDialogs.Instance.Toast("🎈 Preset: Standard Barometer selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(2));
+        }
+
+        private void OnHgtSrcRangefinderClicked(object sender, EventArgs e)
+        {
+            StageParamChange("EK3_SRC1_POSZ", 2f, "Height Source: RangeFinder (2)");
+            int s = _pendingSafetyParams.ContainsKey("SURFTRAK_MODE") ? (int)Math.Round(_pendingSafetyParams["SURFTRAK_MODE"]) : (int)Math.Round(GetMAVParam("SURFTRAK_MODE", 0f));
+            int r = _pendingSafetyParams.ContainsKey("RNGFND1_TYPE") ? (int)Math.Round(_pendingSafetyParams["RNGFND1_TYPE"]) : (int)Math.Round(GetMAVParam("RNGFND1_TYPE", 0f));
+            UpdateRangefinderAltitudeCardsUI(2, s, r);
+            UserDialogs.Instance.Toast("🎯 Height Source: RangeFinder (2) selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
+        }
+
+        private void OnHgtSrcBaroClicked(object sender, EventArgs e)
+        {
+            StageParamChange("EK3_SRC1_POSZ", 1f, "Height Source: Barometer (1)");
+            int s = _pendingSafetyParams.ContainsKey("SURFTRAK_MODE") ? (int)Math.Round(_pendingSafetyParams["SURFTRAK_MODE"]) : (int)Math.Round(GetMAVParam("SURFTRAK_MODE", 0f));
+            int r = _pendingSafetyParams.ContainsKey("RNGFND1_TYPE") ? (int)Math.Round(_pendingSafetyParams["RNGFND1_TYPE"]) : (int)Math.Round(GetMAVParam("RNGFND1_TYPE", 0f));
+            UpdateRangefinderAltitudeCardsUI(1, s, r);
+            UserDialogs.Instance.Toast("🎈 Height Source: Barometer (1) selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
+        }
+
+        private void OnSurftrakOnClicked(object sender, EventArgs e)
+        {
+            StageParamChange("SURFTRAK_MODE", 1f, "Surface Tracking: RangeFinder (1)");
+            int p = _pendingSafetyParams.ContainsKey("EK3_SRC1_POSZ") ? (int)Math.Round(_pendingSafetyParams["EK3_SRC1_POSZ"]) : (int)Math.Round(GetMAVParam("EK3_SRC1_POSZ", 1f));
+            int r = _pendingSafetyParams.ContainsKey("RNGFND1_TYPE") ? (int)Math.Round(_pendingSafetyParams["RNGFND1_TYPE"]) : (int)Math.Round(GetMAVParam("RNGFND1_TYPE", 0f));
+            UpdateRangefinderAltitudeCardsUI(p, 1, r);
+            UserDialogs.Instance.Toast("📏 Surface Tracking: ON (1) selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
+        }
+
+        private void OnSurftrakOffClicked(object sender, EventArgs e)
+        {
+            StageParamChange("SURFTRAK_MODE", 0f, "Surface Tracking: Disabled (0)");
+            int p = _pendingSafetyParams.ContainsKey("EK3_SRC1_POSZ") ? (int)Math.Round(_pendingSafetyParams["EK3_SRC1_POSZ"]) : (int)Math.Round(GetMAVParam("EK3_SRC1_POSZ", 1f));
+            int r = _pendingSafetyParams.ContainsKey("RNGFND1_TYPE") ? (int)Math.Round(_pendingSafetyParams["RNGFND1_TYPE"]) : (int)Math.Round(GetMAVParam("RNGFND1_TYPE", 0f));
+            UpdateRangefinderAltitudeCardsUI(p, 0, r);
+            UserDialogs.Instance.Toast("🚫 Surface Tracking: Disabled (0) selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
+        }
+
+        private void OnRngfndTypeVL53Clicked(object sender, EventArgs e)
+        {
+            StageParamChange("RNGFND1_TYPE", 49f, "Downward ToF Driver: VL53L1/3 (49)");
+            int p = _pendingSafetyParams.ContainsKey("EK3_SRC1_POSZ") ? (int)Math.Round(_pendingSafetyParams["EK3_SRC1_POSZ"]) : (int)Math.Round(GetMAVParam("EK3_SRC1_POSZ", 1f));
+            int s = _pendingSafetyParams.ContainsKey("SURFTRAK_MODE") ? (int)Math.Round(_pendingSafetyParams["SURFTRAK_MODE"]) : (int)Math.Round(GetMAVParam("SURFTRAK_MODE", 0f));
+            UpdateRangefinderAltitudeCardsUI(p, s, 49);
+            UserDialogs.Instance.Toast("📡 ToF Driver: VL53L1/3 (49) selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
+        }
+
+        private void OnRngfndTypeOffClicked(object sender, EventArgs e)
+        {
+            StageParamChange("RNGFND1_TYPE", 0f, "Downward ToF Driver: Disabled (0)");
+            int p = _pendingSafetyParams.ContainsKey("EK3_SRC1_POSZ") ? (int)Math.Round(_pendingSafetyParams["EK3_SRC1_POSZ"]) : (int)Math.Round(GetMAVParam("EK3_SRC1_POSZ", 1f));
+            int s = _pendingSafetyParams.ContainsKey("SURFTRAK_MODE") ? (int)Math.Round(_pendingSafetyParams["SURFTRAK_MODE"]) : (int)Math.Round(GetMAVParam("SURFTRAK_MODE", 0f));
+            UpdateRangefinderAltitudeCardsUI(p, s, 0);
+            UserDialogs.Instance.Toast("🚫 ToF Driver: Disabled (0) selected. Tap 'WRITE TO FC' to save.", TimeSpan.FromSeconds(1.5));
         }
 
         public void SetMotOutputDisState(bool inhibit)
@@ -7121,6 +7566,18 @@ namespace Xamarin
             UpdateRC7CardsUI(0);
         }
 
+        private void OnRC7CardSlowOnClicked(object sender, EventArgs e)
+        {
+            StageParamChange("RC7_OPTION", 190f, "Aux RC7: Slow On (190)");
+            UpdateRC7CardsUI(190);
+        }
+
+        private void OnRC7CardSlowOffClicked(object sender, EventArgs e)
+        {
+            StageParamChange("RC7_OPTION", 191f, "Aux RC7: Slow Off (191)");
+            UpdateRC7CardsUI(191);
+        }
+
         private void OnLowVoltPresetClicked(object sender, EventArgs e)
         {
             if (sender is global::Xamarin.Forms.Button btn && float.TryParse(btn.Text.Replace("V", "").Trim(), System.Globalization.NumberStyles.Any, System.Globalization.CultureInfo.InvariantCulture, out float v))
@@ -7194,6 +7651,85 @@ namespace Xamarin
                 HighlightPresetButton(Btn_Check_All, check != 0);
                 HighlightPresetButton(Btn_Check_Skip, check == 0);
             }
+        }
+
+        private void OnSlowPctPresetClicked(object sender, EventArgs e)
+        {
+            if (sender is global::Xamarin.Forms.Button btn)
+            {
+                float val = 20f;
+                if (btn == Btn_SlowPct_20) val = 20f;
+                else if (btn == Btn_SlowPct_25) val = 25f;
+                else if (btn == Btn_SlowPct_30) val = 30f;
+                else if (btn == Btn_SlowPct_35) val = 35f;
+                else if (btn == Btn_SlowPct_40) val = 40f;
+
+                SlowModePct = val;
+                global::Xamarin.Essentials.Preferences.Set("MP_SlowMode_Pct", val);
+                UpdateSlowModeUI();
+                UserDialogs.Instance.Toast($"🐢 Slow Mode Scale: {(int)val}%", TimeSpan.FromSeconds(1.2));
+            }
+        }
+
+        private void OnSlowModeStateToggleClicked(object sender, EventArgs e)
+        {
+            SetSlowMode(!IsSlowModeActive);
+        }
+
+        private void OnSlowPctStepClicked(object sender, EventArgs e)
+        {
+            if (sender is global::Xamarin.Forms.Button btn)
+            {
+                float step = (btn == Btn_SlowPct_Inc) ? 5f : -5f;
+                float newVal = Math.Max(20f, Math.Min(90f, SlowModePct + step));
+                SlowModePct = newVal;
+                global::Xamarin.Essentials.Preferences.Set("MP_SlowMode_Pct", newVal);
+                UpdateSlowModeUI();
+                UserDialogs.Instance.Toast($"🐢 Slow Mode Scale: {(int)newVal}%", TimeSpan.FromSeconds(1.2));
+            }
+        }
+
+        private void OnSlowAxisToggled(object sender, EventArgs e)
+        {
+            if (sender is global::Xamarin.Forms.Button btn)
+            {
+                int bit = 0;
+                if (btn == Btn_SlowAxis_Roll) bit = 1;
+                else if (btn == Btn_SlowAxis_Pitch) bit = 2;
+                else if (btn == Btn_SlowAxis_Yaw) bit = 4;
+                else if (btn == Btn_SlowAxis_Thr) bit = 8;
+
+                SlowModeAxes ^= bit;
+                global::Xamarin.Essentials.Preferences.Set("MP_SlowMode_Axes", SlowModeAxes);
+                UpdateSlowModeUI();
+                UserDialogs.Instance.Toast($"🐢 Slow Axes: {SlowModeAxes} ({GetAxesShortLabel(SlowModeAxes)})", TimeSpan.FromSeconds(1.2));
+            }
+        }
+
+        private void OnSlowAxesPresetClicked(object sender, EventArgs e)
+        {
+            if (sender is global::Xamarin.Forms.Button btn)
+            {
+                int mask = 7;
+                if (btn == Btn_SlowAxes_Preset_7) mask = 7;
+                else if (btn == Btn_SlowAxes_Preset_3) mask = 3;
+                else if (btn == Btn_SlowAxes_Preset_15) mask = 15;
+
+                SlowModeAxes = mask;
+                global::Xamarin.Essentials.Preferences.Set("MP_SlowMode_Axes", mask);
+                UpdateSlowModeUI();
+                UserDialogs.Instance.Toast($"🐢 Slow Axes: {mask} ({GetAxesShortLabel(mask)})", TimeSpan.FromSeconds(1.2));
+            }
+        }
+
+        private void OnResetSlowModeSettingsClicked(object sender, EventArgs e)
+        {
+            SlowModePct = 25f;
+            SlowModeAxes = 15;
+            global::Xamarin.Essentials.Preferences.Set("MP_SlowMode_Pct", SlowModePct);
+            global::Xamarin.Essentials.Preferences.Set("MP_SlowMode_Axes", SlowModeAxes);
+            UpdateSlowModeUI();
+            UserDialogs.Instance.Toast("🔄 Reset to Slow Mode Defaults (25%, Roll+Pitch+Yaw+Throttle)", TimeSpan.FromSeconds(1.5));
         }
 
         // 💾 FCへ変更されたパラメータだけを一括送信（送信中・完了ステータス通知付き）
@@ -7313,7 +7849,7 @@ namespace Xamarin
                     byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
 
                     var mav = MainV2.comPort.MAVlist?[sysid, compid];
-                    string[] safetyParams = new[] { "ARMING_RUDDER", "RC7_OPTION", "MOT_OUTPUT_DIS", "BATT_LOW_VOLT", "BATT_FS_LOW_ACT", "BATT_CRT_VOLT", "BATT_FS_CRT_ACT", "DISARM_DELAY", "ARMING_CHECK" };
+                    string[] safetyParams = new[] { "ARMING_RUDDER", "RC7_OPTION", "MOT_OUTPUT_DIS", "FLTMODE_CH", "EK3_SRC1_POSZ", "SURFTRAK_MODE", "RNGFND1_TYPE", "BATT_LOW_VOLT", "BATT_FS_LOW_ACT", "BATT_CRT_VOLT", "BATT_FS_CRT_ACT", "DISARM_DELAY", "ARMING_CHECK" };
 
                     // キャッシュに存在しないパラメータだけを特定
                     List<string> missingParams = new List<string>();

@@ -90,6 +90,17 @@
                             <Label Text="JOYSTICK" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
+
+                    <!-- Slow Mode Toggle / Status Pill -->
+                    <Frame x:Name="Frame_SlowMode_Pill" BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnSlowModeStateToggleClicked"/>
+                        </Frame.GestureRecognizers>
+                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                            <Label Text="🐢" FontSize="11" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_slow_mode_topbar" Text="SLOW: OFF" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </StackLayout>
+                    </Frame>
                 </StackLayout>
 
                 <!-- Center: Flight Mode & Telemetry Link -->
@@ -1611,10 +1622,10 @@
                                                        TextColor="#CBD5E1" FontSize="9"/>
                                             </Frame>
 
-                                            <!-- 3 Selection Cards for RC7_OPTION -->
-                                            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="6">
+                                            <!-- Selection Cards for RC7_OPTION -->
+                                            <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="*,*,*" RowSpacing="6" ColumnSpacing="6">
                                                 <!-- Card 188: Arm Only (High: Arm, Low: None) -->
-                                                <Frame x:Name="Card_RC7_Arm" Grid.Column="0" BackgroundColor="#0F172A" BorderColor="#10B981" Padding="6,6" CornerRadius="8" HasShadow="False">
+                                                <Frame x:Name="Card_RC7_Arm" Grid.Row="0" Grid.Column="0" BackgroundColor="#0F172A" BorderColor="#10B981" Padding="6,6" CornerRadius="8" HasShadow="False">
                                                     <Frame.GestureRecognizers>
                                                         <TapGestureRecognizer Tapped="OnRC7CardArmClicked"/>
                                                     </Frame.GestureRecognizers>
@@ -1632,7 +1643,7 @@
                                                 </Frame>
 
                                                 <!-- Card 81: Disarm Only (High: Disarm, Low: None) -->
-                                                <Frame x:Name="Card_RC7_Disarm" Grid.Column="1" BackgroundColor="#0F172A" BorderColor="#334155" Padding="6,6" CornerRadius="8" HasShadow="False">
+                                                <Frame x:Name="Card_RC7_Disarm" Grid.Row="0" Grid.Column="1" BackgroundColor="#0F172A" BorderColor="#334155" Padding="6,6" CornerRadius="8" HasShadow="False">
                                                     <Frame.GestureRecognizers>
                                                         <TapGestureRecognizer Tapped="OnRC7CardDisarmClicked"/>
                                                     </Frame.GestureRecognizers>
@@ -1647,7 +1658,7 @@
                                                 </Frame>
 
                                                 <!-- Card 0: Disabled -->
-                                                <Frame x:Name="Card_RC7_Disabled" Grid.Column="2" BackgroundColor="#0F172A" BorderColor="#334155" Padding="6,6" CornerRadius="8" HasShadow="False">
+                                                <Frame x:Name="Card_RC7_Disabled" Grid.Row="0" Grid.Column="2" BackgroundColor="#0F172A" BorderColor="#334155" Padding="6,6" CornerRadius="8" HasShadow="False">
                                                     <Frame.GestureRecognizers>
                                                         <TapGestureRecognizer Tapped="OnRC7CardDisabledClicked"/>
                                                     </Frame.GestureRecognizers>
@@ -1660,7 +1671,105 @@
                                                                TextColor="#94A3B8" FontSize="8"/>
                                                     </StackLayout>
                                                 </Frame>
+
+                                                <!-- Card 190: Slow Mode On (Button) [FOR STAMPFLY] -->
+                                                <Frame x:Name="Card_RC7_SlowOn" Grid.Row="1" Grid.Column="0" BackgroundColor="#0F172A" BorderColor="#334155" Padding="6,6" CornerRadius="8" HasShadow="False">
+                                                    <Frame.GestureRecognizers>
+                                                        <TapGestureRecognizer Tapped="OnRC7CardSlowOnClicked"/>
+                                                    </Frame.GestureRecognizers>
+                                                    <StackLayout Spacing="3">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="🐢 Slow On (190)" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                                            <Label x:Name="Badge_RC7_SlowOn" Grid.Column="1" Text="● ACTIVE" TextColor="#10B981" FontSize="7" FontAttributes="Bold" IsVisible="False"/>
+                                                        </Grid>
+                                                        <Frame BackgroundColor="#10B98122" BorderColor="#10B981" Padding="3,1" CornerRadius="3" HasShadow="False" HorizontalOptions="Start">
+                                                            <Label Text="FOR STAMPFLY" TextColor="#10B981" FontSize="7" FontAttributes="Bold"/>
+                                                        </Frame>
+                                                        <Label Text="High: Slow Mode ON. Latch mode for push button."
+                                                               TextColor="#94A3B8" FontSize="8"/>
+                                                    </StackLayout>
+                                                </Frame>
+
+                                                <!-- Card 191: Slow Mode Off (Button) [FOR STAMPFLY] -->
+                                                <Frame x:Name="Card_RC7_SlowOff" Grid.Row="1" Grid.Column="1" BackgroundColor="#0F172A" BorderColor="#334155" Padding="6,6" CornerRadius="8" HasShadow="False">
+                                                    <Frame.GestureRecognizers>
+                                                        <TapGestureRecognizer Tapped="OnRC7CardSlowOffClicked"/>
+                                                    </Frame.GestureRecognizers>
+                                                    <StackLayout Spacing="3">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="🚀 Slow Off (191)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                            <Label x:Name="Badge_RC7_SlowOff" Grid.Column="1" Text="● ACTIVE" TextColor="#38BDF8" FontSize="7" FontAttributes="Bold" IsVisible="False"/>
+                                                        </Grid>
+                                                        <Frame BackgroundColor="#0284C722" BorderColor="#0284C7" Padding="3,1" CornerRadius="3" HasShadow="False" HorizontalOptions="Start">
+                                                            <Label Text="NORMAL MODE" TextColor="#38BDF8" FontSize="7" FontAttributes="Bold"/>
+                                                        </Frame>
+                                                        <Label Text="High: Normal Mode. Return to full speed."
+                                                               TextColor="#94A3B8" FontSize="8"/>
+                                                    </StackLayout>
+                                                </Frame>
                                             </Grid>
+                                        </StackLayout>
+                                    </Frame>
+
+                                    <!-- 1B2. Slow Mode Tuning (App-side Stick Scaling) -->
+                                    <Frame BackgroundColor="#1E293B" BorderColor="#334155" Padding="10,8" CornerRadius="8" HasShadow="False">
+                                        <StackLayout Spacing="6">
+                                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6" VerticalOptions="Center">
+                                                <StackLayout Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                    <Label Text="🐢" FontSize="14" VerticalOptions="Center"/>
+                                                    <Label Text="Slow Mode Tuning" TextColor="#10B981" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                    <Label Text="(App Stick Scale)" TextColor="#64748B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                </StackLayout>
+                                                <Button x:Name="Btn_SlowMode_StateToggle" Grid.Column="1" Text="🐢 SLOW: OFF" FontSize="9" FontAttributes="Bold"
+                                                        BackgroundColor="#334155" TextColor="#94A3B8" CornerRadius="4" HeightRequest="26" Padding="8,0"
+                                                        Clicked="OnSlowModeStateToggleClicked"/>
+                                                <Button Grid.Column="2" Text="🔄 RESET" FontSize="9" FontAttributes="Bold"
+                                                        BackgroundColor="#1E293B" TextColor="#94A3B8" CornerRadius="4" HeightRequest="26" Padding="8,0"
+                                                        Clicked="OnResetSlowModeSettingsClicked"/>
+                                                <Label x:Name="LBL_slow_mode_fc_val" Grid.Column="3" Text="MP: 25% (R/P/Y) [OFF]" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            </Grid>
+
+                                            <!-- Row 1: Stick Deflection Scale (SlowModePct) -->
+                                            <Frame BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                                <StackLayout Spacing="4">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <Label Text="Stick Scale Percentage (SlowModePct)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                        <Label x:Name="LBL_slow_pct_current" Grid.Column="1" Text="25%" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                                    </Grid>
+                                                    <Label Text="Stick deflection scale in percent (20% - 90%). Lower is slower and easier indoors:" TextColor="#64748B" FontSize="8"/>
+                                                    <Grid ColumnDefinitions="Auto,*,*,*,*,*,Auto" ColumnSpacing="4">
+                                                        <Button x:Name="Btn_SlowPct_Dec" Grid.Column="0" Text="➖ 5%" FontSize="9" HeightRequest="26" Padding="6,0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSlowPctStepClicked"/>
+                                                        <Button x:Name="Btn_SlowPct_20" Grid.Column="1" Text="20% (Min)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSlowPctPresetClicked"/>
+                                                        <Button x:Name="Btn_SlowPct_25" Grid.Column="2" Text="25% (Def)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSlowPctPresetClicked"/>
+                                                        <Button x:Name="Btn_SlowPct_30" Grid.Column="3" Text="30%" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSlowPctPresetClicked"/>
+                                                        <Button x:Name="Btn_SlowPct_35" Grid.Column="4" Text="35%" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSlowPctPresetClicked"/>
+                                                        <Button x:Name="Btn_SlowPct_40" Grid.Column="5" Text="40%" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSlowPctPresetClicked"/>
+                                                        <Button x:Name="Btn_SlowPct_Inc" Grid.Column="6" Text="➕ 5%" FontSize="9" HeightRequest="26" Padding="6,0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSlowPctStepClicked"/>
+                                                    </Grid>
+                                                </StackLayout>
+                                            </Frame>
+
+                                            <!-- Row 2: Target Control Axes (SlowModeAxes) -->
+                                            <Frame BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                                <StackLayout Spacing="4">
+                                                    <Grid ColumnDefinitions="*,Auto">
+                                                        <Label Text="Scaled Control Axes (SlowModeAxes)" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                        <Label x:Name="LBL_slow_axes_current" Grid.Column="1" Text="Bitmask: 7" TextColor="#10B981" FontSize="10" FontAttributes="Bold"/>
+                                                    </Grid>
+                                                    <Label Text="Tap axis to toggle scaling. Throttle is normally excluded for safe altitude hold:" TextColor="#64748B" FontSize="8"/>
+                                                    <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="4">
+                                                        <Button x:Name="Btn_SlowAxis_Roll" Grid.Column="0" Text="Roll (1)" FontSize="9" FontAttributes="Bold" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#10B981" TextColor="#FFFFFF" Clicked="OnSlowAxisToggled"/>
+                                                        <Button x:Name="Btn_SlowAxis_Pitch" Grid.Column="1" Text="Pitch (2)" FontSize="9" FontAttributes="Bold" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#10B981" TextColor="#FFFFFF" Clicked="OnSlowAxisToggled"/>
+                                                        <Button x:Name="Btn_SlowAxis_Yaw" Grid.Column="2" Text="Yaw (4)" FontSize="9" FontAttributes="Bold" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#10B981" TextColor="#FFFFFF" Clicked="OnSlowAxisToggled"/>
+                                                        <Button x:Name="Btn_SlowAxis_Thr" Grid.Column="3" Text="Throttle (8)" FontSize="9" FontAttributes="Bold" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSlowAxisToggled"/>
+                                                    </Grid>
+                                                    <Grid ColumnDefinitions="*,*,*" ColumnSpacing="4" Margin="0,2,0,0">
+                                                        <Button x:Name="Btn_SlowAxes_Preset_7" Grid.Column="0" Text="⭐ Roll+Pitch+Yaw (7)" FontSize="8" HeightRequest="22" Padding="0" CornerRadius="3" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSlowAxesPresetClicked"/>
+                                                        <Button x:Name="Btn_SlowAxes_Preset_3" Grid.Column="1" Text="Roll+Pitch Only (3)" FontSize="8" HeightRequest="22" Padding="0" CornerRadius="3" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSlowAxesPresetClicked"/>
+                                                        <Button x:Name="Btn_SlowAxes_Preset_15" Grid.Column="2" Text="All 4 Axes (15)" FontSize="8" HeightRequest="22" Padding="0" CornerRadius="3" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSlowAxesPresetClicked"/>
+                                                    </Grid>
+                                                </StackLayout>
+                                            </Frame>
                                         </StackLayout>
                                     </Frame>
 
@@ -1723,7 +1832,189 @@
                                         </StackLayout>
                                     </Frame>
 
-                                    <!-- 2. Battery Failsafe & Thresholds Section -->
+                                    <!-- 1D. Flight Mode Switch Channel (FLTMODE_CH) Section -->
+                                    <Frame BackgroundColor="#1E293B" BorderColor="#334155" Padding="10,8" CornerRadius="8" HasShadow="False">
+                                        <StackLayout Spacing="6">
+                                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6" VerticalOptions="Center">
+                                                <StackLayout Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                    <Label Text="🕹️" FontSize="14" VerticalOptions="Center"/>
+                                                    <Label Text="Flight Mode Channel" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                    <Label Text="(FLTMODE_CH)" TextColor="#64748B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                </StackLayout>
+                                                <Button Grid.Column="1" Text="💾 WRITE" FontSize="9" FontAttributes="Bold"
+                                                        BackgroundColor="#334155" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="26" Padding="8,0"
+                                                        Clicked="OnWriteArmingParamsClicked"/>
+                                                <Button Grid.Column="2" Text="🔄 REFRESH" FontSize="9" FontAttributes="Bold"
+                                                        BackgroundColor="#0284C7" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="26" Padding="8,0"
+                                                        Clicked="OnRefreshArmingParamsClicked"/>
+                                                <Label x:Name="LBL_fltmode_ch_fc_val" Grid.Column="3" Text="FC: Channel 5 (5)" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            </Grid>
+
+                                            <!-- Info Banner -->
+                                            <Frame BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                                <Label Text="💡 Gamepads &amp; Push Buttons: Without latching physical switches, set to &quot;None (0)&quot; so modes (e.g. AltHold) remain active when releasing the button, preventing forced revert to Stabilize."
+                                                       TextColor="#CBD5E1" FontSize="9"/>
+                                            </Frame>
+
+                                            <!-- Selection Cards -->
+                                            <Grid ColumnDefinitions="*,*,Auto" ColumnSpacing="6">
+                                                <!-- Card 0: None (0) [RECOMMENDED FOR GAMEPAD] -->
+                                                <Frame x:Name="Card_FltModeCh_None" Grid.Column="0" BackgroundColor="#0F172A" BorderColor="#10B981" Padding="8,8" CornerRadius="8" HasShadow="False">
+                                                    <Frame.GestureRecognizers>
+                                                        <TapGestureRecognizer Tapped="OnFltModeChCardNoneClicked"/>
+                                                    </Frame.GestureRecognizers>
+                                                    <StackLayout Spacing="3">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="🚫 None (0)" TextColor="#10B981" FontSize="11" FontAttributes="Bold"/>
+                                                            <Label x:Name="Badge_FltModeCh_None" Grid.Column="1" Text="● ACTIVE" TextColor="#10B981" FontSize="8" FontAttributes="Bold" IsVisible="False"/>
+                                                        </Grid>
+                                                        <Frame BackgroundColor="#064E3B" BorderColor="#059669" Padding="4,1" CornerRadius="4" HorizontalOptions="Start" HasShadow="False">
+                                                            <Label Text="FOR GAMEPAD / STAMPFLY" TextColor="#34D399" FontSize="7" FontAttributes="Bold"/>
+                                                        </Frame>
+                                                        <Label Text="Mode channel disabled. Prevents auto-revert to Stabilize on button release."
+                                                               TextColor="#94A3B8" FontSize="8"/>
+                                                    </StackLayout>
+                                                </Frame>
+
+                                                <!-- Card 1: Channel 5 (5) [DEFAULT RC] -->
+                                                <Frame x:Name="Card_FltModeCh_Ch5" Grid.Column="1" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,8" CornerRadius="8" HasShadow="False">
+                                                    <Frame.GestureRecognizers>
+                                                        <TapGestureRecognizer Tapped="OnFltModeChCardCh5Clicked"/>
+                                                    </Frame.GestureRecognizers>
+                                                    <StackLayout Spacing="3">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="🕹️ Channel 5 (5)" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold"/>
+                                                            <Label x:Name="Badge_FltModeCh_Ch5" Grid.Column="1" Text="● ACTIVE" TextColor="#38BDF8" FontSize="8" FontAttributes="Bold" IsVisible="False"/>
+                                                        </Grid>
+                                                        <Frame BackgroundColor="#1E293B" BorderColor="#475569" Padding="4,1" CornerRadius="4" HorizontalOptions="Start" HasShadow="False">
+                                                            <Label Text="DEFAULT RC TRANSMITTER" TextColor="#94A3B8" FontSize="7" FontAttributes="Bold"/>
+                                                        </Frame>
+                                                        <Label Text="Standard RC 6-pos switch. Reverts to Ch5 mode when aux switch is off."
+                                                               TextColor="#94A3B8" FontSize="8"/>
+                                                    </StackLayout>
+                                                </Frame>
+
+                                                <!-- Card 2: Other Channels (6, 7, 8) -->
+                                                <Frame x:Name="Card_FltModeCh_Other" Grid.Column="2" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,8" CornerRadius="8" HasShadow="False" WidthRequest="95">
+                                                    <Frame.GestureRecognizers>
+                                                        <TapGestureRecognizer Tapped="OnFltModeChCardOtherClicked"/>
+                                                    </Frame.GestureRecognizers>
+                                                    <StackLayout Spacing="3" VerticalOptions="Center">
+                                                        <Label Text="🎛️ Ch 6..8" TextColor="#94A3B8" FontSize="10" FontAttributes="Bold" HorizontalOptions="Center"/>
+                                                        <Label x:Name="LBL_fltmode_ch_other_val" Text="Custom ▾" TextColor="#64748B" FontSize="8" HorizontalOptions="Center"/>
+                                                    </StackLayout>
+                                                </Frame>
+                                            </Grid>
+                                        </StackLayout>
+                                    </Frame>
+
+                                    <!-- 1E. RangeFinder &amp; Altitude Control Section -->
+                                    <Frame BackgroundColor="#1E293B" BorderColor="#334155" Padding="10,8" CornerRadius="8" HasShadow="False">
+                                        <StackLayout Spacing="6">
+                                            <!-- Section Header -->
+                                            <Grid ColumnDefinitions="*,Auto,Auto,Auto" ColumnSpacing="6" VerticalOptions="Center">
+                                                <StackLayout Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                                                    <Label Text="📏" FontSize="14" VerticalOptions="Center"/>
+                                                    <Label Text="RangeFinder &amp; Altitude" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                    <Label Text="(EK3_SRC1_POSZ, SURFTRAK)" TextColor="#64748B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                                </StackLayout>
+                                                <Button Grid.Column="1" Text="💾 WRITE" FontSize="9" FontAttributes="Bold"
+                                                        BackgroundColor="#334155" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="26" Padding="8,0"
+                                                        Clicked="OnWriteArmingParamsClicked"/>
+                                                <Button Grid.Column="2" Text="🔄 REFRESH" FontSize="9" FontAttributes="Bold"
+                                                        BackgroundColor="#0284C7" TextColor="#FFFFFF" CornerRadius="4" HeightRequest="26" Padding="8,0"
+                                                        Clicked="OnRefreshArmingParamsClicked"/>
+                                                <Label x:Name="LBL_rngfnd_alt_fc_summary" Grid.Column="3" Text="FC: RangeFinder (2)" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                                            </Grid>
+
+                                            <!-- Quick Presets Row -->
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                                                <Button Text="✨ Preset: StampFly ToF AltHold" FontSize="10" FontAttributes="Bold"
+                                                        BackgroundColor="#065F46" TextColor="#34D399" CornerRadius="6" HeightRequest="30" Padding="8,0"
+                                                        Clicked="OnPresetStampflyTofClicked"/>
+                                                <Button Grid.Column="1" Text="🎈 Preset: Standard Barometer" FontSize="10" FontAttributes="Bold"
+                                                        BackgroundColor="#1E293B" TextColor="#94A3B8" CornerRadius="6" HeightRequest="30" Padding="8,0"
+                                                        Clicked="OnPresetStandardBaroClicked"/>
+                                            </Grid>
+
+                                            <!-- Row 1: EKF3 Primary Height Source (EK3_SRC1_POSZ) -->
+                                            <StackLayout Spacing="3">
+                                                <Label Text="EKF3 Primary Height Source (EK3_SRC1_POSZ):" TextColor="#CBD5E1" FontSize="10" FontAttributes="Bold"/>
+                                                <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                                                    <!-- Card 0: RangeFinder (2) [RECOMMENDED] -->
+                                                    <Frame x:Name="Card_HgtSrc_Rangefinder" Grid.Column="0" BackgroundColor="#0F172A" BorderColor="#10B981" Padding="8,8" CornerRadius="8" HasShadow="False">
+                                                        <Frame.GestureRecognizers>
+                                                            <TapGestureRecognizer Tapped="OnHgtSrcRangefinderClicked"/>
+                                                        </Frame.GestureRecognizers>
+                                                        <StackLayout Spacing="3">
+                                                            <Grid ColumnDefinitions="*,Auto">
+                                                                <Label Text="🎯 RangeFinder (2)" TextColor="#10B981" FontSize="11" FontAttributes="Bold"/>
+                                                                <Label x:Name="Badge_HgtSrc_Rangefinder" Grid.Column="1" Text="● ACTIVE" TextColor="#10B981" FontSize="8" FontAttributes="Bold" IsVisible="False"/>
+                                                            </Grid>
+                                                            <Frame BackgroundColor="#064E3B" BorderColor="#059669" Padding="4,1" CornerRadius="4" HorizontalOptions="Start" HasShadow="False">
+                                                                <Label Text="RECOMMENDED FOR STAMPFLY / INDOOR" TextColor="#34D399" FontSize="7" FontAttributes="Bold"/>
+                                                            </Frame>
+                                                            <Label Text="Direct ToF floor sensing. Immune to prop wash &amp; AC drafts. Pinpoint stable hover."
+                                                                   TextColor="#94A3B8" FontSize="8"/>
+                                                        </StackLayout>
+                                                    </Frame>
+
+                                                    <!-- Card 1: Barometer (1) [OUTDOOR] -->
+                                                    <Frame x:Name="Card_HgtSrc_Baro" Grid.Column="1" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,8" CornerRadius="8" HasShadow="False">
+                                                        <Frame.GestureRecognizers>
+                                                            <TapGestureRecognizer Tapped="OnHgtSrcBaroClicked"/>
+                                                        </Frame.GestureRecognizers>
+                                                        <StackLayout Spacing="3">
+                                                            <Grid ColumnDefinitions="*,Auto">
+                                                                <Label Text="🎈 Barometer (1)" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold"/>
+                                                                <Label x:Name="Badge_HgtSrc_Baro" Grid.Column="1" Text="● ACTIVE" TextColor="#38BDF8" FontSize="8" FontAttributes="Bold" IsVisible="False"/>
+                                                            </Grid>
+                                                            <Frame BackgroundColor="#1E293B" BorderColor="#475569" Padding="4,1" CornerRadius="4" HorizontalOptions="Start" HasShadow="False">
+                                                                <Label Text="STANDARD RC / OUTDOOR" TextColor="#94A3B8" FontSize="7" FontAttributes="Bold"/>
+                                                            </Frame>
+                                                            <Label Text="Uses onboard air pressure sensor. Standard for outdoor flight above 3m."
+                                                                   TextColor="#94A3B8" FontSize="8"/>
+                                                        </StackLayout>
+                                                    </Frame>
+                                                </Grid>
+                                            </StackLayout>
+
+                                            <!-- Row 2: Surface Tracking &amp; Rangefinder Driver -->
+                                            <Grid ColumnDefinitions="*,*" ColumnSpacing="6">
+                                                <!-- Surface Tracking (SURFTRAK_MODE) -->
+                                                <Frame Grid.Column="0" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                                    <StackLayout Spacing="3">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="Surface Tracking (SURFTRAK_MODE)" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"/>
+                                                            <Label x:Name="LBL_surftrak_fc_val" Grid.Column="1" Text="1" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                        </Grid>
+                                                        <Label Text="Floor distance following in AltHold:" TextColor="#64748B" FontSize="8"/>
+                                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                                            <Button x:Name="Btn_Surftrak_On" Grid.Column="0" Text="📏 RangeFinder (1)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#064E3B" TextColor="#34D399" Clicked="OnSurftrakOnClicked"/>
+                                                            <Button x:Name="Btn_Surftrak_Off" Grid.Column="1" Text="🚫 Disabled (0)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnSurftrakOffClicked"/>
+                                                        </Grid>
+                                                    </StackLayout>
+                                                </Frame>
+
+                                                <!-- Rangefinder 1 Type (RNGFND1_TYPE) -->
+                                                <Frame Grid.Column="1" BackgroundColor="#0F172A" BorderColor="#334155" Padding="8,6" CornerRadius="6" HasShadow="False">
+                                                    <StackLayout Spacing="3">
+                                                        <Grid ColumnDefinitions="*,Auto">
+                                                            <Label Text="Downward ToF Driver (RNGFND1_TYPE)" TextColor="#F59E0B" FontSize="10" FontAttributes="Bold"/>
+                                                            <Label x:Name="LBL_rngfnd1_type_fc_val" Grid.Column="1" Text="49" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold"/>
+                                                        </Grid>
+                                                        <Label Text="Hardware sensor driver setting:" TextColor="#64748B" FontSize="8"/>
+                                                        <Grid ColumnDefinitions="*,*" ColumnSpacing="4">
+                                                            <Button x:Name="Btn_Rngfnd_Type_VL53" Grid.Column="0" Text="📡 VL53L1/3 (49)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#064E3B" TextColor="#34D399" Clicked="OnRngfndTypeVL53Clicked"/>
+                                                            <Button x:Name="Btn_Rngfnd_Type_Off" Grid.Column="1" Text="🚫 Disabled (0)" FontSize="9" HeightRequest="26" Padding="0" CornerRadius="4" BackgroundColor="#1E293B" TextColor="#94A3B8" Clicked="OnRngfndTypeOffClicked"/>
+                                                        </Grid>
+                                                    </StackLayout>
+                                                </Frame>
+                                            </Grid>
+                                        </StackLayout>
+                                    </Frame>
+
+                                    <!-- 2. Battery Failsafe &amp; Thresholds Section -->
                                     <Frame BackgroundColor="#1E293B" BorderColor="#334155" Padding="10,8" CornerRadius="8" HasShadow="False">
                                         <StackLayout Spacing="6">
                                             <Grid ColumnDefinitions="*,Auto,Auto" ColumnSpacing="6" VerticalOptions="Center">
