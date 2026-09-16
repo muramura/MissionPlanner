@@ -364,7 +364,7 @@ namespace Xamarin
             string srcInfo = string.IsNullOrEmpty(triggerSource) ? "" : $" ({triggerSource})";
             if (active)
             {
-                ShowButtonActionToast($"🐢 Slow Mode ON: {(int)SlowModePct}% [R/P/Y]{srcInfo}", "#10B981");
+                ShowButtonActionToast($"🐢 Slow Mode ON: {(int)SlowModePct}% [{GetAxesShortLabel(SlowModeAxes)}]{srcInfo}", "#10B981");
                 TriggerHapticForChoice(Config_Pattern_Arm);
             }
             else
@@ -4764,19 +4764,30 @@ namespace Xamarin
                 LoadArmingSafetyParameters();
                 UpdateAllButtonActionUI();
 
-                // キャッシュ全件が空なら取得トリガー
-                var sysid = MainV2.comPort?.MAV?.sysid ?? 1;
-                var compid = MainV2.comPort?.MAV?.compid ?? 1;
-                var paramDict = MainV2.comPort?.MAVlist[sysid, compid]?.param;
-                if (paramDict == null || paramDict.Count == 0)
+                // TASK-004: Pinpoint query for RC option parameters instead of bulk getParamList
+                if (MainV2.comPort != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
                 {
-                    if (MainV2.comPort != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
+                    byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                    byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+
+                    Task.Run(async () =>
                     {
-                        Task.Run(() =>
+                        for (int ch = 5; ch <= 12; ch++)
                         {
-                            try { MainV2.comPort.getParamList(); } catch { }
+                            try
+                            {
+                                await MainV2.comPort.GetParamAsync(sysid, compid, $"RC{ch}_OPTION", -1, false);
+                                await Task.Delay(25);
+                            }
+                            catch { }
+                        }
+                        await Task.Delay(100);
+                        Device.BeginInvokeOnMainThread(() =>
+                        {
+                            LoadRCOptionsFromCache();
+                            UpdateAllButtonActionUI();
                         });
-                    }
+                    });
                 }
             }
             catch (Exception ex)
@@ -6418,15 +6429,30 @@ namespace Xamarin
         {
             try
             {
-                var mav = MainV2.comPort?.MAV;
-                if (mav == null || mav.param == null || mav.param.Count == 0)
+                // TASK-004: Pinpoint query for COMPASS_ENABLE instead of bulk getParamList
+                if (MainV2.comPort != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
                 {
-                    _ = Task.Run(() =>
+                    byte sysid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.sysid > 0) ? MainV2.comPort.MAV.sysid : (MainV2.comPort.sysidcurrent > 0 ? MainV2.comPort.sysidcurrent : 1));
+                    byte compid = (byte)((MainV2.comPort.MAV != null && MainV2.comPort.MAV.compid > 0) ? MainV2.comPort.MAV.compid : (MainV2.comPort.compidcurrent > 0 ? MainV2.comPort.compidcurrent : 1));
+
+                    Task.Run(async () =>
                     {
-                        try { MainV2.comPort.getParamList(); } catch { }
+                        try
+                        {
+                            await MainV2.comPort.GetParamAsync(sysid, compid, "COMPASS_ENABLE", -1, false);
+                        }
+                        catch { }
+                        await Task.Delay(80);
+                        Device.BeginInvokeOnMainThread(() =>
+                        {
+                            LoadCompassParameters();
+                        });
                     });
                 }
-                LoadCompassParameters();
+                else
+                {
+                    LoadCompassParameters();
+                }
             }
             catch (Exception ex)
             {

@@ -105,12 +105,7 @@ namespace Xamarin
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 1);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, 1);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA3, 4);
-
-                            // Populate parameter cache in background upon connection
-                            _ = Task.Run(() =>
-                            {
-                                try { MainV2.comPort.getParamList(); } catch { }
-                            });
+                            // TASK-004: Eliminated bulk getParamList() upon connection to avoid FC CPU slowdown (Main loop slow)
                         }
                         catch { }
                     }
