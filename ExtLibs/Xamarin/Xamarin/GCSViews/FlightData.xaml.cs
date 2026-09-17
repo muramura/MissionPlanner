@@ -556,20 +556,7 @@ namespace Xamarin
                     if (ch == 1 && (SlowModeAxes & 1) != 0) applySlow = true;
                     else if (ch == 2 && (SlowModeAxes & 2) != 0) applySlow = true;
                     else if (ch == 4 && (SlowModeAxes & 4) != 0) applySlow = true;
-                    else if (ch == 3 && (SlowModeAxes & 8) != 0)
-                    {
-                        bool isArmed = (MainV2.comPort != null && MainV2.comPort.MAV != null && MainV2.comPort.MAV.cs != null && MainV2.comPort.MAV.cs.armed);
-                        // 🛡️ アーム前(Disarmed)はアームチェック通過のためスロー適用外(1000µs)。
-                        // 飛行中(Armed)はスティック最下端でも急降下させず、設定されたスロー率で穏やかに下降させる。
-                        if (!isArmed)
-                        {
-                            applySlow = false;
-                        }
-                        else
-                        {
-                            applySlow = true;
-                        }
-                    }
+                    else if (ch == 3 && (SlowModeAxes & 8) != 0) applySlow = true;
 
                     if (applySlow)
                     {
@@ -695,9 +682,10 @@ namespace Xamarin
                 hud1.hudcolor = Color.FromName(Settings.Instance["hudcolor"]);
             }
 
-            // 🎮 保存されたジョイスティック設定を起動時に自動読み込み
+            // 🎮 保存されたジョイスティック設定・スローモード設定を起動時に自動読み込み
             LoadJoystickSettings();
             LoadVibeSettings();
+            LoadSlowModeSettings();
 
             List<string> list = new List<string>();
 
@@ -7072,14 +7060,15 @@ namespace Xamarin
 
         public void LoadSlowModeSettings()
         {
-            SlowModePct = global::Xamarin.Essentials.Preferences.Get("MP_SlowMode_Pct", 20f);
+            SlowModePct = global::Xamarin.Essentials.Preferences.Get("MP_SlowMode_Pct", 25f);
             if (SlowModePct < 20f)
             {
-                SlowModePct = 20f;
+                SlowModePct = 25f;
                 global::Xamarin.Essentials.Preferences.Set("MP_SlowMode_Pct", SlowModePct);
             }
             SlowModeAxes = global::Xamarin.Essentials.Preferences.Get("MP_SlowMode_Axes", 15);
-            if (SlowModeAxes == 7) // 旧デフォルト(R/P/Yのみ)からの自動更新
+            // 🐢 スロットル(ビット8)が含まれていない場合、または旧デフォルト(7)の場合は15(全4軸: R/P/Y/T)に自動更新
+            if ((SlowModeAxes & 8) == 0 || SlowModeAxes == 7)
             {
                 SlowModeAxes = 15;
                 global::Xamarin.Essentials.Preferences.Set("MP_SlowMode_Axes", SlowModeAxes);
