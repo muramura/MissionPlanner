@@ -7924,11 +7924,12 @@ namespace Xamarin
                 bool isEnabled = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_ENABLED, true);
                 bool isMinimized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MINIMIZED, false);
                 bool isMaximized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MAXIMIZED, true);
-                bool isFront = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FACING_FRONT, false);
+                // 機体追尾・撮影用のため、常に背面カメラを使用
+                Xamarin.Essentials.Preferences.Set(PREF_CAMERA_FACING_FRONT, false);
 
                 if (CameraPreviewControl != null)
                 {
-                    CameraPreviewControl.CameraFacing = isFront ? MissionPlanner.Controls.CameraFacingOption.Front : MissionPlanner.Controls.CameraFacingOption.Back;
+                    CameraPreviewControl.CameraFacing = MissionPlanner.Controls.CameraFacingOption.Back;
                     CameraPreviewControl.IsCameraActive = isEnabled;
                     CameraPreviewControl.RecordingFinished += (s, filePath) =>
                     {
