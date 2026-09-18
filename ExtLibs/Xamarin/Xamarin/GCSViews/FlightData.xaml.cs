@@ -3027,6 +3027,7 @@ namespace Xamarin
             View_QuickTab.IsVisible = true;
             View_ActionsTab.IsVisible = false;
             View_StatusTab.IsVisible = false;
+            if (Frame_HUD != null) Frame_HUD.IsVisible = true;
 
             Btn_Tab_Quick.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#2563EB");
             Btn_Tab_Quick.TextColor = global::Xamarin.Forms.Color.White;
@@ -3041,6 +3042,7 @@ namespace Xamarin
             View_QuickTab.IsVisible = false;
             View_ActionsTab.IsVisible = true;
             View_StatusTab.IsVisible = false;
+            if (Frame_HUD != null) Frame_HUD.IsVisible = false;
 
             Btn_Tab_Quick.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
             Btn_Tab_Quick.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
@@ -3055,6 +3057,7 @@ namespace Xamarin
             View_QuickTab.IsVisible = false;
             View_ActionsTab.IsVisible = false;
             View_StatusTab.IsVisible = true;
+            if (Frame_HUD != null) Frame_HUD.IsVisible = false;
 
             Btn_Tab_Quick.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
             Btn_Tab_Quick.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
