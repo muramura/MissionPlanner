@@ -54,8 +54,15 @@ namespace MissionPlanner.Droid
         {
             base.OnElementChanged(e);
 
+            if (e.OldElement != null)
+            {
+                e.OldElement.CapturePhotoRequested -= OnCapturePhotoRequested;
+            }
+
             if (e.NewElement != null)
             {
+                e.NewElement.CapturePhotoRequested += OnCapturePhotoRequested;
+
                 if (Control == null)
                 {
                     InitializeNativeViews();
@@ -64,6 +71,69 @@ namespace MissionPlanner.Droid
 
                 UpdateCameraState();
             }
+        }
+
+        private void OnCapturePhotoRequested(object sender, EventArgs e)
+        {
+            if (_textureView == null || !_textureView.IsAvailable)
+            {
+                AndroidLog.Warn("CameraPreviewRenderer", "TextureView not available for photo capture.");
+                return;
+            }
+
+            try
+            {
+                Bitmap bitmap = _textureView.Bitmap;
+                if (bitmap == null)
+                {
+                    AndroidLog.Warn("CameraPreviewRenderer", "Failed to get bitmap from TextureView.");
+                    return;
+                }
+
+                System.Threading.ThreadPool.QueueUserWorkItem(_ =>
+                {
+                    try
+                    {
+                        string photoPath = GetOutputPhotoFilePath();
+                        using (var fs = new System.IO.FileStream(photoPath, System.IO.FileMode.Create))
+                        {
+                            bitmap.Compress(Bitmap.CompressFormat.Jpeg, 95, fs);
+                        }
+
+                        bitmap.Recycle();
+                        bitmap.Dispose();
+
+                        Android.Media.MediaScannerConnection.ScanFile(
+                            _context,
+                            new[] { photoPath },
+                            new[] { "image/jpeg" },
+                            null);
+
+                        Element?.NotifyPhotoCaptured(photoPath);
+                    }
+                    catch (Exception ex)
+                    {
+                        AndroidLog.Error("CameraPreviewRenderer", "Photo save exception: " + ex);
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                AndroidLog.Error("CameraPreviewRenderer", "OnCapturePhotoRequested exception: " + ex);
+            }
+        }
+
+        private string GetOutputPhotoFilePath()
+        {
+            string picturesDir = Android.OS.Environment.GetExternalStoragePublicDirectory(Android.OS.Environment.DirectoryPictures).AbsolutePath;
+            string targetDir = System.IO.Path.Combine(picturesDir, "MissionPlanner");
+            if (!System.IO.Directory.Exists(targetDir))
+            {
+                System.IO.Directory.CreateDirectory(targetDir);
+            }
+
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            return System.IO.Path.Combine(targetDir, $"stampfly_{timestamp}.jpg");
         }
 
         private void InitializeNativeViews()
@@ -679,6 +749,10 @@ namespace MissionPlanner.Droid
             if (disposing)
             {
                 _isDisposed = true;
+                if (Element != null)
+                {
+                    Element.CapturePhotoRequested -= OnCapturePhotoRequested;
+                }
                 CloseCamera();
 
                 if (_textureView != null)

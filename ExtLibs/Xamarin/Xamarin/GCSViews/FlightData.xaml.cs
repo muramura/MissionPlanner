@@ -7939,6 +7939,15 @@ namespace Xamarin
                         }
                         catch { }
                     };
+                    CameraPreviewControl.PhotoCaptured += (s, filePath) =>
+                    {
+                        try
+                        {
+                            string fileName = System.IO.Path.GetFileName(filePath);
+                            UserDialogs.Instance.Toast($"📸 Photo saved: {fileName}", TimeSpan.FromSeconds(2));
+                        }
+                        catch { }
+                    };
                 }
 
                 UpdateCameraFinderUI(isEnabled, isMinimized, isMaximized);
@@ -8179,6 +8188,27 @@ namespace Xamarin
             }
         }
 
+        private async void OnCameraSnapshotTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                if (CameraPreviewControl == null) return;
+
+                // シャッターフラッシュ演出（一瞬白く光ってフェードアウト）
+                if (Box_CameraFlash != null)
+                {
+                    Box_CameraFlash.Opacity = 0.75;
+                    _ = Box_CameraFlash.FadeTo(0, 180);
+                }
+
+                // スナップショット撮影実行
+                CameraPreviewControl.CapturePhoto();
+            }
+            catch (Exception ex)
+            {
+                log.Warn("OnCameraSnapshotTapped error: " + ex.Message);
+            }
+        }
 
         #endregion
 

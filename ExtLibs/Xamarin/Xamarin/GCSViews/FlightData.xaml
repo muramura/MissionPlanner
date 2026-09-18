@@ -2733,6 +2733,14 @@
                                             HorizontalOptions="FillAndExpand"
                                             VerticalOptions="FillAndExpand"/>
 
+                    <!-- シャッターフラッシュ演出用オーバーレイ -->
+                    <BoxView x:Name="Box_CameraFlash"
+                             BackgroundColor="White"
+                             Opacity="0"
+                             InputTransparent="True"
+                             HorizontalOptions="FillAndExpand"
+                             VerticalOptions="FillAndExpand"/>
+
                     <!-- 右下親指操作パネル (メインツールバー誤タップ完全防止) -->
                     <StackLayout Orientation="Horizontal" Spacing="6"
                                  HorizontalOptions="End" VerticalOptions="End"
@@ -2749,20 +2757,23 @@
                             </StackLayout>
                         </Frame>
 
+                        <!-- 📸 SNAP シャッターボタン (静止画撮影) -->
+                        <Frame x:Name="Frame_CameraSnapshot" BackgroundColor="#E60F172A" BorderColor="#10B981" CornerRadius="6" Padding="8,5" HasShadow="True">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnCameraSnapshotTapped"/>
+                            </Frame.GestureRecognizers>
+                            <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
+                                <Label Text="📸" FontSize="10" VerticalOptions="Center"/>
+                                <Label Text="SNAP" TextColor="#10B981" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                            </StackLayout>
+                        </Frame>
+
                         <!-- 🔍 段階ズームボタン (1.0x / 2.0x / 3.0x) -->
                         <Frame x:Name="Frame_CameraZoom" BackgroundColor="#E60F172A" BorderColor="#38BDF8" CornerRadius="6" Padding="8,5" HasShadow="True">
                             <Frame.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnCameraToggleZoomTapped"/>
                             </Frame.GestureRecognizers>
                             <Label x:Name="LBL_Camera_ZoomText" Text="🔍 1.0x" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
-                        </Frame>
-
-                        <!-- 🔄 カメラ前後切り替えボタン (背面 / 前面) -->
-                        <Frame BackgroundColor="#E60F172A" BorderColor="#475569" CornerRadius="6" Padding="8,5" HasShadow="True">
-                            <Frame.GestureRecognizers>
-                                <TapGestureRecognizer Tapped="OnCameraSwitchFacingTapped"/>
-                            </Frame.GestureRecognizers>
-                            <Label Text="🔄" FontSize="10" VerticalOptions="Center"/>
                         </Frame>
 
                         <!-- ❐ / ⛶ 大画面 / 小窓 切替ボタン -->

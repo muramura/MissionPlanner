@@ -79,6 +79,21 @@ namespace MissionPlanner.Controls
 
         public event EventHandler<string> CameraError;
         public event EventHandler<string> RecordingFinished;
+        public event EventHandler CapturePhotoRequested;
+        public event EventHandler<string> PhotoCaptured;
+
+        public void CapturePhoto()
+        {
+            CapturePhotoRequested?.Invoke(this, EventArgs.Empty);
+        }
+
+        public void NotifyPhotoCaptured(string filePath)
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                PhotoCaptured?.Invoke(this, filePath);
+            });
+        }
 
         public void NotifyError(string message)
         {
