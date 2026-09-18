@@ -1062,9 +1062,79 @@ namespace Xamarin
 
                             // Update top telemetry bar
                             LBL_battery_volt.Text = $"{cs.battery_voltage:0.00} V";
-                            LBL_mode_val.Text = (string.IsNullOrEmpty(cs.mode) ? "STABILIZE" : cs.mode.ToUpper()) + " ▾";
-                            LBL_link_val.Text = $"{cs.linkqualitygcs}%";
-                            LBL_link_val.TextColor = cs.linkqualitygcs > 50 ? global::Xamarin.Forms.Color.FromHex("#10B981") : global::Xamarin.Forms.Color.FromHex("#EF4444");
+
+                            // Flight Mode: 高視認性バッジ更新 (カラー＆アイコン連動)
+                            string modeUpper = (string.IsNullOrEmpty(cs.mode) ? "STABILIZE" : cs.mode.ToUpper());
+                            LBL_mode_val.Text = modeUpper + " ▾";
+                            string modeColor = "#F59E0B";
+                            string modeIcon = "🕹️";
+                            switch (modeUpper)
+                            {
+                                case "LAND":
+                                    modeColor = "#EF4444";
+                                    modeIcon = "🛬";
+                                    break;
+                                case "POSHOLD":
+                                    modeColor = "#10B981";
+                                    modeIcon = "📍";
+                                    break;
+                                case "LOITER":
+                                    modeColor = "#0284C7";
+                                    modeIcon = "🛸";
+                                    break;
+                                case "ALTHOLD":
+                                    modeColor = "#F59E0B";
+                                    modeIcon = "🔒";
+                                    break;
+                                case "STABILIZE":
+                                    modeColor = "#38BDF8";
+                                    modeIcon = "🕹️";
+                                    break;
+                                case "RTL":
+                                    modeColor = "#EC4899";
+                                    modeIcon = "🏠";
+                                    break;
+                                case "AUTO":
+                                    modeColor = "#8B5CF6";
+                                    modeIcon = "🧭";
+                                    break;
+                                case "ACRO":
+                                    modeColor = "#DC2626";
+                                    modeIcon = "⚡";
+                                    break;
+                            }
+                            LBL_mode_val.TextColor = global::Xamarin.Forms.Color.FromHex(modeColor);
+                            if (LBL_mode_icon != null) LBL_mode_icon.Text = modeIcon;
+                            if (Frame_flight_mode != null) Frame_flight_mode.BorderColor = global::Xamarin.Forms.Color.FromHex(modeColor);
+
+                            // Wi-Fi / Link Quality: 明確・高視認性バッジ更新
+                            int linkPct = (int)cs.linkqualitygcs;
+                            LBL_link_val.Text = $"{linkPct}%";
+                            string wifiColor = "#10B981";
+                            string wifiIcon = "📶";
+                            if (linkPct >= 70)
+                            {
+                                wifiColor = "#10B981";
+                                wifiIcon = "📶";
+                            }
+                            else if (linkPct >= 40)
+                            {
+                                wifiColor = "#F59E0B";
+                                wifiIcon = "📶";
+                            }
+                            else if (linkPct > 0)
+                            {
+                                wifiColor = "#EF4444";
+                                wifiIcon = "⚠️";
+                            }
+                            else
+                            {
+                                wifiColor = "#64748B";
+                                wifiIcon = "❌";
+                            }
+                            LBL_link_val.TextColor = global::Xamarin.Forms.Color.FromHex(wifiColor);
+                            if (LBL_wifi_icon != null) LBL_wifi_icon.Text = wifiIcon;
+                            if (Frame_wifi_link != null) Frame_wifi_link.BorderColor = global::Xamarin.Forms.Color.FromHex(wifiColor);
 
                             // GNSS Status
                             if (cs.gpsstatus >= 3)

@@ -69,28 +69,6 @@
 
                     <BoxView WidthRequest="1" HeightRequest="12" BackgroundColor="#475569" VerticalOptions="Center"/>
 
-                    <!-- SETUP Suite Button (Left Toolbar) -->
-                    <Frame BackgroundColor="#0284C7" CornerRadius="5" Padding="8,2" HasShadow="False" VerticalOptions="Center" BorderColor="#38BDF8">
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnOpenSetupModalClicked"/>
-                        </Frame.GestureRecognizers>
-                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
-                            <Label Text="🛠️" FontSize="11" VerticalOptions="Center"/>
-                            <Label Text="SETUP" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
-                        </StackLayout>
-                    </Frame>
-
-                    <!-- JOYSTICK Setup Button (Top Toolbar) -->
-                    <Frame BackgroundColor="#2563EB" CornerRadius="5" Padding="8,2" HasShadow="False" VerticalOptions="Center" BorderColor="#60A5FA">
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnOpenJoystickModalClicked"/>
-                        </Frame.GestureRecognizers>
-                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
-                            <Label Text="🎮" FontSize="11" VerticalOptions="Center"/>
-                            <Label Text="JOYSTICK" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
-                        </StackLayout>
-                    </Frame>
-
                     <!-- Slow Mode Toggle / Status Pill -->
                     <Frame x:Name="Frame_SlowMode_Pill" BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
                         <Frame.GestureRecognizers>
@@ -114,24 +92,27 @@
                     </Frame>
                 </StackLayout>
 
-                <!-- Center: Flight Mode & Telemetry Link -->
-                <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="8" HorizontalOptions="Center" VerticalOptions="Center">
-                    <!-- Flight Mode Selector Pill -->
-                    <Frame BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
+                <!-- Center: Flight Mode & Wi-Fi Link Quality (高視認性バッジ) -->
+                <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalOptions="Center" VerticalOptions="Center">
+                    <!-- Flight Mode Selector Badge -->
+                    <Frame x:Name="Frame_flight_mode" BackgroundColor="#1E293B" CornerRadius="6" Padding="10,3" HasShadow="True" VerticalOptions="Center" BorderColor="#F59E0B">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnFlightModeTapped"/>
                         </Frame.GestureRecognizers>
-                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
-                            <Label Text="🕹️" FontSize="11" VerticalOptions="Center"/>
-                            <Label x:Name="LBL_mode_val" Text="STABILIZE ▾" TextColor="#F59E0B" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                        <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
+                            <Label x:Name="LBL_mode_icon" Text="🕹️" FontSize="12" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_mode_val" Text="STABILIZE ▾" TextColor="#F59E0B" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
 
-                    <!-- Link Quality -->
-                    <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
-                        <Label Text="📶" FontSize="11" VerticalOptions="Center"/>
-                        <Label x:Name="LBL_link_val" Text="0%" TextColor="#10B981" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
-                    </StackLayout>
+                    <!-- Wi-Fi Link Quality Badge -->
+                    <Frame x:Name="Frame_wifi_link" BackgroundColor="#1E293B" CornerRadius="6" Padding="8,3" HasShadow="True" VerticalOptions="Center" BorderColor="#10B981">
+                        <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
+                            <Label x:Name="LBL_wifi_icon" Text="📶" FontSize="12" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_wifi_label" Text="WIFI:" TextColor="#CBD5E1" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_link_val" Text="100%" TextColor="#10B981" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </StackLayout>
+                    </Frame>
                 </StackLayout>
 
                 <!-- Right: Arm/Disarm Status & Emergency Stop Button -->
@@ -295,15 +276,17 @@
                                         BackgroundColor="#475569" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
                                         Clicked="OnModeLoiterClicked"/>
                             </Grid>
-                            <!-- 🎮 JOYSTICK & KEY SETUP ボタン -->
-                            <Button Text="🎮 JOYSTICK &amp; KEY SETUP" FontSize="9" FontAttributes="Bold"
-                                    BackgroundColor="#2563EB" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="26"
-                                    Clicked="OnOpenJoystickModalClicked"/>
-
-                            <!-- 🛠️ 機体初期設定 (CALIBRATION) ボタン -->
-                            <Button Text="🛠️ SETUP &amp; CALIBRATION" FontSize="9" FontAttributes="Bold"
-                                    BackgroundColor="#0284C7" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="26"
-                                    Clicked="OnOpenSetupModalClicked"/>
+                            <!-- SETTINGS & CALIBRATION SECTION (Moved from Top Toolbar) -->
+                            <BoxView HeightRequest="1" BackgroundColor="#475569" Margin="0,4,0,2"/>
+                            <Label Text="⚙️ SETTINGS &amp; CONTROLLER" TextColor="#38BDF8" FontSize="9" FontAttributes="Bold" HorizontalOptions="Center"/>
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="3">
+                                <Button Grid.Column="0" Text="🛠️ SETUP" FontSize="9" FontAttributes="Bold"
+                                        BackgroundColor="#0284C7" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="30"
+                                        Clicked="OnOpenSetupModalClicked"/>
+                                <Button Grid.Column="1" Text="🎮 JOYSTICK" FontSize="9" FontAttributes="Bold"
+                                        BackgroundColor="#2563EB" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="30"
+                                        Clicked="OnOpenJoystickModalClicked"/>
+                            </Grid>
                         </StackLayout>
                     </ScrollView>
 
