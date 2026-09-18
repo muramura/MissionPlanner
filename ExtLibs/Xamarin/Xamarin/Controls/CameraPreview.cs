@@ -50,12 +50,35 @@ namespace MissionPlanner.Controls
             set => SetValue(StatusMessageProperty, value);
         }
 
+        public static readonly BindableProperty IsRecordingProperty =
+            BindableProperty.Create(
+                propertyName: nameof(IsRecording),
+                returnType: typeof(bool),
+                declaringType: typeof(CameraPreview),
+                defaultValue: false,
+                defaultBindingMode: BindingMode.TwoWay);
+
+        public bool IsRecording
+        {
+            get => (bool)GetValue(IsRecordingProperty);
+            set => SetValue(IsRecordingProperty, value);
+        }
+
         public event EventHandler<string> CameraError;
+        public event EventHandler<string> RecordingFinished;
 
         public void NotifyError(string message)
         {
             StatusMessage = message;
             CameraError?.Invoke(this, message);
+        }
+
+        public void NotifyRecordingFinished(string filePath)
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                RecordingFinished?.Invoke(this, filePath);
+            });
         }
     }
 }

@@ -2719,15 +2719,26 @@
                BackgroundColor="#D90F172A" BorderColor="#38BDF8"
                IsVisible="True">
             <Grid RowDefinitions="Auto,*" RowSpacing="2">
-                <!-- タイトルバー: 📷 FINDER + カメラ切替 + 拡大 + 最小化ボタン -->
-                <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" Padding="6,4" BackgroundColor="#E60F172A">
+                <!-- タイトルバー: 📷 FINDER + 🔴 REC + カメラ切替 + 拡大 + 最小化ボタン -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto,Auto" Padding="6,4" BackgroundColor="#E60F172A">
                     <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
                         <Label Text="📷" FontSize="11" VerticalOptions="Center"/>
                         <Label Text="CAM FINDER" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
                     </StackLayout>
                     
+                    <!-- 録画ボタン (REC / STOP) -->
+                    <Frame x:Name="Frame_CameraRecord" Grid.Column="1" BackgroundColor="#DC2626" BorderColor="#EF4444" CornerRadius="4" Padding="6,2" HasShadow="False" Margin="0,0,4,0">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCameraToggleRecordTapped"/>
+                        </Frame.GestureRecognizers>
+                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                            <Label x:Name="LBL_Camera_RecordIcon" Text="🔴" FontSize="9" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_Camera_RecordText" Text="REC" TextColor="#FFFFFF" FontSize="9" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </StackLayout>
+                    </Frame>
+
                     <!-- カメラ前後切り替えボタン (背面 / 前面) -->
-                    <Frame Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#475569" CornerRadius="4" Padding="4,2" HasShadow="False" Margin="0,0,4,0">
+                    <Frame Grid.Column="2" BackgroundColor="#1E293B" BorderColor="#475569" CornerRadius="4" Padding="4,2" HasShadow="False" Margin="0,0,4,0">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCameraSwitchFacingTapped"/>
                         </Frame.GestureRecognizers>
@@ -2735,7 +2746,7 @@
                     </Frame>
 
                     <!-- 大画面 / 小窓 切替ボタン -->
-                    <Frame Grid.Column="2" BackgroundColor="#1E293B" BorderColor="#475569" CornerRadius="4" Padding="4,2" HasShadow="False" Margin="0,0,4,0">
+                    <Frame Grid.Column="3" BackgroundColor="#1E293B" BorderColor="#475569" CornerRadius="4" Padding="4,2" HasShadow="False" Margin="0,0,4,0">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCameraToggleMaximizeTapped"/>
                         </Frame.GestureRecognizers>
@@ -2743,7 +2754,7 @@
                     </Frame>
 
                     <!-- 最小化ボタン -->
-                    <Frame Grid.Column="3" BackgroundColor="#1E293B" BorderColor="#475569" CornerRadius="4" Padding="4,2" HasShadow="False">
+                    <Frame Grid.Column="4" BackgroundColor="#1E293B" BorderColor="#475569" CornerRadius="4" Padding="4,2" HasShadow="False">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCameraToggleMinimizeTapped"/>
                         </Frame.GestureRecognizers>

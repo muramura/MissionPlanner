@@ -7930,6 +7930,15 @@ namespace Xamarin
                 {
                     CameraPreviewControl.CameraFacing = isFront ? MissionPlanner.Controls.CameraFacingOption.Front : MissionPlanner.Controls.CameraFacingOption.Back;
                     CameraPreviewControl.IsCameraActive = isEnabled;
+                    CameraPreviewControl.RecordingFinished += (s, filePath) =>
+                    {
+                        try
+                        {
+                            string fileName = System.IO.Path.GetFileName(filePath);
+                            UserDialogs.Instance.Toast($"🎥 Video saved: {fileName}", TimeSpan.FromSeconds(3));
+                        }
+                        catch { }
+                    };
                 }
 
                 UpdateCameraFinderUI(isEnabled, isMinimized, isMaximized);
@@ -8071,6 +8080,76 @@ namespace Xamarin
             catch (Exception ex)
             {
                 log.Warn("OnCameraSwitchFacingTapped error: " + ex.Message);
+            }
+        }
+
+        private bool _isRecordingVideo = false;
+        private DateTime _recordingStartTime;
+
+        private void OnCameraToggleRecordTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                if (CameraPreviewControl == null) return;
+
+                if (!_isRecordingVideo)
+                {
+                    // 録画開始
+                    _isRecordingVideo = true;
+                    _recordingStartTime = DateTime.Now;
+                    CameraPreviewControl.IsRecording = true;
+
+                    // UI更新: 録画中表示
+                    if (Frame_CameraRecord != null)
+                    {
+                        Frame_CameraRecord.BackgroundColor = Xamarin.Forms.Color.FromHex("#991B1B");
+                    }
+                    if (LBL_Camera_RecordIcon != null)
+                    {
+                        LBL_Camera_RecordIcon.Text = "⏹️";
+                    }
+                    if (LBL_Camera_RecordText != null)
+                    {
+                        LBL_Camera_RecordText.Text = "00:00";
+                    }
+
+                    // 1秒ごとの経過時間タイマー
+                    Device.StartTimer(TimeSpan.FromSeconds(1), () =>
+                    {
+                        if (!_isRecordingVideo) return false;
+
+                        var elapsed = DateTime.Now - _recordingStartTime;
+                        if (LBL_Camera_RecordText != null)
+                        {
+                            LBL_Camera_RecordText.Text = string.Format("{0:D2}:{1:D2}", (int)elapsed.TotalMinutes, elapsed.Seconds);
+                        }
+                        return true;
+                    });
+                }
+                else
+                {
+                    // 録画停止
+                    _isRecordingVideo = false;
+                    CameraPreviewControl.IsRecording = false;
+
+                    // UI復帰
+                    if (Frame_CameraRecord != null)
+                    {
+                        Frame_CameraRecord.BackgroundColor = Xamarin.Forms.Color.FromHex("#DC2626");
+                    }
+                    if (LBL_Camera_RecordIcon != null)
+                    {
+                        LBL_Camera_RecordIcon.Text = "🔴";
+                    }
+                    if (LBL_Camera_RecordText != null)
+                    {
+                        LBL_Camera_RecordText.Text = "REC";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("OnCameraToggleRecordTapped error: " + ex.Message);
             }
         }
 

@@ -57,6 +57,8 @@ using Stream = Android.Media.Stream;
 [assembly: UsesFeature("android.hardware.bluetooth", Required = false)]
 [assembly: UsesFeature(GLESVersion = 0x00030000, Required = true)]
 [assembly: UsesLibrary("org.apache.http.legacy", false)]
+[assembly: UsesPermission(Android.Manifest.Permission.Camera)]
+[assembly: UsesPermission(Android.Manifest.Permission.RecordAudio)]
 [assembly: UsesPermission("android.permission.RECEIVE_D2D_COMMANDS")]
 [assembly: UsesPermission("android.permission.BLUETOOTH")]
 [assembly: UsesPermission("android.permission.BLUETOOTH_CONNECT")]

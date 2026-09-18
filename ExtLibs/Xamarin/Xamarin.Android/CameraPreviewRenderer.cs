@@ -14,7 +14,7 @@ using MissionPlanner.Controls;
 using MissionPlanner.Droid;
 using Xamarin.Forms;
 using Xamarin.Forms.Platform.Android;
-using AndroidCamera = Android.Hardware.Camera2.CameraDevice;
+using Android.Media;
 using AndroidLog = Android.Util.Log;
 
 [assembly: ExportRenderer(typeof(CameraPreview), typeof(CameraPreviewRenderer))]
@@ -35,6 +35,10 @@ namespace MissionPlanner.Droid
 
         private HandlerThread _backgroundThread;
         private Handler _backgroundHandler;
+
+        private MediaRecorder _mediaRecorder;
+        private bool _isRecording;
+        private string _currentVideoPath;
 
         private bool _isCameraOpening;
         private bool _isDisposed;
@@ -97,7 +101,26 @@ namespace MissionPlanner.Droid
             {
                 UpdateCameraState();
             }
+            else if (e.PropertyName == CameraPreview.IsRecordingProperty.PropertyName)
+            {
+                HandleRecordingStateChanged();
+            }
         }
+
+        private void HandleRecordingStateChanged()
+        {
+            if (Element == null) return;
+
+            if (Element.IsRecording)
+            {
+                StartRecording();
+            }
+            else
+            {
+                StopRecording();
+            }
+        }
+
 
         private void UpdateCameraState()
         {
@@ -253,6 +276,11 @@ namespace MissionPlanner.Droid
         {
             try
             {
+                if (_isRecording)
+                {
+                    StopRecording();
+                }
+
                 if (_captureSession != null)
                 {
                     _captureSession.Close();
@@ -413,6 +441,191 @@ namespace MissionPlanner.Droid
                 _renderer.Element?.NotifyError("Failed to configure capture session");
             }
         }
+
+        #region Video Recording
+
+        private void StartRecording()
+        {
+            if (_cameraDevice == null || _textureView == null || !_textureView.IsAvailable || _isRecording || _isDisposed) return;
+
+            try
+            {
+                // 既存のプレビューセッションを一旦安全に停止
+                if (_captureSession != null)
+                {
+                    try { _captureSession.StopRepeating(); } catch { }
+                    _captureSession.Close();
+                    _captureSession.Dispose();
+                    _captureSession = null;
+                }
+
+                SetUpMediaRecorder();
+
+                var texture = _textureView.SurfaceTexture;
+                texture.SetDefaultBufferSize(1280, 720);
+                var previewSurface = new Surface(texture);
+                var recorderSurface = _mediaRecorder.Surface;
+
+                var surfaces = new List<Surface> { previewSurface, recorderSurface };
+
+                _previewRequestBuilder = _cameraDevice.CreateCaptureRequest(CameraTemplate.Record);
+                _previewRequestBuilder.AddTarget(previewSurface);
+                _previewRequestBuilder.AddTarget(recorderSurface);
+                _previewRequestBuilder.Set(CaptureRequest.ControlAfMode, (int)ControlAFMode.ContinuousVideo);
+
+                _cameraDevice.CreateCaptureSession(surfaces, new RecordCaptureSessionCallback(this), _backgroundHandler);
+            }
+            catch (Exception ex)
+            {
+                AndroidLog.Error("CameraPreviewRenderer", "StartRecording exception: " + ex);
+                Element?.NotifyError("Record start error: " + ex.Message);
+                _isRecording = false;
+            }
+        }
+
+        private class RecordCaptureSessionCallback : CameraCaptureSession.StateCallback
+        {
+            private readonly CameraPreviewRenderer _renderer;
+
+            public RecordCaptureSessionCallback(CameraPreviewRenderer renderer)
+            {
+                _renderer = renderer;
+            }
+
+            public override void OnConfigured(CameraCaptureSession session)
+            {
+                if (_renderer._cameraDevice == null || _renderer._isDisposed) return;
+
+                _renderer._captureSession = session;
+                try
+                {
+                    _renderer._previewRequestBuilder.Set(CaptureRequest.ControlMode, (int)ControlMode.Auto);
+                    session.SetRepeatingRequest(_renderer._previewRequestBuilder.Build(), null, _renderer._backgroundHandler);
+
+                    // MediaRecorder 開始
+                    _renderer._mediaRecorder.Start();
+                    _renderer._isRecording = true;
+                    AndroidLog.Info("CameraPreviewRenderer", "Recording started: " + _renderer._currentVideoPath);
+                }
+                catch (Exception ex)
+                {
+                    AndroidLog.Error("CameraPreviewRenderer", "Record session start error: " + ex);
+                    _renderer.Element?.NotifyError("Record error: " + ex.Message);
+                    _renderer._isRecording = false;
+                }
+            }
+
+            public override void OnConfigureFailed(CameraCaptureSession session)
+            {
+                _renderer.Element?.NotifyError("Record configure failed");
+                _renderer._isRecording = false;
+                _renderer.CreateCameraPreviewSession();
+            }
+        }
+
+        private void StopRecording()
+        {
+            if (!_isRecording && _mediaRecorder == null) return;
+
+            try
+            {
+                _isRecording = false;
+
+                if (_mediaRecorder != null)
+                {
+                    try
+                    {
+                        _mediaRecorder.Stop();
+                        _mediaRecorder.Reset();
+                    }
+                    catch (Exception ex)
+                    {
+                        AndroidLog.Warn("CameraPreviewRenderer", "MediaRecorder stop warning: " + ex.Message);
+                    }
+                    finally
+                    {
+                        _mediaRecorder.Release();
+                        _mediaRecorder.Dispose();
+                        _mediaRecorder = null;
+                    }
+                }
+
+                // ギャラリーへ即時登録
+                if (!string.IsNullOrEmpty(_currentVideoPath) && System.IO.File.Exists(_currentVideoPath))
+                {
+                    Android.Media.MediaScannerConnection.ScanFile(
+                        _context,
+                        new[] { _currentVideoPath },
+                        new[] { "video/mp4" },
+                        null);
+
+                    Element?.NotifyRecordingFinished(_currentVideoPath);
+                }
+            }
+            catch (Exception ex)
+            {
+                AndroidLog.Error("CameraPreviewRenderer", "StopRecording exception: " + ex);
+            }
+            finally
+            {
+                // プレビューのみのセッションへ復帰
+                CreateCameraPreviewSession();
+            }
+        }
+
+        private void SetUpMediaRecorder()
+        {
+            _mediaRecorder = new MediaRecorder(_context);
+
+            bool hasAudio = ContextCompat.CheckSelfPermission(_context, Android.Manifest.Permission.RecordAudio) == Android.Content.PM.Permission.Granted;
+            if (hasAudio)
+            {
+                try
+                {
+                    _mediaRecorder.SetAudioSource(AudioSource.Camcorder);
+                }
+                catch { }
+            }
+
+            _mediaRecorder.SetVideoSource(VideoSource.Surface);
+            _mediaRecorder.SetOutputFormat(OutputFormat.Mpeg4);
+
+            _currentVideoPath = GetOutputMediaFilePath();
+            _mediaRecorder.SetOutputFile(_currentVideoPath);
+            _mediaRecorder.SetVideoEncodingBitRate(8000000); // 8Mbps
+            _mediaRecorder.SetVideoFrameRate(30);
+            _mediaRecorder.SetVideoSize(1280, 720); // 720p HD
+            _mediaRecorder.SetVideoEncoder(VideoEncoder.H264);
+
+            if (hasAudio)
+            {
+                try
+                {
+                    _mediaRecorder.SetAudioEncoder(AudioEncoder.Aac);
+                }
+                catch { }
+            }
+
+            // 横画面の向き（スマホ横持ち用）
+            _mediaRecorder.SetOrientationHint(0);
+
+            _mediaRecorder.Prepare();
+        }
+
+        private string GetOutputMediaFilePath()
+        {
+            string moviesDir = Android.OS.Environment.GetExternalStoragePublicDirectory(Android.OS.Environment.DirectoryMovies).AbsolutePath;
+            string targetDir = System.IO.Path.Combine(moviesDir, "MissionPlanner");
+            if (!System.IO.Directory.Exists(targetDir))
+            {
+                System.IO.Directory.CreateDirectory(targetDir);
+            }
+
+            string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
+            return System.IO.Path.Combine(targetDir, $"stampfly_{timestamp}.mp4");
+        }
+
+        #endregion
 
         #endregion
 
