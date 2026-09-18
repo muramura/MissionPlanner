@@ -2719,8 +2719,8 @@
                BackgroundColor="#D90F172A" BorderColor="#38BDF8"
                IsVisible="True">
             <Grid RowDefinitions="Auto,*" RowSpacing="2">
-                <!-- タイトルバー: 📷 FINDER + カメラ切替 + 最小化ボタン -->
-                <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Padding="6,4" BackgroundColor="#E60F172A">
+                <!-- タイトルバー: 📷 FINDER + カメラ切替 + 拡大 + 最小化ボタン -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto,Auto" Padding="6,4" BackgroundColor="#E60F172A">
                     <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
                         <Label Text="📷" FontSize="11" VerticalOptions="Center"/>
                         <Label Text="CAM FINDER" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
@@ -2734,8 +2734,16 @@
                         <Label Text="🔄" FontSize="9" VerticalOptions="Center"/>
                     </Frame>
 
+                    <!-- 大画面 / 小窓 切替ボタン -->
+                    <Frame Grid.Column="2" BackgroundColor="#1E293B" BorderColor="#475569" CornerRadius="4" Padding="4,2" HasShadow="False" Margin="0,0,4,0">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCameraToggleMaximizeTapped"/>
+                        </Frame.GestureRecognizers>
+                        <Label x:Name="LBL_Camera_MaximizeIcon" Text="⛶" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                    </Frame>
+
                     <!-- 最小化ボタン -->
-                    <Frame Grid.Column="2" BackgroundColor="#1E293B" BorderColor="#475569" CornerRadius="4" Padding="4,2" HasShadow="False">
+                    <Frame Grid.Column="3" BackgroundColor="#1E293B" BorderColor="#475569" CornerRadius="4" Padding="4,2" HasShadow="False">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnCameraToggleMinimizeTapped"/>
                         </Frame.GestureRecognizers>

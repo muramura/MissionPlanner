@@ -7913,15 +7913,17 @@ namespace Xamarin
 
         private const string PREF_CAMERA_FINDER_ENABLED = "CameraFinderEnabled";
         private const string PREF_CAMERA_FINDER_MINIMIZED = "CameraFinderMinimized";
+        private const string PREF_CAMERA_FINDER_MAXIMIZED = "CameraFinderMaximized";
         private const string PREF_CAMERA_FACING_FRONT = "CameraFacingFront";
 
         private void InitCameraFinder()
         {
             try
             {
-                // Load persistent user settings (default: Enabled = true, Minimized = false, Facing = Back)
+                // Load persistent user settings (default: Enabled = true, Minimized = false, Maximized = true, Facing = Back)
                 bool isEnabled = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_ENABLED, true);
                 bool isMinimized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MINIMIZED, false);
+                bool isMaximized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MAXIMIZED, true);
                 bool isFront = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FACING_FRONT, false);
 
                 if (CameraPreviewControl != null)
@@ -7930,7 +7932,7 @@ namespace Xamarin
                     CameraPreviewControl.IsCameraActive = isEnabled;
                 }
 
-                UpdateCameraFinderUI(isEnabled, isMinimized);
+                UpdateCameraFinderUI(isEnabled, isMinimized, isMaximized);
             }
             catch (Exception ex)
             {
@@ -7938,7 +7940,7 @@ namespace Xamarin
             }
         }
 
-        private void UpdateCameraFinderUI(bool isEnabled, bool isMinimized)
+        private void UpdateCameraFinderUI(bool isEnabled, bool isMinimized, bool isMaximized)
         {
             Device.BeginInvokeOnMainThread(() =>
             {
@@ -7951,6 +7953,30 @@ namespace Xamarin
                 if (Frame_CameraFinder != null)
                 {
                     Frame_CameraFinder.IsVisible = isEnabled && !isMinimized;
+
+                    if (isMaximized)
+                    {
+                        // 大画面モード: 左側計器ドック（220dp）と上部バー（34dp）を避け、白いメイン領域全体いっぱいに表示
+                        Frame_CameraFinder.HorizontalOptions = LayoutOptions.FillAndExpand;
+                        Frame_CameraFinder.VerticalOptions = LayoutOptions.FillAndExpand;
+                        Frame_CameraFinder.Margin = new Thickness(226, 38, 8, 8);
+                        Frame_CameraFinder.WidthRequest = -1;
+                        Frame_CameraFinder.HeightRequest = -1;
+                    }
+                    else
+                    {
+                        // 小窓モード: 右下にコンパクトに表示（幅200 x 高150 dp）
+                        Frame_CameraFinder.HorizontalOptions = LayoutOptions.End;
+                        Frame_CameraFinder.VerticalOptions = LayoutOptions.End;
+                        Frame_CameraFinder.Margin = new Thickness(0, 0, 16, 16);
+                        Frame_CameraFinder.WidthRequest = 200;
+                        Frame_CameraFinder.HeightRequest = 150;
+                    }
+                }
+
+                if (LBL_Camera_MaximizeIcon != null)
+                {
+                    LBL_Camera_MaximizeIcon.Text = isMaximized ? "❐" : "⛶";
                 }
 
                 if (Frame_CameraFinder_Minimized != null)
@@ -7965,6 +7991,24 @@ namespace Xamarin
             });
         }
 
+        private void OnCameraToggleMaximizeTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                bool currentMaximized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MAXIMIZED, true);
+                bool newMaximized = !currentMaximized;
+                Xamarin.Essentials.Preferences.Set(PREF_CAMERA_FINDER_MAXIMIZED, newMaximized);
+
+                bool isEnabled = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_ENABLED, true);
+                bool isMinimized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MINIMIZED, false);
+                UpdateCameraFinderUI(isEnabled, isMinimized, newMaximized);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("OnCameraToggleMaximizeTapped error: " + ex.Message);
+            }
+        }
+
         private void OnCameraToggleClicked(object sender, EventArgs e)
         {
             try
@@ -7974,7 +8018,8 @@ namespace Xamarin
                 Xamarin.Essentials.Preferences.Set(PREF_CAMERA_FINDER_ENABLED, newEnabled);
 
                 bool isMinimized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MINIMIZED, false);
-                UpdateCameraFinderUI(newEnabled, isMinimized);
+                bool isMaximized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MAXIMIZED, true);
+                UpdateCameraFinderUI(newEnabled, isMinimized, isMaximized);
             }
             catch (Exception ex)
             {
@@ -7988,7 +8033,8 @@ namespace Xamarin
             {
                 Xamarin.Essentials.Preferences.Set(PREF_CAMERA_FINDER_MINIMIZED, true);
                 bool isEnabled = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_ENABLED, true);
-                UpdateCameraFinderUI(isEnabled, true);
+                bool isMaximized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MAXIMIZED, true);
+                UpdateCameraFinderUI(isEnabled, true, isMaximized);
             }
             catch (Exception ex)
             {
@@ -8002,7 +8048,8 @@ namespace Xamarin
             {
                 Xamarin.Essentials.Preferences.Set(PREF_CAMERA_FINDER_MINIMIZED, false);
                 bool isEnabled = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_ENABLED, true);
-                UpdateCameraFinderUI(isEnabled, false);
+                bool isMaximized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MAXIMIZED, true);
+                UpdateCameraFinderUI(isEnabled, false, isMaximized);
             }
             catch (Exception ex)
             {
