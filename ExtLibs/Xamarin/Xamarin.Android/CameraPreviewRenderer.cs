@@ -199,6 +199,10 @@ namespace MissionPlanner.Droid
             {
                 ApplyZoom();
             }
+            else if (e.PropertyName == CameraPreview.IsTorchOnProperty.PropertyName)
+            {
+                ApplyTorch();
+            }
         }
 
 
@@ -402,6 +406,32 @@ namespace MissionPlanner.Droid
             }
         }
 
+        private void ApplyTorch()
+        {
+            if (_previewRequestBuilder == null || _captureSession == null || _isDisposed) return;
+
+            try
+            {
+                bool torch = Element?.IsTorchOn ?? false;
+                if (torch)
+                {
+                    _previewRequestBuilder.Set(CaptureRequest.FlashMode, (int)FlashMode.Torch);
+                    _previewRequestBuilder.Set(CaptureRequest.ControlAeMode, (int)ControlAEMode.On);
+                }
+                else
+                {
+                    _previewRequestBuilder.Set(CaptureRequest.FlashMode, (int)FlashMode.Off);
+                }
+
+                _captureSession.SetRepeatingRequest(_previewRequestBuilder.Build(), null, _backgroundHandler);
+                AndroidLog.Info("CameraPreviewRenderer", $"Torch applied: {torch}");
+            }
+            catch (Exception ex)
+            {
+                AndroidLog.Warn("CameraPreviewRenderer", "ApplyTorch error: " + ex.Message);
+            }
+        }
+
         private void CloseCamera()
         {
             try
@@ -599,6 +629,7 @@ namespace MissionPlanner.Droid
                     _renderer._previewRequestBuilder.Set(CaptureRequest.ControlMode, (int)ControlMode.Auto);
                     session.SetRepeatingRequest(_renderer._previewRequestBuilder.Build(), null, _renderer._backgroundHandler);
                     _renderer.ApplyZoom();
+                    _renderer.ApplyTorch();
                 }
                 catch (Exception ex)
                 {
@@ -674,6 +705,7 @@ namespace MissionPlanner.Droid
                     _renderer._previewRequestBuilder.Set(CaptureRequest.ControlMode, (int)ControlMode.Auto);
                     session.SetRepeatingRequest(_renderer._previewRequestBuilder.Build(), null, _renderer._backgroundHandler);
                     _renderer.ApplyZoom();
+                    _renderer.ApplyTorch();
 
                     // MediaRecorder 開始
                     _renderer._mediaRecorder.Start();

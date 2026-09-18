@@ -126,6 +126,7 @@ namespace Xamarin
             "None",
             "CAM: REC TOGGLE",
             "CAM: SNAP",
+            "CAM: LIGHT TOGGLE",
             "CAM: ZOOM CYCLE",
             "CAM: TOGGLE VIEW",
             "SLOW MODE TOGGLE",
@@ -268,6 +269,14 @@ namespace Xamarin
                     case "SNAPSHOT":
                     case "SHUTTER":
                         TriggerCameraSnapshot(btnName);
+                        break;
+                    case "CAM: LIGHT TOGGLE":
+                    case "CAM: TORCH TOGGLE":
+                    case "CAMERA LIGHT":
+                    case "LIGHT TOGGLE":
+                    case "LIGHT":
+                    case "TORCH":
+                        TriggerCameraToggleTorch(btnName);
                         break;
                     case "CAM: ZOOM CYCLE":
                     case "CAMERA ZOOM":
@@ -4090,6 +4099,12 @@ namespace Xamarin
                 case "SNAP":
                 case "SNAPSHOT":
                 case "SHUTTER": return global::Xamarin.Forms.Color.FromHex("#06B6D4"); // Cyan
+                case "CAM: LIGHT TOGGLE":
+                case "CAM: TORCH TOGGLE":
+                case "CAMERA LIGHT":
+                case "LIGHT TOGGLE":
+                case "LIGHT":
+                case "TORCH": return global::Xamarin.Forms.Color.FromHex("#EAB308"); // Yellow
                 case "CAM: ZOOM CYCLE":
                 case "CAMERA ZOOM":
                 case "ZOOM CYCLE":
@@ -8336,6 +8351,67 @@ namespace Xamarin
             {
                 log.Warn("OnCameraSnapshotTapped error: " + ex.Message);
             }
+        }
+
+        private void OnCameraToggleTorchTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                if (CameraPreviewControl == null) return;
+
+                bool newTorch = !CameraPreviewControl.IsTorchOn;
+                CameraPreviewControl.IsTorchOn = newTorch;
+
+                UpdateCameraTorchUI(newTorch);
+
+                string state = newTorch ? "💡 Light ON" : "💡 Light OFF";
+                ShowButtonActionToast(state, newTorch ? "#EAB308" : "#64748B");
+                TriggerHapticForChoice(Config_Pattern_Arm);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("OnCameraToggleTorchTapped error: " + ex.Message);
+            }
+        }
+
+        private void UpdateCameraTorchUI(bool isOn)
+        {
+            if (Frame_CameraTorch != null)
+            {
+                Frame_CameraTorch.BackgroundColor = isOn
+                    ? global::Xamarin.Forms.Color.FromHex("#EAB308")
+                    : global::Xamarin.Forms.Color.FromHex("#E60F172A");
+                Frame_CameraTorch.BorderColor = isOn
+                    ? global::Xamarin.Forms.Color.FromHex("#FDE047")
+                    : global::Xamarin.Forms.Color.FromHex("#EAB308");
+            }
+            if (LBL_Camera_TorchText != null)
+            {
+                LBL_Camera_TorchText.Text = isOn ? "ON" : "LIGHT";
+                LBL_Camera_TorchText.TextColor = isOn
+                    ? global::Xamarin.Forms.Color.FromHex("#000000")
+                    : global::Xamarin.Forms.Color.FromHex("#EAB308");
+            }
+            if (LBL_Camera_TorchIcon != null)
+            {
+                LBL_Camera_TorchIcon.Text = isOn ? "🔦" : "💡";
+            }
+        }
+
+        public static void TriggerCameraToggleTorch(string btnName = "")
+        {
+            global::Xamarin.Forms.Device.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    if (instance == null) return;
+                    instance.OnCameraToggleTorchTapped(null, EventArgs.Empty);
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("TriggerCameraToggleTorch error: " + ex.Message);
+                }
+            });
         }
 
         public static void TriggerCameraToggleRecord(string btnName = "")

@@ -77,6 +77,20 @@ namespace MissionPlanner.Controls
             set => SetValue(ZoomFactorProperty, value);
         }
 
+        public static readonly BindableProperty IsTorchOnProperty =
+            BindableProperty.Create(
+                propertyName: nameof(IsTorchOn),
+                returnType: typeof(bool),
+                declaringType: typeof(CameraPreview),
+                defaultValue: false,
+                defaultBindingMode: BindingMode.TwoWay);
+
+        public bool IsTorchOn
+        {
+            get => (bool)GetValue(IsTorchOnProperty);
+            set => SetValue(IsTorchOnProperty, value);
+        }
+
         public event EventHandler<string> CameraError;
         public event EventHandler<string> RecordingFinished;
         public event EventHandler CapturePhotoRequested;

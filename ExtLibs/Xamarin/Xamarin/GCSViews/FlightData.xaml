@@ -2783,6 +2783,17 @@
                             </StackLayout>
                         </Frame>
 
+                        <!-- 💡 LIGHT ライト点灯/消灯ボタン -->
+                        <Frame x:Name="Frame_CameraTorch" BackgroundColor="#E60F172A" BorderColor="#EAB308" CornerRadius="6" Padding="8,5" HasShadow="True">
+                            <Frame.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnCameraToggleTorchTapped"/>
+                            </Frame.GestureRecognizers>
+                            <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
+                                <Label x:Name="LBL_Camera_TorchIcon" Text="💡" FontSize="10" VerticalOptions="Center"/>
+                                <Label x:Name="LBL_Camera_TorchText" Text="LIGHT" TextColor="#EAB308" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                            </StackLayout>
+                        </Frame>
+
                         <!-- 🔍 段階ズームボタン (1.0x / 2.0x / 3.0x) -->
                         <Frame x:Name="Frame_CameraZoom" BackgroundColor="#E60F172A" BorderColor="#38BDF8" CornerRadius="6" Padding="8,5" HasShadow="True">
                             <Frame.GestureRecognizers>
