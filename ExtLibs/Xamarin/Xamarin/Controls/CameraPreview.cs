@@ -64,6 +64,19 @@ namespace MissionPlanner.Controls
             set => SetValue(IsRecordingProperty, value);
         }
 
+        public static readonly BindableProperty ZoomFactorProperty =
+            BindableProperty.Create(
+                propertyName: nameof(ZoomFactor),
+                returnType: typeof(float),
+                declaringType: typeof(CameraPreview),
+                defaultValue: 1.0f);
+
+        public float ZoomFactor
+        {
+            get => (float)GetValue(ZoomFactorProperty);
+            set => SetValue(ZoomFactorProperty, value);
+        }
+
         public event EventHandler<string> CameraError;
         public event EventHandler<string> RecordingFinished;
 

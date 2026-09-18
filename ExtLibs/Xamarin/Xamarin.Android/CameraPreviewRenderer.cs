@@ -39,6 +39,7 @@ namespace MissionPlanner.Droid
         private MediaRecorder _mediaRecorder;
         private bool _isRecording;
         private string _currentVideoPath;
+        private CameraCharacteristics _cameraCharacteristics;
 
         private bool _isCameraOpening;
         private bool _isDisposed;
@@ -105,7 +106,12 @@ namespace MissionPlanner.Droid
             {
                 HandleRecordingStateChanged();
             }
+            else if (e.PropertyName == CameraPreview.ZoomFactorProperty.PropertyName)
+            {
+                ApplyZoom();
+            }
         }
+
 
         private void HandleRecordingStateChanged()
         {
@@ -263,13 +269,48 @@ namespace MissionPlanner.Droid
                 var facing = (LensFacing)(int)characteristics.Get(CameraCharacteristics.LensFacing);
                 if (facing == desiredFacing)
                 {
+                    _cameraCharacteristics = characteristics;
                     return id;
                 }
             }
 
             // Fallback to first available camera
             var allIds = manager.GetCameraIdList();
-            return allIds.Length > 0 ? allIds[0] : null;
+            if (allIds.Length > 0)
+            {
+                _cameraCharacteristics = manager.GetCameraCharacteristics(allIds[0]);
+                return allIds[0];
+            }
+            return null;
+        }
+
+        private void ApplyZoom()
+        {
+            if (_cameraDevice == null || _captureSession == null || _previewRequestBuilder == null || _cameraCharacteristics == null || _isDisposed) return;
+
+            try
+            {
+                float zoom = Element?.ZoomFactor ?? 1.0f;
+                if (zoom < 1.0f) zoom = 1.0f;
+
+                var sensorRect = (Android.Graphics.Rect)_cameraCharacteristics.Get(CameraCharacteristics.SensorInfoActiveArraySize);
+                if (sensorRect == null) return;
+
+                int cropW = (int)(sensorRect.Width() / zoom);
+                int cropH = (int)(sensorRect.Height() / zoom);
+                int cropX = (sensorRect.Width() - cropW) / 2;
+                int cropY = (sensorRect.Height() - cropH) / 2;
+
+                var cropRect = new Android.Graphics.Rect(cropX, cropY, cropX + cropW, cropY + cropH);
+                _previewRequestBuilder.Set(CaptureRequest.ScalerCropRegion, cropRect);
+
+                _captureSession.SetRepeatingRequest(_previewRequestBuilder.Build(), null, _backgroundHandler);
+                AndroidLog.Info("CameraPreviewRenderer", $"Zoom applied: {zoom}x");
+            }
+            catch (Exception ex)
+            {
+                AndroidLog.Warn("CameraPreviewRenderer", "ApplyZoom error: " + ex.Message);
+            }
         }
 
         private void CloseCamera()
@@ -427,6 +468,7 @@ namespace MissionPlanner.Droid
                 {
                     _renderer._previewRequestBuilder.Set(CaptureRequest.ControlMode, (int)ControlMode.Auto);
                     session.SetRepeatingRequest(_renderer._previewRequestBuilder.Build(), null, _renderer._backgroundHandler);
+                    _renderer.ApplyZoom();
                 }
                 catch (Exception ex)
                 {
@@ -501,6 +543,7 @@ namespace MissionPlanner.Droid
                 {
                     _renderer._previewRequestBuilder.Set(CaptureRequest.ControlMode, (int)ControlMode.Auto);
                     session.SetRepeatingRequest(_renderer._previewRequestBuilder.Build(), null, _renderer._backgroundHandler);
+                    _renderer.ApplyZoom();
 
                     // MediaRecorder 開始
                     _renderer._mediaRecorder.Start();

@@ -8153,6 +8153,33 @@ namespace Xamarin
             }
         }
 
+        private float[] _zoomLevels = new float[] { 1.0f, 2.0f, 3.0f };
+        private int _currentZoomIndex = 0;
+
+        private void OnCameraToggleZoomTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                if (CameraPreviewControl == null) return;
+
+                _currentZoomIndex = (_currentZoomIndex + 1) % _zoomLevels.Length;
+                float newZoom = _zoomLevels[_currentZoomIndex];
+                CameraPreviewControl.ZoomFactor = newZoom;
+
+                if (LBL_Camera_ZoomText != null)
+                {
+                    LBL_Camera_ZoomText.Text = $"🔍 {newZoom:0.0}x";
+                }
+
+                UserDialogs.Instance.Toast($"🔍 Zoom: {newZoom:0.0}x", TimeSpan.FromSeconds(1));
+            }
+            catch (Exception ex)
+            {
+                log.Warn("OnCameraToggleZoomTapped error: " + ex.Message);
+            }
+        }
+
+
         #endregion
 
         #endregion
