@@ -686,6 +686,8 @@ namespace Xamarin
             LoadJoystickSettings();
             LoadVibeSettings();
             LoadSlowModeSettings();
+            // 📷 保存されたカメラファインダー設定を起動時に自動読み込み
+            InitCameraFinder();
 
             List<string> list = new List<string>();
 
@@ -7907,8 +7909,129 @@ namespace Xamarin
 
         #endregion
 
+        #region Camera Finder Overlay (Approach 3 Step 1)
+
+        private const string PREF_CAMERA_FINDER_ENABLED = "CameraFinderEnabled";
+        private const string PREF_CAMERA_FINDER_MINIMIZED = "CameraFinderMinimized";
+        private const string PREF_CAMERA_FACING_FRONT = "CameraFacingFront";
+
+        private void InitCameraFinder()
+        {
+            try
+            {
+                // Load persistent user settings (default: Enabled = true, Minimized = false, Facing = Back)
+                bool isEnabled = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_ENABLED, true);
+                bool isMinimized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MINIMIZED, false);
+                bool isFront = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FACING_FRONT, false);
+
+                if (CameraPreviewControl != null)
+                {
+                    CameraPreviewControl.CameraFacing = isFront ? MissionPlanner.Controls.CameraFacingOption.Front : MissionPlanner.Controls.CameraFacingOption.Back;
+                    CameraPreviewControl.IsCameraActive = isEnabled;
+                }
+
+                UpdateCameraFinderUI(isEnabled, isMinimized);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("InitCameraFinder error: " + ex.Message);
+            }
+        }
+
+        private void UpdateCameraFinderUI(bool isEnabled, bool isMinimized)
+        {
+            Device.BeginInvokeOnMainThread(() =>
+            {
+                if (LBL_Camera_TopBar != null)
+                {
+                    LBL_Camera_TopBar.Text = isEnabled ? "CAM: ON" : "CAM: OFF";
+                    LBL_Camera_TopBar.TextColor = isEnabled ? Xamarin.Forms.Color.FromHex("#38BDF8") : Xamarin.Forms.Color.FromHex("#94A3B8");
+                }
+
+                if (Frame_CameraFinder != null)
+                {
+                    Frame_CameraFinder.IsVisible = isEnabled && !isMinimized;
+                }
+
+                if (Frame_CameraFinder_Minimized != null)
+                {
+                    Frame_CameraFinder_Minimized.IsVisible = isEnabled && isMinimized;
+                }
+
+                if (CameraPreviewControl != null)
+                {
+                    CameraPreviewControl.IsCameraActive = isEnabled;
+                }
+            });
+        }
+
+        private void OnCameraToggleClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                bool currentEnabled = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_ENABLED, true);
+                bool newEnabled = !currentEnabled;
+                Xamarin.Essentials.Preferences.Set(PREF_CAMERA_FINDER_ENABLED, newEnabled);
+
+                bool isMinimized = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_MINIMIZED, false);
+                UpdateCameraFinderUI(newEnabled, isMinimized);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("OnCameraToggleClicked error: " + ex.Message);
+            }
+        }
+
+        private void OnCameraToggleMinimizeTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                Xamarin.Essentials.Preferences.Set(PREF_CAMERA_FINDER_MINIMIZED, true);
+                bool isEnabled = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_ENABLED, true);
+                UpdateCameraFinderUI(isEnabled, true);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("OnCameraToggleMinimizeTapped error: " + ex.Message);
+            }
+        }
+
+        private void OnCameraExpandTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                Xamarin.Essentials.Preferences.Set(PREF_CAMERA_FINDER_MINIMIZED, false);
+                bool isEnabled = Xamarin.Essentials.Preferences.Get(PREF_CAMERA_FINDER_ENABLED, true);
+                UpdateCameraFinderUI(isEnabled, false);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("OnCameraExpandTapped error: " + ex.Message);
+            }
+        }
+
+        private void OnCameraSwitchFacingTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                if (CameraPreviewControl == null) return;
+
+                bool currentFront = (CameraPreviewControl.CameraFacing == MissionPlanner.Controls.CameraFacingOption.Front);
+                bool newFront = !currentFront;
+                CameraPreviewControl.CameraFacing = newFront ? MissionPlanner.Controls.CameraFacingOption.Front : MissionPlanner.Controls.CameraFacingOption.Back;
+                Xamarin.Essentials.Preferences.Set(PREF_CAMERA_FACING_FRONT, newFront);
+            }
+            catch (Exception ex)
+            {
+                log.Warn("OnCameraSwitchFacingTapped error: " + ex.Message);
+            }
+        }
+
+        #endregion
+
         #endregion
     }
+
 
     internal class InputBox
     {
@@ -7974,3 +8097,5 @@ namespace Xamarin
         }
     }
 }
+
+

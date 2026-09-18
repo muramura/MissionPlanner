@@ -101,6 +101,17 @@
                             <Label x:Name="LBL_slow_mode_topbar" Text="SLOW: OFF" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
+
+                    <!-- Camera Finder Toggle Button -->
+                    <Frame x:Name="Frame_CameraToggle_TopBar" BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCameraToggleClicked"/>
+                        </Frame.GestureRecognizers>
+                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                            <Label Text="📷" FontSize="11" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_Camera_TopBar" Text="CAM: ON" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </StackLayout>
+                    </Frame>
                 </StackLayout>
 
                 <!-- Center: Flight Mode & Telemetry Link -->
@@ -2698,6 +2709,63 @@
                 </StackLayout>
             </Frame>
         </Grid>
+
+        <!-- ================= CAMERA FINDER OVERLAY (アプローチ3 ステップ1) ================= -->
+        <!-- 通常表示時のカメラ小窓（右下・幅200 x 高150 dp、4:3アスペクト比） -->
+        <Frame x:Name="Frame_CameraFinder"
+               Margin="0,0,16,16" Padding="2" CornerRadius="8" HasShadow="True"
+               WidthRequest="200" HeightRequest="150"
+               HorizontalOptions="End" VerticalOptions="End"
+               BackgroundColor="#D90F172A" BorderColor="#38BDF8"
+               IsVisible="True">
+            <Grid RowDefinitions="Auto,*" RowSpacing="2">
+                <!-- タイトルバー: 📷 FINDER + カメラ切替 + 最小化ボタン -->
+                <Grid Grid.Row="0" ColumnDefinitions="*,Auto,Auto" Padding="6,4" BackgroundColor="#E60F172A">
+                    <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
+                        <Label Text="📷" FontSize="11" VerticalOptions="Center"/>
+                        <Label Text="CAM FINDER" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+                    </StackLayout>
+                    
+                    <!-- カメラ前後切り替えボタン (背面 / 前面) -->
+                    <Frame Grid.Column="1" BackgroundColor="#1E293B" BorderColor="#475569" CornerRadius="4" Padding="4,2" HasShadow="False" Margin="0,0,4,0">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCameraSwitchFacingTapped"/>
+                        </Frame.GestureRecognizers>
+                        <Label Text="🔄" FontSize="9" VerticalOptions="Center"/>
+                    </Frame>
+
+                    <!-- 最小化ボタン -->
+                    <Frame Grid.Column="2" BackgroundColor="#1E293B" BorderColor="#475569" CornerRadius="4" Padding="4,2" HasShadow="False">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnCameraToggleMinimizeTapped"/>
+                        </Frame.GestureRecognizers>
+                        <Label Text="➖" TextColor="#94A3B8" FontSize="9" VerticalOptions="Center"/>
+                    </Frame>
+                </Grid>
+
+                <!-- カメラプレビュー映像コンテナ -->
+                <Grid Grid.Row="1" x:Name="Grid_CameraPreviewContainer">
+                    <controls:CameraPreview x:Name="CameraPreviewControl"
+                                            HorizontalOptions="FillAndExpand"
+                                            VerticalOptions="FillAndExpand"/>
+                </Grid>
+            </Grid>
+        </Frame>
+
+        <!-- 最小化時のコンパクトCAMアイコン（タップで再展開） -->
+        <Frame x:Name="Frame_CameraFinder_Minimized"
+               Margin="0,0,16,16" Padding="8,6" CornerRadius="20" HasShadow="True"
+               HorizontalOptions="End" VerticalOptions="End"
+               BackgroundColor="#D90F172A" BorderColor="#38BDF8"
+               IsVisible="False">
+            <Frame.GestureRecognizers>
+                <TapGestureRecognizer Tapped="OnCameraExpandTapped"/>
+            </Frame.GestureRecognizers>
+            <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
+                <Label Text="📷" FontSize="14" VerticalOptions="Center"/>
+                <Label Text="CAM" TextColor="#38BDF8" FontSize="10" FontAttributes="Bold" VerticalOptions="Center"/>
+            </StackLayout>
+        </Frame>
 
     </Grid>
 </ContentPage>

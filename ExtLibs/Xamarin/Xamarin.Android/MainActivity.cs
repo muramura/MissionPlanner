@@ -78,6 +78,9 @@ using Stream = Android.Media.Stream;
 [assembly: UsesFeature("android.hardware.location" , Required = false)]
 [assembly: UsesFeature("android.hardware.telephony", Required = false)]
 [assembly: UsesFeature("android.hardware.faketouch" , Required = true)]
+[assembly: UsesPermission("android.permission.CAMERA")]
+[assembly: UsesFeature("android.hardware.camera", Required = false)]
+[assembly: UsesFeature("android.hardware.camera.autofocus", Required = false)]
 
 
 namespace Xamarin.Droid
