@@ -463,9 +463,24 @@ namespace MissionPlanner.Droid
                 }
             }
 
-            // 背面カメラの必要回転角（横画面アプリ前提）
-            // 例: sensorOrientation=90, displayDegrees=90 の横持ち時は requiredRotation=0 度（無回転）
-            int requiredRotation = (sensorOrientation - displayDegrees + 360) % 360;
+            // 横画面（Landscape）での使用を前提とした正立回転角の決定
+            // 端末通常横持ち（ROTATION_90）時、カメラセンサーフレームを正立させるには 270 度の回転が必要
+            int requiredRotation = 270;
+            switch (rotation)
+            {
+                case SurfaceOrientation.Rotation0:
+                    requiredRotation = 0;
+                    break;
+                case SurfaceOrientation.Rotation90:
+                    requiredRotation = 270;
+                    break;
+                case SurfaceOrientation.Rotation180:
+                    requiredRotation = 180;
+                    break;
+                case SurfaceOrientation.Rotation270:
+                    requiredRotation = 90;
+                    break;
+            }
 
             var matrix = new Matrix();
             var viewRect = new RectF(0, 0, viewWidth, viewHeight);
@@ -477,7 +492,7 @@ namespace MissionPlanner.Droid
                 var bufferRect = new RectF(0, 0, viewHeight, viewWidth);
                 bufferRect.Offset(centerX - bufferRect.CenterX(), centerY - bufferRect.CenterY());
                 matrix.SetRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.Fill);
-                matrix.PostRotate(requiredRotation == 90 ? 90 : -90, centerX, centerY);
+                matrix.PostRotate(requiredRotation == 90 ? 90 : 270, centerX, centerY);
             }
             else if (requiredRotation == 180)
             {
@@ -764,7 +779,7 @@ namespace MissionPlanner.Droid
                 catch { }
             }
 
-            // 横画面の向き（スマホ横持ち用）
+            // 横画面（Landscape）での動画録画（1280x720 横長）
             _mediaRecorder.SetOrientationHint(0);
 
             _mediaRecorder.Prepare();
