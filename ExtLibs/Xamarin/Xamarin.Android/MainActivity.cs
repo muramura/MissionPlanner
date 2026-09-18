@@ -797,10 +797,10 @@ namespace Xamarin.Droid
                 return true; // OSのBack処理へ渡さずアプリ内で消費
             }
 
-            if (keyCode == Keycode.VolumeUp)
+            if (keyCode == Keycode.VolumeUp || keyCode == Keycode.VolumeDown || keyCode == Keycode.Camera)
             {
-                e.StartTracking();
-                return true;
+                Log.Debug(TAG, "Hardware Key Pressed: " + keyCode);
+                return true; // アプリ内で消費 (OSの音量バー表示をガード)
             }
 
             return base.OnKeyDown(keyCode, e);
@@ -810,6 +810,12 @@ namespace Xamarin.Droid
         {
             // 🎮 ボタン離脱状態をFlightDataへ即座に伝達
             FlightData.SetButtonState((int)keyCode, false);
+
+            if (keyCode == Keycode.VolumeUp || keyCode == Keycode.VolumeDown || keyCode == Keycode.Camera)
+            {
+                Log.Debug(TAG, "Hardware Key Released: " + keyCode);
+                return true; // アプリ内で消費
+            }
 
             // 🎮 ゲームパッド・ジョイスティックのボタン離脱時もOS処理へ流さない
             if (global::Android.Views.KeyEvent.IsGamepadButton(keyCode) ||

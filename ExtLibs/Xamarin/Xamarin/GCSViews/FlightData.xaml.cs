@@ -124,6 +124,10 @@ namespace Xamarin
         public static readonly string[] AvailableButtonActions = new string[]
         {
             "None",
+            "CAM: REC TOGGLE",
+            "CAM: SNAP",
+            "CAM: ZOOM CYCLE",
+            "CAM: TOGGLE VIEW",
             "SLOW MODE TOGGLE",
             "SLOW MODE ON",
             "SLOW MODE OFF",
@@ -150,7 +154,8 @@ namespace Xamarin
             "Btn A", "Btn B", "Btn X", "Btn Y",
             "Btn L1", "Btn R1", "Btn L2", "Btn R2",
             "Dpad Up", "Dpad Down", "Dpad Left", "Dpad Right",
-            "Btn Start", "Btn Select"
+            "Btn Start", "Btn Select",
+            "Vol Up", "Vol Down"
         };
 
         public static string NormalizeButtonKeyName(string raw)
@@ -171,6 +176,8 @@ namespace Xamarin
             if (s.IndexOf("Dpad Right", StringComparison.OrdinalIgnoreCase) >= 0) return "Dpad Right";
             if (s.IndexOf("Btn Start", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Start";
             if (s.IndexOf("Btn Select", StringComparison.OrdinalIgnoreCase) >= 0) return "Btn Select";
+            if (s.IndexOf("Vol Up", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("VolumeUp", StringComparison.OrdinalIgnoreCase) >= 0) return "Vol Up";
+            if (s.IndexOf("Vol Down", StringComparison.OrdinalIgnoreCase) >= 0 || s.IndexOf("VolumeDown", StringComparison.OrdinalIgnoreCase) >= 0) return "Vol Down";
             return s;
         }
 
@@ -187,6 +194,8 @@ namespace Xamarin
                 case "Dpad Right": return "LOITER";
                 case "Dpad Up": return "ALTHOLD";
                 case "Btn R1": return "ARM / DISARM";
+                case "Vol Up": return "CAM: SNAP";
+                case "Vol Down": return "CAM: REC TOGGLE";
                 default: return "None";
             }
         }
@@ -247,6 +256,31 @@ namespace Xamarin
             {
                 switch (action.ToUpperInvariant())
                 {
+                    case "CAM: REC TOGGLE":
+                    case "CAMERA REC TOGGLE":
+                    case "REC TOGGLE":
+                    case "REC":
+                        TriggerCameraToggleRecord(btnName);
+                        break;
+                    case "CAM: SNAP":
+                    case "CAMERA SNAP":
+                    case "SNAP":
+                    case "SNAPSHOT":
+                    case "SHUTTER":
+                        TriggerCameraSnapshot(btnName);
+                        break;
+                    case "CAM: ZOOM CYCLE":
+                    case "CAMERA ZOOM":
+                    case "ZOOM CYCLE":
+                    case "ZOOM":
+                        TriggerCameraToggleZoom(btnName);
+                        break;
+                    case "CAM: TOGGLE VIEW":
+                    case "CAMERA TOGGLE":
+                    case "CAM TOGGLE":
+                    case "CAM VIEW":
+                        TriggerCameraToggleView(btnName);
+                        break;
                     case "190: SLOW MODE ON (BUTTON)":
                     case "SLOW MODE ON":
                         SetSlowMode(true, btnName);
@@ -616,6 +650,9 @@ namespace Xamarin
                 case 21: return "Dpad Left";
                 case 22: return "Dpad Right";
                 case 23: return "Dpad Center";
+                case 24: return "Vol Up";
+                case 25: return "Vol Down";
+                case 27: return "Camera";
                 default: return $"Btn {keyCode}";
             }
         }
@@ -3971,6 +4008,23 @@ namespace Xamarin
         {
             switch (action?.ToUpperInvariant())
             {
+                case "CAM: REC TOGGLE":
+                case "CAMERA REC TOGGLE":
+                case "REC TOGGLE":
+                case "REC": return global::Xamarin.Forms.Color.FromHex("#DC2626"); // Red
+                case "CAM: SNAP":
+                case "CAMERA SNAP":
+                case "SNAP":
+                case "SNAPSHOT":
+                case "SHUTTER": return global::Xamarin.Forms.Color.FromHex("#06B6D4"); // Cyan
+                case "CAM: ZOOM CYCLE":
+                case "CAMERA ZOOM":
+                case "ZOOM CYCLE":
+                case "ZOOM": return global::Xamarin.Forms.Color.FromHex("#F59E0B"); // Amber
+                case "CAM: TOGGLE VIEW":
+                case "CAMERA TOGGLE":
+                case "CAM TOGGLE":
+                case "CAM VIEW": return global::Xamarin.Forms.Color.FromHex("#8B5CF6"); // Violet
                 case "190: SLOW MODE ON (BUTTON)":
                 case "SLOW MODE ON":
                 case "SLOW MODE":
@@ -8209,6 +8263,82 @@ namespace Xamarin
             {
                 log.Warn("OnCameraSnapshotTapped error: " + ex.Message);
             }
+        }
+
+        public static void TriggerCameraToggleRecord(string btnName = "")
+        {
+            global::Xamarin.Forms.Device.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    if (instance == null) return;
+                    instance.OnCameraToggleRecordTapped(null, EventArgs.Empty);
+                    string state = instance._isRecordingVideo ? "🔴 REC Started" : "⏹️ REC Stopped";
+                    string src = string.IsNullOrEmpty(btnName) ? "" : $" ({btnName})";
+                    ShowButtonActionToast($"{state}{src}", instance._isRecordingVideo ? "#DC2626" : "#10B981");
+                    TriggerHapticForChoice(Config_Pattern_Arm);
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("TriggerCameraToggleRecord error: " + ex.Message);
+                }
+            });
+        }
+
+        public static void TriggerCameraSnapshot(string btnName = "")
+        {
+            global::Xamarin.Forms.Device.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    if (instance == null) return;
+                    instance.OnCameraSnapshotTapped(null, EventArgs.Empty);
+                    string src = string.IsNullOrEmpty(btnName) ? "" : $" ({btnName})";
+                    ShowButtonActionToast($"📸 Snapshot Taken{src}", "#06B6D4");
+                    TriggerHapticForChoice(Config_Pattern_Arm);
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("TriggerCameraSnapshot error: " + ex.Message);
+                }
+            });
+        }
+
+        public static void TriggerCameraToggleZoom(string btnName = "")
+        {
+            global::Xamarin.Forms.Device.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    if (instance == null) return;
+                    instance.OnCameraToggleZoomTapped(null, EventArgs.Empty);
+                    TriggerHapticForChoice(Config_Pattern_Arm);
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("TriggerCameraToggleZoom error: " + ex.Message);
+                }
+            });
+        }
+
+        public static void TriggerCameraToggleView(string btnName = "")
+        {
+            global::Xamarin.Forms.Device.BeginInvokeOnMainThread(() =>
+            {
+                try
+                {
+                    if (instance == null) return;
+                    instance.OnCameraToggleClicked(null, EventArgs.Empty);
+                    string src = string.IsNullOrEmpty(btnName) ? "" : $" ({btnName})";
+                    bool isVis = instance.Frame_CameraFinder != null && instance.Frame_CameraFinder.IsVisible;
+                    ShowButtonActionToast(isVis ? $"📷 CAM ON{src}" : $"CAM OFF{src}", isVis ? "#10B981" : "#64748B");
+                    TriggerHapticForChoice(Config_Pattern_Arm);
+                }
+                catch (Exception ex)
+                {
+                    log.Warn("TriggerCameraToggleView error: " + ex.Message);
+                }
+            });
         }
 
         #endregion
