@@ -83,11 +83,30 @@ namespace MissionPlanner.Droid
 
             try
             {
-                Bitmap bitmap = _textureView.Bitmap;
-                if (bitmap == null)
+                Bitmap rawBitmap = _textureView.Bitmap;
+                if (rawBitmap == null)
                 {
                     AndroidLog.Warn("CameraPreviewRenderer", "Failed to get bitmap from TextureView.");
                     return;
+                }
+
+                // 画面で表示されている向き（横画面）に合わせて Transform 行列を適用
+                var matrix = new Android.Graphics.Matrix();
+                _textureView.GetTransform(matrix);
+
+                Bitmap finalBitmap;
+                if (!matrix.IsIdentity)
+                {
+                    finalBitmap = Bitmap.CreateBitmap(rawBitmap, 0, 0, rawBitmap.Width, rawBitmap.Height, matrix, true);
+                    if (finalBitmap != rawBitmap)
+                    {
+                        rawBitmap.Recycle();
+                        rawBitmap.Dispose();
+                    }
+                }
+                else
+                {
+                    finalBitmap = rawBitmap;
                 }
 
                 System.Threading.ThreadPool.QueueUserWorkItem(_ =>
@@ -97,11 +116,11 @@ namespace MissionPlanner.Droid
                         string photoPath = GetOutputPhotoFilePath();
                         using (var fs = new System.IO.FileStream(photoPath, System.IO.FileMode.Create))
                         {
-                            bitmap.Compress(Bitmap.CompressFormat.Jpeg, 95, fs);
+                            finalBitmap.Compress(Bitmap.CompressFormat.Jpeg, 95, fs);
                         }
 
-                        bitmap.Recycle();
-                        bitmap.Dispose();
+                        finalBitmap.Recycle();
+                        finalBitmap.Dispose();
 
                         Android.Media.MediaScannerConnection.ScanFile(
                             _context,
@@ -425,22 +444,48 @@ namespace MissionPlanner.Droid
             if (windowManager == null) return;
 
             var rotation = windowManager.DefaultDisplay.Rotation;
+            int displayDegrees = 0;
+            switch (rotation)
+            {
+                case SurfaceOrientation.Rotation0: displayDegrees = 0; break;
+                case SurfaceOrientation.Rotation90: displayDegrees = 90; break;
+                case SurfaceOrientation.Rotation180: displayDegrees = 180; break;
+                case SurfaceOrientation.Rotation270: displayDegrees = 270; break;
+            }
+
+            int sensorOrientation = 90;
+            if (_cameraCharacteristics != null)
+            {
+                var orientationObj = _cameraCharacteristics.Get(CameraCharacteristics.SensorOrientation);
+                if (orientationObj != null)
+                {
+                    sensorOrientation = (int)orientationObj;
+                }
+            }
+
+            // 背面カメラの必要回転角（横画面アプリ前提）
+            // 例: sensorOrientation=90, displayDegrees=90 の横持ち時は requiredRotation=0 度（無回転）
+            int requiredRotation = (sensorOrientation - displayDegrees + 360) % 360;
+
             var matrix = new Matrix();
             var viewRect = new RectF(0, 0, viewWidth, viewHeight);
+            float centerX = viewRect.CenterX();
+            float centerY = viewRect.CenterY();
 
-            if (rotation == SurfaceOrientation.Rotation90 || rotation == SurfaceOrientation.Rotation270)
+            if (requiredRotation == 90 || requiredRotation == 270)
             {
                 var bufferRect = new RectF(0, 0, viewHeight, viewWidth);
-                var centerX = viewRect.CenterX();
-                var centerY = viewRect.CenterY();
                 bufferRect.Offset(centerX - bufferRect.CenterX(), centerY - bufferRect.CenterY());
                 matrix.SetRectToRect(viewRect, bufferRect, Matrix.ScaleToFit.Fill);
-
-                var degrees = rotation == SurfaceOrientation.Rotation90 ? 90 : 270;
-                matrix.PostRotate(-degrees, centerX, centerY);
+                matrix.PostRotate(requiredRotation == 90 ? 90 : -90, centerX, centerY);
+            }
+            else if (requiredRotation == 180)
+            {
+                matrix.PostRotate(180, centerX, centerY);
             }
 
             _textureView.SetTransform(matrix);
+            AndroidLog.Info("CameraPreviewRenderer", $"ConfigureTransform: view={viewWidth}x{viewHeight}, display={displayDegrees}, sensor={sensorOrientation}, requiredRotation={requiredRotation}");
         }
 
         private void SetStatusText(string message)
