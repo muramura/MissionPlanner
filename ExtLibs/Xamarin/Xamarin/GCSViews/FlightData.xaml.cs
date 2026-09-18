@@ -195,6 +195,7 @@ namespace Xamarin
                 case "Dpad Right": return "LOITER";
                 case "Dpad Up": return "ALTHOLD";
                 case "Btn R1": return "ARM / DISARM";
+                case "Btn L2": return "CAM: LIGHT TOGGLE";
                 case "Vol Up": return "CAM: SNAP";
                 case "Vol Down": return "CAM: REC TOGGLE";
                 default: return "None";
@@ -248,7 +249,15 @@ namespace Xamarin
 
             if (!ButtonActionMap.TryGetValue(btnName, out string action) || string.IsNullOrEmpty(action) || action == "None")
             {
-                return;
+                string def = GetDefaultActionForButton(btnName);
+                if (!string.IsNullOrEmpty(def) && def != "None")
+                {
+                    action = def;
+                }
+                else
+                {
+                    return;
+                }
             }
 
             Console.WriteLine($"[Joystick] Executing Button Action for '{btnName}': {action}");
@@ -3950,6 +3959,11 @@ namespace Xamarin
                 {
                     string def = GetDefaultActionForButton(b);
                     string saved = global::Xamarin.Essentials.Preferences.Get($"MP_Joy_BtnAction_{b}", def);
+                    if (b == "Btn L2" && (saved.Contains("Slow Mode") || string.IsNullOrEmpty(saved) || saved == "None"))
+                    {
+                        saved = def;
+                        global::Xamarin.Essentials.Preferences.Set($"MP_Joy_BtnAction_{b}", saved);
+                    }
                     ButtonActionMap[b] = saved;
                 }
                 UpdateAllButtonActionUI();
@@ -8396,6 +8410,31 @@ namespace Xamarin
             {
                 LBL_Camera_TorchIcon.Text = isOn ? "🔦" : "💡";
             }
+
+            // ACTIONS タブのライトボタンも完全同期
+            if (Btn_Actions_Light != null)
+            {
+                Btn_Actions_Light.Text = isOn ? "🔦 LIGHT: ON" : "💡 LIGHT: OFF";
+                Btn_Actions_Light.BackgroundColor = isOn
+                    ? global::Xamarin.Forms.Color.FromHex("#EAB308")
+                    : global::Xamarin.Forms.Color.FromHex("#1E293B");
+                Btn_Actions_Light.TextColor = isOn
+                    ? global::Xamarin.Forms.Color.Black
+                    : global::Xamarin.Forms.Color.FromHex("#EAB308");
+                Btn_Actions_Light.BorderColor = isOn
+                    ? global::Xamarin.Forms.Color.FromHex("#FDE047")
+                    : global::Xamarin.Forms.Color.FromHex("#EAB308");
+            }
+        }
+
+        private void OnActionsLightClicked(object sender, EventArgs e)
+        {
+            OnCameraToggleTorchTapped(sender, e);
+        }
+
+        private void OnActionsSnapshotClicked(object sender, EventArgs e)
+        {
+            OnCameraSnapshotTapped(sender, e);
         }
 
         public static void TriggerCameraToggleTorch(string btnName = "")
