@@ -905,6 +905,37 @@ namespace Xamarin
                             {
                                 LBL_RCChannelsStats.Text = $"📡 RC_CHANNELS: {_lastRcChannelsHz:F1} Hz | Count: {currentRxCount}";
                             }
+
+                            // 4. ACTIONS タブ内の時計同期ボタンのオフセット表示更新
+                            if (View_ActionsTab != null && View_ActionsTab.IsVisible && Btn_Actions_SyncTime != null)
+                            {
+                                var cs = MainV2.comPort?.MAV?.cs;
+                                if (cs != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
+                                {
+                                    var nowUtc = DateTime.UtcNow;
+                                    double offset = Math.Abs((nowUtc - cs.gpstime).TotalSeconds);
+                                    if (offset >= 10.0)
+                                    {
+                                        Btn_Actions_SyncTime.Text = $"🕒 SYNC TIME ({offset:F0}s OFF)";
+                                        Btn_Actions_SyncTime.BorderColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                                        Btn_Actions_SyncTime.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                                    }
+                                    else
+                                    {
+                                        Btn_Actions_SyncTime.Text = $"🕒 SYNC TIME ({offset:F1}s)";
+                                        Btn_Actions_SyncTime.BorderColor = global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                                        Btn_Actions_SyncTime.TextColor = global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                                        Btn_Actions_SyncTime.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+                                    }
+                                }
+                                else
+                                {
+                                    Btn_Actions_SyncTime.Text = "🕒 SYNC TIME TO PHONE";
+                                    Btn_Actions_SyncTime.BorderColor = global::Xamarin.Forms.Color.FromHex("#64748B");
+                                    Btn_Actions_SyncTime.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8");
+                                    Btn_Actions_SyncTime.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+                                }
+                            }
                         }
 
                         // 🎯 チャンネルPWM & ボタンアクション表示更新
@@ -8435,6 +8466,38 @@ namespace Xamarin
         private void OnActionsSnapshotClicked(object sender, EventArgs e)
         {
             OnCameraSnapshotTapped(sender, e);
+        }
+
+        private void OnActionsSyncTimeClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (MainV2.comPort == null || !MainV2.comPort.BaseStream.IsOpen)
+                {
+                    ShowButtonActionToast("⚠️ Vehicle not connected", "#EF4444");
+                    return;
+                }
+
+                bool success = MainV2.comPort.SyncVehicleTimeNow();
+                if (success)
+                {
+                    ShowButtonActionToast("🕒 Vehicle Time Synced!", "#38BDF8");
+                    if (Btn_Actions_SyncTime != null)
+                    {
+                        Btn_Actions_SyncTime.Text = "🕒 TIME SYNCED! ✓";
+                        Btn_Actions_SyncTime.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#0284C7");
+                        Btn_Actions_SyncTime.TextColor = global::Xamarin.Forms.Color.FromHex("#FFFFFF");
+                    }
+                }
+                else
+                {
+                    ShowButtonActionToast("⚠️ Sync failed", "#EF4444");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnActionsSyncTimeClicked ex: " + ex);
+            }
         }
 
         public static void TriggerCameraToggleTorch(string btnName = "")

@@ -296,6 +296,10 @@
                                         BackgroundColor="#0F766E" TextColor="#FFFFFF" CornerRadius="5" HeightRequest="28"
                                         Clicked="OnActionsSnapshotClicked"/>
                             </Grid>
+                            <!-- Vehicle Time Sync (Manual Sync & Clock Offset Display) -->
+                            <Button x:Name="Btn_Actions_SyncTime" Text="🕒 SYNC TIME TO PHONE" FontSize="9" FontAttributes="Bold"
+                                    BackgroundColor="#1E293B" BorderColor="#38BDF8" BorderWidth="1" TextColor="#38BDF8" CornerRadius="5" HeightRequest="28"
+                                    Clicked="OnActionsSyncTimeClicked"/>
                         </StackLayout>
                     </ScrollView>
 

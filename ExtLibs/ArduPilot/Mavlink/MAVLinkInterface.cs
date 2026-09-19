@@ -426,6 +426,7 @@ namespace MissionPlanner
         private int _bps1 = 0;
         private int _bps2 = 0;
         private DateTime _bpstime { get; set; }
+        private DateTime _lastVehicleTimeSync = DateTime.MinValue;
 
         public bool MirrorStreamWrite { 
             get {
@@ -5338,6 +5339,12 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
                                 _sysidcurrent = sysid;
                                 compidcurrent = compid;
                             }
+
+                            // not a gcs: check and sync vehicle clock with GCS clock (10s threshold)
+                            if (hb.type != (byte)MAV_TYPE.GCS)
+                            {
+                                CheckAndSyncVehicleTime(sysid, compid, hb);
+                            }
                         }
                     }
 
@@ -5541,6 +5548,129 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
                 enableSigning(sysid, compid);
 
                 return valid;
+            }
+        }
+
+        /// <summary>
+        /// 機体からの HEARTBEAT 受信時 (1Hz) に呼び出され、機体時刻 (gpstime) と GCS 時刻 (DateTime.UtcNow) を照合。
+        /// 10秒以上のズレがある場合、自動で MAVLink SYSTEM_TIME を送信して機体クロックを同期する。
+        /// </summary>
+        public void CheckAndSyncVehicleTime(byte sysid, byte compid, mavlink_heartbeat_t hb)
+        {
+            try
+            {
+                // ログファイル再生中、または通信ポートが閉鎖している場合は何もしない
+                if (logreadmode || BaseStream == null || !BaseStream.IsOpen)
+                    return;
+
+                if (!MAVlist.Contains(sysid, compid, false))
+                    return;
+
+                var mav = MAVlist[sysid, compid];
+                if (mav == null || mav.cs == null)
+                    return;
+
+                // 安全保護: 武装解除中 (Disarmed) のみ時刻同期を行う (飛行中の時刻急変を防止)
+                bool isArmed = (hb.base_mode & (byte)MAV_MODE_FLAG.SAFETY_ARMED) != 0;
+                if (isArmed || mav.cs.armed)
+                    return;
+
+                // クールダウン: 前回の送信から最低10秒間は再送しない
+                var nowUtc = DateTime.UtcNow;
+                if ((nowUtc - _lastVehicleTimeSync).TotalSeconds < 10.0)
+                    return;
+
+                // 機体時刻と GCS 時刻の差分計算
+                DateTime fcTime = mav.cs.gpstime;
+                double diffSeconds = Math.Abs((nowUtc - fcTime).TotalSeconds);
+
+                // 10秒以上のズレがある場合のみ同期を実行
+                if (diffSeconds >= 10.0)
+                {
+                    _lastVehicleTimeSync = nowUtc;
+
+                    var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                    ulong time_unix_us = Convert.ToUInt64((nowUtc - epoch).TotalMilliseconds * 1000);
+
+                    var pkt = new MAVLink.mavlink_system_time_t()
+                    {
+                        time_unix_usec = time_unix_us,
+                        time_boot_ms = 0
+                    };
+
+                    // QGroundControl 仕様準拠: パケットロス対策として2回連続送信
+                    sendPacket(pkt, sysid, compid);
+                    sendPacket(pkt, sysid, compid);
+
+                    log.Info($"[TimeSync] Vehicle clock synchronized to GCS (offset was {diffSeconds:F1}s, sysid={sysid}, compid={compid})");
+
+                    // メッセージ履歴に記録
+                    try
+                    {
+                        mav.cs.messages.Add((DateTime.Now, $"[GCS] Vehicle clock synced (offset: {diffSeconds:F1}s)"));
+                    }
+                    catch { }
+
+                    // HUD 中央に通知表示 (数秒間)
+                    try
+                    {
+                        mav.cs.messageHigh = $"TIME SYNCED ({diffSeconds:F0}s)";
+                        mav.cs.messageHighSeverity = MAV_SEVERITY.INFO;
+                    }
+                    catch { }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("[TimeSync] Exception in CheckAndSyncVehicleTime: " + ex);
+            }
+        }
+
+        /// <summary>
+        /// 手動で機体へ SYSTEM_TIME を即座に送信して時刻同期を行う。
+        /// </summary>
+        public bool SyncVehicleTimeNow(byte sysid = 0, byte compid = 0)
+        {
+            try
+            {
+                if (sysid == 0) sysid = (byte)sysidcurrent;
+                if (compid == 0) compid = (byte)compidcurrent;
+
+                if (BaseStream == null || !BaseStream.IsOpen)
+                    return false;
+
+                var nowUtc = DateTime.UtcNow;
+                var epoch = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                ulong time_unix_us = Convert.ToUInt64((nowUtc - epoch).TotalMilliseconds * 1000);
+
+                var pkt = new MAVLink.mavlink_system_time_t()
+                {
+                    time_unix_usec = time_unix_us,
+                    time_boot_ms = 0
+                };
+
+                sendPacket(pkt, sysid, compid);
+                sendPacket(pkt, sysid, compid);
+                _lastVehicleTimeSync = nowUtc;
+
+                if (MAVlist.Contains(sysid, compid, false))
+                {
+                    var mav = MAVlist[sysid, compid];
+                    if (mav?.cs != null)
+                    {
+                        mav.cs.messages.Add((DateTime.Now, "[GCS] Vehicle clock synced manually"));
+                        mav.cs.messageHigh = "TIME SYNCED";
+                        mav.cs.messageHighSeverity = MAV_SEVERITY.INFO;
+                    }
+                }
+
+                log.Info($"[TimeSync] Manual vehicle clock sync sent to sysid={sysid}, compid={compid}");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                log.Error("[TimeSync] SyncVehicleTimeNow failed: " + ex);
+                return false;
             }
         }
 
