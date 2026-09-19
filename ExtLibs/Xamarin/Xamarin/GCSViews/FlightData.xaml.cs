@@ -1120,8 +1120,6 @@ namespace Xamarin
                             hud1.connected = true;
                             hud1.Invalidate();
 
-                            // Update top telemetry bar
-                            LBL_battery_volt.Text = $"{cs.battery_voltage:0.00} V";
 
                             // Flight Mode: 高視認性バッジ更新 (カラー＆アイコン連動)
                             string modeUpper = (string.IsNullOrEmpty(cs.mode) ? "STABILIZE" : cs.mode.ToUpper());
@@ -1242,13 +1240,6 @@ namespace Xamarin
                                     LBL_quick_cpuload.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981"); // Green
                                 }
 
-                                // 10. Link Quality
-                                int linkQual = (int)cs.linkqualitygcs;
-                                LBL_quick_link.Text = $"{linkQual} %";
-                                LBL_quick_link.TextColor = linkQual >= 80 
-                                    ? global::Xamarin.Forms.Color.FromHex("#38BDF8") 
-                                    : (linkQual >= 50 ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#EF4444"));
-
                                 if (View_StatusTab.IsVisible)
                                 {
                                     LBL_status_list.Text = $"Roll: {cs.roll:0.0}°\nPitch: {cs.pitch:0.0}°\nYaw: {cs.yaw:0.0}°\nAlt: {cs.alt:0.0}m\nClimb: {cs.verticalspeed:0.0}m/s\nVolt: {cs.battery_voltage:0.00}V\nCur: {cs.current:0.0}A\nSatCount: {cs.satcount}\nGPSFix: {cs.gpsstatus}\nArmed: {cs.armed}\nMode: {cs.mode}";
@@ -1256,12 +1247,17 @@ namespace Xamarin
                             }
                             catch { }
 
-                            // Phone Battery Level
+                            // Phone Battery Level (QUICK Tab Tile)
                             try
                             {
                                 var phoneBat = (int)(global::Xamarin.Essentials.Battery.ChargeLevel * 100);
                                 if (phoneBat >= 0)
-                                    LBL_phone_battery.Text = $"{phoneBat}%";
+                                {
+                                    LBL_quick_phone_bat.Text = $"{phoneBat} %";
+                                    LBL_quick_phone_bat.TextColor = phoneBat >= 50 
+                                        ? global::Xamarin.Forms.Color.FromHex("#38BDF8") 
+                                        : (phoneBat >= 20 ? global::Xamarin.Forms.Color.FromHex("#F59E0B") : global::Xamarin.Forms.Color.FromHex("#EF4444"));
+                                }
                             }
                             catch { }
 

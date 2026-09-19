@@ -40,22 +40,6 @@
 
                     <BoxView WidthRequest="1" HeightRequest="12" BackgroundColor="#475569" VerticalOptions="Center"/>
 
-                    <!-- Drone Battery -->
-                    <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
-                        <Label Text="🔋" FontSize="12" VerticalOptions="Center"/>
-                        <Label x:Name="LBL_battery_volt" Text="-- V" TextColor="#10B981" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
-                    </StackLayout>
-
-                    <BoxView WidthRequest="1" HeightRequest="12" BackgroundColor="#475569" VerticalOptions="Center"/>
-
-                    <!-- Android Phone Battery -->
-                    <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
-                        <Label Text="📱" FontSize="11" VerticalOptions="Center"/>
-                        <Label x:Name="LBL_phone_battery" Text="--%" TextColor="#94A3B8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
-                    </StackLayout>
-
-                    <BoxView WidthRequest="1" HeightRequest="12" BackgroundColor="#475569" VerticalOptions="Center"/>
-
                     <!-- FC / MP Messages Button -->
                     <Frame BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
                         <Frame.GestureRecognizers>
@@ -230,11 +214,11 @@
                                     <Label x:Name="LBL_quick_cpuload" Text="-- %" TextColor="#10B981" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
-                            <!-- 10. Link Quality -->
+                            <!-- 10. Phone Battery (📱) -->
                             <Frame Grid.Row="4" Grid.Column="1" BackgroundColor="#1E293B" CornerRadius="4" Padding="5,3" HasShadow="False" BorderColor="#334155">
                                 <StackLayout Spacing="0">
-                                    <Label Text="Link Quality" TextColor="#94A3B8" FontSize="8"/>
-                                    <Label x:Name="LBL_quick_link" Text="-- %" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold"/>
+                                    <Label Text="Phone Bat 📱" TextColor="#94A3B8" FontSize="8"/>
+                                    <Label x:Name="LBL_quick_phone_bat" Text="-- %" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold"/>
                                 </StackLayout>
                             </Frame>
                         </Grid>
