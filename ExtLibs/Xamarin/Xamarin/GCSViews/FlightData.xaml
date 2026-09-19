@@ -79,6 +79,17 @@
                             <Label x:Name="LBL_Camera_TopBar" Text="CAM: ON" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
+
+                    <!-- Map Source / Satellite Image Selector Button -->
+                    <Frame x:Name="Frame_MapProvider_TopBar" BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnMapProviderSelectClicked"/>
+                        </Frame.GestureRecognizers>
+                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                            <Label Text="🗺️" FontSize="11" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_MapProvider_TopBar" Text="MAP: Google Sat" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </StackLayout>
+                    </Frame>
                 </StackLayout>
 
                 <!-- Center: Flight Mode & Wi-Fi Link Quality (高視認性バッジ) -->

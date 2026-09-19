@@ -763,7 +763,7 @@ namespace Xamarin
             gMapControl1.LevelsKeepInMemmory = 10;
             //gMapControl1.Manager.MemoryCache.Size
 
-            gMapControl1.MapProvider = GMapProviders.GoogleSatelliteMap;
+            InitMapProvider();
 
             gMapControl1.ShowTileGridLines = false;
             gMapControl1.MapScaleInfoEnabled = false;
@@ -8309,6 +8309,97 @@ namespace Xamarin
             catch (Exception ex)
             {
                 log.Warn("OnCameraToggleClicked error: " + ex.Message);
+            }
+        }
+
+
+        // ==========================================
+        // 🗺️ 地図・衛星写真ソース選択機能
+        // ==========================================
+        private class MapOption
+        {
+            public string Name { get; set; }
+            public GMapProvider Provider { get; set; }
+            public string ShortName { get; set; }
+
+            public MapOption(string name, GMapProvider provider, string shortName)
+            {
+                Name = name;
+                Provider = provider;
+                ShortName = shortName;
+            }
+        }
+
+        private static readonly List<MapOption> AvailableMapOptions = new List<MapOption>
+        {
+            new MapOption("Google 衛星写真", GMapProviders.GoogleSatelliteMap, "Google Sat"),
+            new MapOption("Google ハイブリッド", GMapProviders.GoogleHybridMap, "Google Hyb"),
+            new MapOption("Bing 衛星写真", GMapProviders.BingSatelliteMap, "Bing Sat"),
+            new MapOption("Bing ハイブリッド", GMapProviders.BingHybridMap, "Bing Hyb"),
+            new MapOption("Google 地図", GMapProviders.GoogleMap, "Google Map"),
+            new MapOption("Google 地形図", GMapProviders.GoogleTerrainMap, "Google Ter"),
+            new MapOption("OpenStreetMap", GMapProviders.OpenStreetMap, "OSM")
+        };
+
+        private const string PREF_SELECTED_MAP_PROVIDER = "MP_SelectedMapProvider";
+
+        private void InitMapProvider()
+        {
+            try
+            {
+                string saved = global::Xamarin.Essentials.Preferences.Get(PREF_SELECTED_MAP_PROVIDER, "Google 衛星写真");
+                ApplyMapProvider(saved);
+            }
+            catch (Exception ex)
+            {
+                log.Error("InitMapProvider error: " + ex.Message);
+                gMapControl1.MapProvider = GMapProviders.GoogleSatelliteMap;
+            }
+        }
+
+        private void ApplyMapProvider(string name)
+        {
+            try
+            {
+                MapOption selected = AvailableMapOptions.Find(o => o.Name == name);
+                if (selected == null)
+                {
+                    selected = AvailableMapOptions[0]; // デフォルト: Google 衛星写真
+                }
+
+                gMapControl1.MapProvider = selected.Provider;
+                if (LBL_MapProvider_TopBar != null)
+                {
+                    LBL_MapProvider_TopBar.Text = $"MAP: {selected.ShortName}";
+                }
+                global::Xamarin.Essentials.Preferences.Set(PREF_SELECTED_MAP_PROVIDER, selected.Name);
+            }
+            catch (Exception ex)
+            {
+                log.Error("ApplyMapProvider error: " + ex.Message);
+            }
+        }
+
+        private async void OnMapProviderSelectClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                List<string> buttons = new List<string>();
+                foreach (var opt in AvailableMapOptions)
+                {
+                    buttons.Add(opt.Name);
+                }
+
+                string action = await DisplayActionSheet("🗺️ 地図・衛星写真ソースの選択", "キャンセル", null, buttons.ToArray());
+                if (!string.IsNullOrEmpty(action) && action != "キャンセル")
+                {
+                    ApplyMapProvider(action);
+                    gMapControl1.ReloadMap();
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnMapProviderSelectClicked error: " + ex.Message);
             }
         }
 
