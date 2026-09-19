@@ -913,19 +913,30 @@ namespace Xamarin
                                 if (cs != null && MainV2.comPort.BaseStream != null && MainV2.comPort.BaseStream.IsOpen)
                                 {
                                     var nowUtc = DateTime.UtcNow;
-                                    double offset = Math.Abs((nowUtc - cs.gpstime).TotalSeconds);
-                                    if (offset >= 10.0)
+                                    if (cs.gpstime < new DateTime(2020, 1, 1))
                                     {
-                                        Btn_Actions_SyncTime.Text = $"🕒 SYNC TIME ({offset:F0}s OFF)";
+                                        Btn_Actions_SyncTime.Text = "🕒 SYNC TIME (NOT SET)";
                                         Btn_Actions_SyncTime.BorderColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
                                         Btn_Actions_SyncTime.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                                        Btn_Actions_SyncTime.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
                                     }
                                     else
                                     {
-                                        Btn_Actions_SyncTime.Text = $"🕒 SYNC TIME ({offset:F1}s)";
-                                        Btn_Actions_SyncTime.BorderColor = global::Xamarin.Forms.Color.FromHex("#38BDF8");
-                                        Btn_Actions_SyncTime.TextColor = global::Xamarin.Forms.Color.FromHex("#38BDF8");
-                                        Btn_Actions_SyncTime.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+                                        double offset = Math.Abs((nowUtc - cs.gpstime).TotalSeconds);
+                                        if (offset >= 10.0)
+                                        {
+                                            Btn_Actions_SyncTime.Text = $"🕒 SYNC TIME ({offset:F0}s OFF)";
+                                            Btn_Actions_SyncTime.BorderColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                                            Btn_Actions_SyncTime.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                                            Btn_Actions_SyncTime.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+                                        }
+                                        else
+                                        {
+                                            Btn_Actions_SyncTime.Text = $"🕒 TIME SYNCED ({offset:F1}s)";
+                                            Btn_Actions_SyncTime.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                                            Btn_Actions_SyncTime.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                                            Btn_Actions_SyncTime.BackgroundColor = global::Xamarin.Forms.Color.FromHex("#1E293B");
+                                        }
                                     }
                                 }
                                 else

@@ -1635,6 +1635,32 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
         }
 
         /// <summary>
+        /// パラメーター辞書キャッシュの存在有無にかかわらず、機体へ直接 PARAM_SET を送信する
+        /// </summary>
+        public void SendParamSetDirect(byte sysid, byte compid, string paramname, float value, MAV_PARAM_TYPE ptype = MAV_PARAM_TYPE.REAL32)
+        {
+            try
+            {
+                var req = new mavlink_param_set_t
+                {
+                    target_system = sysid,
+                    target_component = compid,
+                    param_type = (byte)ptype,
+                    param_value = value
+                };
+                char[] temp = paramname.ToCharArray();
+                Array.Resize(ref temp, 16);
+                req.param_id = temp.ToByteArray();
+                sendPacket(req, sysid, compid);
+                log.Info($"[TimeSync] SendParamSetDirect sent {paramname}={value} to sysid={sysid}");
+            }
+            catch (Exception ex)
+            {
+                log.Error($"[TimeSync] SendParamSetDirect error: {ex}");
+            }
+        }
+
+        /// <summary>
         /// Set parameter on apm
         /// </summary>
         /// <param name="paramname">name as a string</param>
@@ -5602,6 +5628,36 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
                     sendPacket(pkt, sysid, compid);
                     sendPacket(pkt, sysid, compid);
 
+                    // 即時にローカルの gpstime も更新して不要な再送ループを抑制
+                    mav.cs.gpstime = nowUtc;
+
+                    // 機体の RTC ソース許可設定 (BRD_RTC_TYPES) をチェックし、MAVLink が未許可なら直接パケットで自動有効化 (3 = GPS + MAVLink)
+                    try
+                    {
+                        if (mav.param.ContainsKey("BRD_RTC_TYPES"))
+                        {
+                            int currentTypes = (int)(float)mav.param["BRD_RTC_TYPES"].Value;
+                            if ((currentTypes & 2) == 0)
+                            {
+                                log.Info($"[TimeSync] Enabling MAVLink time source on vehicle: BRD_RTC_TYPES {currentTypes} -> {currentTypes | 2}");
+                                SendParamSetDirect(sysid, compid, "BRD_RTC_TYPES", currentTypes | 2, MAV_PARAM_TYPE.INT8);
+                            }
+                        }
+                        else
+                        {
+                            // パラメーターリスト未取得時でも直接機体に送信して即座に有効化
+                            SendParamSetDirect(sysid, compid, "BRD_RTC_TYPES", 3.0f, MAV_PARAM_TYPE.INT8);
+                        }
+                    }
+                    catch { }
+
+                    // 機体に SYSTEM_TIME (1Hz = 1,000,000us) の定期配信を要求
+                    try
+                    {
+                        doCommand(sysid, compid, MAV_CMD.SET_MESSAGE_INTERVAL, (float)MAVLINK_MSG_ID.SYSTEM_TIME, 1000000, 0, 0, 0, 0, 0, false);
+                    }
+                    catch { }
+
                     log.Info($"[TimeSync] Vehicle clock synchronized to GCS (offset was {diffSeconds:F1}s, sysid={sysid}, compid={compid})");
 
                     // メッセージ履歴に記録
@@ -5658,11 +5714,38 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
                     var mav = MAVlist[sysid, compid];
                     if (mav?.cs != null)
                     {
+                        mav.cs.gpstime = nowUtc;
                         mav.cs.messages.Add((DateTime.Now, "[GCS] Vehicle clock synced manually"));
                         mav.cs.messageHigh = "TIME SYNCED";
                         mav.cs.messageHighSeverity = MAV_SEVERITY.INFO;
                     }
+
+                    // 機体の RTC ソース許可設定 (BRD_RTC_TYPES) をチェックし、MAVLink が未許可なら直接パケットで自動有効化
+                    try
+                    {
+                        if (mav != null && mav.param.ContainsKey("BRD_RTC_TYPES"))
+                        {
+                            int currentTypes = (int)(float)mav.param["BRD_RTC_TYPES"].Value;
+                            if ((currentTypes & 2) == 0)
+                            {
+                                log.Info($"[TimeSync] Enabling MAVLink time source on vehicle: BRD_RTC_TYPES {currentTypes} -> {currentTypes | 2}");
+                                SendParamSetDirect(sysid, compid, "BRD_RTC_TYPES", currentTypes | 2, MAV_PARAM_TYPE.INT8);
+                            }
+                        }
+                        else
+                        {
+                            SendParamSetDirect(sysid, compid, "BRD_RTC_TYPES", 3.0f, MAV_PARAM_TYPE.INT8);
+                        }
+                    }
+                    catch { }
                 }
+
+                // 機体に SYSTEM_TIME (1Hz = 1,000,000us) の定期配信を要求
+                try
+                {
+                    doCommand(sysid, compid, MAV_CMD.SET_MESSAGE_INTERVAL, (float)MAVLINK_MSG_ID.SYSTEM_TIME, 1000000, 0, 0, 0, 0, 0, false);
+                }
+                catch { }
 
                 log.Info($"[TimeSync] Manual vehicle clock sync sent to sysid={sysid}, compid={compid}");
                 return true;

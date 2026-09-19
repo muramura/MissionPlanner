@@ -2630,12 +2630,19 @@ namespace MissionPlanner
                         {
                             var systime = mavLinkMessage.ToStructure<MAVLink.mavlink_system_time_t>();
 
-                            var date1 = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
                             try
                             {
-                                date1 = date1.AddMilliseconds(systime.time_unix_usec / 1000);
-
-                                gpstime = date1;
+                                if (systime.time_unix_usec > 0)
+                                {
+                                    var date1 = new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc);
+                                    date1 = date1.AddMilliseconds(systime.time_unix_usec / 1000);
+                                    gpstime = date1;
+                                    log.Info($"[SYSTEM_TIME] Received from vehicle: {gpstime:yyyy-MM-dd HH:mm:ss} UTC (boot: {systime.time_boot_ms}ms)");
+                                }
+                                else
+                                {
+                                    log.Info($"[SYSTEM_TIME] Received from vehicle with time_unix_usec=0 (boot: {systime.time_boot_ms}ms)");
+                                }
                             }
                             catch
                             {
