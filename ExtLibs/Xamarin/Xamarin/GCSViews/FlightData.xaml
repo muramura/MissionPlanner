@@ -32,11 +32,16 @@
                     
                     <BoxView WidthRequest="1" HeightRequest="12" BackgroundColor="#475569" VerticalOptions="Center"/>
                     
-                    <!-- GNSS Status -->
-                    <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
-                        <Label Text="🛰️" FontSize="11" VerticalOptions="Center"/>
-                        <Label x:Name="LBL_gps_status" Text="No GPS" TextColor="#F87171" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
-                    </StackLayout>
+                    <!-- GNSS Status Pill (Tappable for details) -->
+                    <Frame x:Name="Frame_gps_status" BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnGpsStatusTapped"/>
+                        </Frame.GestureRecognizers>
+                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                            <Label Text="🛰️" FontSize="11" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_gps_status" Text="No GPS" TextColor="#F87171" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </StackLayout>
+                    </Frame>
 
                     <BoxView WidthRequest="1" HeightRequest="12" BackgroundColor="#475569" VerticalOptions="Center"/>
 

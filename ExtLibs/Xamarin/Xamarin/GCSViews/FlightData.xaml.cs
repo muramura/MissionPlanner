@@ -1194,21 +1194,30 @@ namespace Xamarin
                             if (LBL_wifi_icon != null) LBL_wifi_icon.Text = wifiIcon;
                             if (Frame_wifi_link != null) Frame_wifi_link.BorderColor = global::Xamarin.Forms.Color.FromHex(wifiColor);
 
-                            // GNSS Status
+                            // GNSS Status & HACC
+                            string haccBadge = "";
+                            if (cs.gpsstatus > 0 && cs.gpsh_acc > 0 && cs.gpsh_acc < 100)
+                            {
+                                haccBadge = $" ±{cs.gpsh_acc:0.1}m";
+                            }
+
                             if (cs.gpsstatus >= 3)
                             {
-                                LBL_gps_status.Text = $"3D ({cs.satcount})";
+                                LBL_gps_status.Text = $"3D ({cs.satcount}){haccBadge}";
                                 LBL_gps_status.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                                if (Frame_gps_status != null) Frame_gps_status.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
                             }
                             else if (cs.gpsstatus > 0)
                             {
-                                LBL_gps_status.Text = $"Fix ({cs.satcount})";
+                                LBL_gps_status.Text = $"Fix ({cs.satcount}){haccBadge}";
                                 LBL_gps_status.TextColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
+                                if (Frame_gps_status != null) Frame_gps_status.BorderColor = global::Xamarin.Forms.Color.FromHex("#F59E0B");
                             }
                             else
                             {
                                 LBL_gps_status.Text = cs.satcount > 0 ? $"No GPS ({cs.satcount})" : "No GPS";
                                 LBL_gps_status.TextColor = global::Xamarin.Forms.Color.FromHex("#F87171");
+                                if (Frame_gps_status != null) Frame_gps_status.BorderColor = global::Xamarin.Forms.Color.FromHex("#475569");
                             }
 
                             // Quick Tab Telemetry Updates
@@ -3074,6 +3083,69 @@ namespace Xamarin
             catch (Exception ex)
             {
                 log.Error("OnMessagesTapped ex: " + ex);
+            }
+        }
+
+
+        private async void OnGpsStatusTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                var cs = MainV2.comPort?.MAV?.cs;
+                if (cs == null)
+                {
+                    await DisplayAlert("🛰️ GNSS 詳細", "機体に接続されていません。", "OK");
+                    return;
+                }
+
+                string fixType;
+                switch ((int)cs.gpsstatus)
+                {
+                    case 0: fixType = "No GPS (0)"; break;
+                    case 1: fixType = "No Fix (1)"; break;
+                    case 2: fixType = "2D Fix (2)"; break;
+                    case 3: fixType = "3D Fix (3)"; break;
+                    case 4: fixType = "DGPS / SBAS (4)"; break;
+                    case 5: fixType = "RTK Float (5)"; break;
+                    case 6: fixType = "RTK Fixed (6)"; break;
+                    default: fixType = $"Status ({cs.gpsstatus})"; break;
+                }
+
+                string hacc = (cs.gpsstatus > 0 && cs.gpsh_acc > 0) ? $"{cs.gpsh_acc:0.00} m" : "未取得 (N/A)";
+                string vacc = (cs.gpsstatus > 0 && cs.gpsv_acc > 0) ? $"{cs.gpsv_acc:0.00} m" : "未取得 (N/A)";
+                string velacc = (cs.gpsstatus > 0 && cs.gpsvel_acc > 0) ? $"{cs.gpsvel_acc:0.00} m/s" : "未取得 (N/A)";
+                string hdop = (cs.gpshdop > 0) ? $"{cs.gpshdop:0.00}" : "N/A";
+
+                // 飛行可否判定
+                string flyable;
+                if (cs.gpsstatus >= 3 && cs.satcount >= 7 && (cs.gpsh_acc <= 0 || cs.gpsh_acc <= 2.0f))
+                {
+                    flyable = "✅ 飛行可能 (PosHold / Loiter / Auto)\n精度・衛星数が十分確保されています。";
+                }
+                else if (cs.gpsstatus >= 3 && cs.satcount >= 5)
+                {
+                    flyable = "⚠️ 精度確認中 (衛星数またはHACC不足)\n屋外でHACC ≤ 2.0mまで待機を推奨します。";
+                }
+                else
+                {
+                    flyable = "❌ 自律飛行不可 (AltHold / Stabilize のみ)\nGPS位置制御モードは使用できません。";
+                }
+
+                string details =
+                    $"【状態】: {fixType} (衛星: {cs.satcount}機)\n" +
+                    $"【水平精度 HACC】: {hacc}\n" +
+                    $"【垂直精度 VACC】: {vacc}\n" +
+                    $"【対地速】: {cs.groundspeed:0.1} m/s (HDOP: {hdop})\n" +
+                    $"【位置】: {cs.lat:0.000000}°, {cs.lng:0.000000}°\n" +
+                    $"【高度】: 海抜 {cs.altasl:0.1}m (相対 {cs.alt:0.1}m)\n" +
+                    $"──────────────────\n" +
+                    $"【フライト判定】\n{flyable}";
+
+                await DisplayAlert("🛰️ GNSS 詳細ステータス", details, "閉じる");
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnGpsStatusTapped ex: " + ex);
             }
         }
 
