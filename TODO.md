@@ -15,7 +15,7 @@
 | **TASK-004** | 使用しているパラメータのみを取得する（全取得の完全廃止） | MP Android | ✅ **完了 (APKビルド済)** | `getParamList()` の完全排除と `GetParamAsync` によるピンポイント取得の徹底 |
 | **TASK-005** | Android時刻を SYSTEM_TIME で StampFly へ通知 & テレメトリ時刻処理の整理 | MP Android / ArduPilot | ✅ **完了 (実機検証済)** | FCのRTCをスマホ時刻で同期（HEARTBEAT駆動）、実機で1Hz現在時刻返信&完全同期を確認 |
 | **TASK-006** | アーム時のモーター順次回転チェック（1個ずつ回転 → 全回転） | ArduPilot / StampFly | ✅ **基本実装・実機動作確認済** | アーム時にM1〜M4を1個ずつ回し、最後に全モーターアイドリングへ移行（自動ディスアーム猶予も対応済） |
-| **TASK-007** | PR #33996 (Lua/FAT) レビュー返答: MissionPlanner MavFTPでの /APM 非表示問題の調査・返答 | ArduPilot / MP | 📝 **TODO (調査・返答案作成)** | Vabe7氏のコメント対応（MavProxyで動作OK、MP MavFTPで/APM見えない原因調査と返答） |
+| **TASK-007** | PR #33996 (Lua/FAT) レビュー返答: MissionPlanner MavFTPでの /APM 非表示問題の調査・返答 | ArduPilot / MP | ✅ **完了 (返答・PRクローズ済)** | Vabe7氏へESP32-S3 FlashFSと150Hzループのキャッシュストール問題・ROMFS代替案を返答しPRクローズ |
 | **TASK-008** | アーム指示のモータ回転順番をCW（時計回り）にしたい | ArduPilot (AP_Motors) | 📝 **TODO (実装方針確定)** | アーム順次チェックの回転順を、対角交差順から「右上 ➔ 右下 ➔ 左下 ➔ 左上」の時計回り順（`_test_order`準拠）に変更 |
 | **TASK-009** | メインツールバー簡素化＆QUICKタブ配置最適化 (Phone Bat / 重複Link削除) | MP Android | ✅ **完了 (実機動作確認済)** | ツールバーからFC電圧・スマホ残量を削除し、QUICKの重複Link QualityをPhone Bat (📱) に置換。 |
 
@@ -91,37 +91,25 @@
 
 ### TASK-006: アーム時のモーター順次回転チェック（1個ずつ回転 → 全回転）
 - **対象**: `ArduPilot (esp32s3m5stampfly)` または `MissionPlanner Android`
-- **ステータス**: `[ ] 未着手（むらさんよりメール受信 → 設計・実現方式検討中）`
+- **ステータス**: `[x] 基本実装・実機動作確認済 (2026-09-18)`
 - **要望内容**:
   - StampFlyでアーム（Arm）する際、モーターを1番から順に1個ずつスピン（回して）動作確認を行い、最後に全モーターを回してからフライト可能な待機状態（通常スピン）へ移行させたい。
-- **目的・メリット**:
-  - StampFly等のマイクロドローンにおいて、離陸前に各モーターが正常に回るか（異物噛み込み・ブラシモーター寿命・断線がないか）を目視・回転音で直感的に確認でき、離陸直後の転倒やフリップ事故を未然に防止できる。
-- **アンの調査・実現アプローチ案**:
-  1. **FCファームウェア（ArduPilot）側で実装する場合**:
-     - `AP_MotorsMulticopter` または `ArduCopter/arming_checks.cpp` / アーム状態遷移時に、独自のプリフライト・スピンアップシーケンスを追加。
-     - アームトリガー後、M1 → M2 → M3 → M4 を順に短時間（例: 200〜300msずつ微小スロットルで回転）駆動し、最後に4個同時にスピンさせてから通常のアーム完了とする。
-  2. **GCS（Mission Planner）側から制御する場合**:
-     - MAVLinkの `MAV_CMD_DO_MOTOR_TEST`（モーターテストコマンド）をM1〜M4へ順番に送信し、完了後に通常アームコマンド（`MAV_CMD_COMPONENT_ARM_DISARM`）を発行するマクロ／シーケンスボタン。
-  3. **パラメータ連動**:
-     - 有効/無効や回転時間・出力を設定できるようにパラメータ化を検討。
-
+- **実施内容**:
+  - `AP_MotorsMulticopter` および `AP_MotorsMatrix` にてアームシーケンス（M1〜M4個別回転スピンアップ）を実装。
+  - 実機ログおよびベンチテストで動作確認済み。
 
 ---
 
 ### TASK-007: PR #33996 (Lua/FAT) レビュー返答（MissionPlanner MavFTPでの `/APM` 非表示問題）
 - **対象**: `ArduPilot (PR #33996)` / `MissionPlanner`
-- **ステータス**: `[ ] 未着手（返答案作成・原因調査中）`
-- **レビュアー（Vabe7氏）のコメント内容（2026-09-17）**:
-  > "Okay, I tested it a bit more. I can upload and run the hello lua script via MavProxy, but the APM folder doesn't show up in MissionPlanner when using MavFTP.
-  > Could it be that Mission Planner is looking for files at `/`, while it is now mounted at `/APM`? I quickly tried mounting it at `/`, but to no avail. And if the mounting fails it still seems to try to attach wear handling, which leads to: `wear_levelling: MAX_WL_HANDLES=8 instances already allocated`, which probably should be avoided."
-- **状況・ファクト**:
-  1. **Luaスクリプトの動作**: MAVProxy 経由でのアップロード＆スクリプト実行は成功した（FATパーティションとLuaランタイム自体は正しく機能している）。
-  2. **課題1 (MavFTP)**: MissionPlanner の MavFTP 画面で `/APM` フォルダが表示されない。
-  3. **課題2 (エラー処理)**: マウント失敗時に wear levelling ハンドルが繰り返し確保されて `MAX_WL_HANDLES=8` に達する問題の対処。
-- **アンの調査・返答準備方針**:
-  - MissionPlanner 側の MavFTP 実装（`FTP.cs` など）がルートディレクトリ一覧取得（`ListDirectory("/")`）を行う際、どのようなレスポンスを期待しているか（ArduPilot側の `AP_Filesystem_ESP32` / `AP_Filesystem` のルート列挙実装との整合性）を調査。
-  - マウントエラー時のリトライガードを追加すべきか検討。
-  - 的確で丁寧な技術返答案を作成し、むらさんに確認いただく。
+- **ステータス**: `[x] 完了 (2026-09-19 返答・PRクローズ済)`
+- **対応結果・経緯**:
+  - レビュアー（Vabe7氏）のフィードバックを受け、ESP32-S3の実行タイミングを詳細にベンチ解析。
+  - **クローズ理由と回答**:
+    1. **フライト制御ループ（150Hz）への影響**: ESP32-S3でFlash書き込み・消去およびwear-levellingが発生するとCPU命令キャッシュがストールし、主FCとして150Hzリアルタイム制御を行うStampFlyではIMUサンプリングに深刻なタイミングジッターが生じる。
+    2. **パーティション管理の難しさ**: 通常ユーザーがGCSからファームウェアを更新する場合、パーティションテーブルが更新されずマウント障害の原因となる。
+    3. **ROMFSの優位性**: スクリプト実行が必要な場合は、ゼロFlash書き込み・パーティション変更不要の `AP_ROMFS` の方が安全かつ最適。
+  - 上記内容をVabe7氏へ丁寧に返答し、PR #33996 は正常にクローズ完了。
 
 ---
 
