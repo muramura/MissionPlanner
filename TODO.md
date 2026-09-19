@@ -18,7 +18,7 @@
 | **TASK-007** | PR #33996 (Lua/FAT) レビュー返答: MissionPlanner MavFTPでの /APM 非表示問題の調査・返答 | ArduPilot / MP | ✅ **完了 (返答・PRクローズ済)** | Vabe7氏へESP32-S3 FlashFSと150Hzループのキャッシュストール問題・ROMFS代替案を返答しPRクローズ |
 | **TASK-008** | アーム指示のモータ回転順番をCW（時計回り）にしたい | ArduPilot (AP_Motors) | 📝 **TODO (実装方針確定)** | アーム順次チェックの回転順を、対角交差順から「右上 ➔ 右下 ➔ 左下 ➔ 左上」の時計回り順（`_test_order`準拠）に変更 |
 | **TASK-009** | メインツールバー簡素化＆QUICKタブ配置最適化 (Phone Bat / 重複Link削除) | MP Android | ✅ **完了 (実機動作確認済)** | ツールバーからFC電圧・スマホ残量を削除し、QUICKの重複Link QualityをPhone Bat (📱) に置換。 |
-| **TASK-010** | バッテリー低電圧警告・フェイルセーフの適正化 (3.50V設定) | ArduPilot / MP Android | 📝 **TODO (設計・設定確認)** | 1S LiPoで3.8V警告は高すぎるため、低電圧警告(BATT_LOW_VOLT)およびGCS警告を3.50Vに適正化 |
+| **TASK-010** | バッテリー低電圧警告・フェイルセーフの適正化 (3.50V設定) | ArduPilot / MP Android | ✅ **完了 (defaults.parm反映済)** | `defaults.parm` の `BATT_LOW_VOLT` を 3.50V に設定・反映完了 |
 
 ---
 
@@ -146,17 +146,13 @@
 
 ### TASK-010: バッテリー低電圧警告・フェイルセーフの適正化 (3.50V設定)
 - **対象**: `ArduPilot (defaults.parm / BATT_LOW_VOLT)` および `MissionPlanner (Android / GCS)`
-- **ステータス**: `[ ] 未着手（むらさん要望 → TODO追加）`
+- **ステータス**: `[x] defaults.parm 反映・コミット完了 (2026-09-19)`
 - **背景・課題**:
   - StampFlyで採用されている1S LiPoバッテリー（公称3.7V、満充電4.2V）において、3.8Vで「低電圧（Low Battery）」警告やフェイルセーフが発動すると、通常フライト開始直後やモーター負荷時の電圧降下ですぐに警告状態となってしまう。
   - 実用的なフライト時間を確保し、安全に運用するために低電圧判定しきい値を **3.50V** に適正化したい。
-- **目標・検討項目**:
-  1. **ArduPilot側パラメータ (`defaults.parm`)**:
-     - `BATT_LOW_VOLT` を 3.50V（現在デフォルト3.4V、実機3.50V）に正式確定・整理。
-     - 重大低電圧（`BATT_CRT_VOLT`）を 3.30V 等に整合させるか検討。
-  2. **Mission Planner Android側の警告設定**:
-     - GCS側の低電圧アラート（HUD表示 `lowvoltagealert`、音声アナウンス `speechbatteryvolt`）が 3.8V 等の高すぎる値になっていないか点検。
-     - `CONFIG ➔ SAFETY` タブでのプリセット（3.50V）との連動や、接続時のデフォルト警告電圧を 3.50V に適正化。
+- **実施内容**:
+  - `libraries/AP_HAL_ESP32/hwdef/esp32s3m5stampfly/defaults.parm` 内の `BATT_LOW_VOLT` を `3.4` から `3.50` に更新し、コミット完了（`e3a40cac80`）。
+  - 実機の現在のパラメータ（3.50V）とも完全に一致し、以降のクリーンフラッシュ時にも確実に 3.50V が初期適用される状態を確保。
 
 ---
 
