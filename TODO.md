@@ -20,6 +20,7 @@
 | **TASK-009** | メインツールバー簡素化＆QUICKタブ配置最適化 (Phone Bat / 重複Link削除) | MP Android | ✅ **完了 (実機動作確認済)** | ツールバーからFC電圧・スマホ残量を削除し、QUICKの重複Link QualityをPhone Bat (📱) に置換。 |
 | **TASK-010** | バッテリー低電圧警告・フェイルセーフの適正化 (3.50V設定) | ArduPilot / MP Android | ✅ **完了 (defaults.parm反映済)** | `defaults.parm` の `BATT_LOW_VOLT` を 3.50V に設定・反映完了 |
 | **TASK-011** | テレメトリのARM状態（アーム中・アーム・解除）の周期的点滅・ループ現象の修正 | MP Android / テレメトリ | 📝 **TODO (調査・修正)** | テレメトリのARM項目がアーム中・アーム・アーム解除を定期的に繰り返す表示不具合の調査と修正 |
+| **TASK-012** | テレメトリのGPS情報から有意義な情報を表示する (StampFly GNSS搭載対応) | MP Android / UI | 💡 **検討・設計中** | 搭載したGNSS(u-blox)からのテレメトリを精査し、パイロットに必要なGPS関連情報を最適表示 |
 
 ---
 
@@ -173,6 +174,33 @@
     - `FlightData.xaml.cs` や `CurrentState.cs` でのアーム状態プロパティ更新およびUI反映タイマーの挙動を追跡。
   - **FC側の送信内容確認**:
     - StampFlyから送信されている MAVLink ストリームにおいて、HEARTBEAT の `base_mode` やカスタムフラグが周期的に変動していないか、あるいは別システムID/コンポーネントIDからのパケットが混在していないか確認。
+
+---
+
+### TASK-012: テレメトリのGPS情報から有意義な情報を表示する (StampFly GNSS搭載対応)
+- **対象**: `MissionPlanner (Android / Xamarin)` / `UI (QUICKタブ / ツールバー / HUD)`
+- **ステータス**: `💡 検討・要件定義中（むらさんと表示項目を相談・決定）`
+- **背景・目的**:
+  - StampFlyに超小型GNSSモジュール（u-blox SAM-M8Q等）を搭載。
+  - これまでオプティカルフローや気圧・高度維持のみだったStampFlyが、屋外でのGPS測位・自律航法（PosHold / RTL / Auto）に対応可能となった。
+  - テレメトリで送られてくるGPS情報から、パイロットにとって本当に有益・不可欠な情報を厳選して見やすく表示したい。
+- **検討対象のGPSテレメトリ情報**:
+  1. **GPS Fix Type & 衛星数**:
+     - 例: `3D Fix (8 Sats)`, `RTK Fixed`, `No GPS`
+     - 飛行可否（PosHold/RTL可能か）を判定する最重要指標。
+  2. **HDOP / 水平精度 (Horizontal Dilution of Precision)**:
+     - 例: `HDOP: 0.8` (測位精度の信頼度。1.2以下で安全、2.0以上で注意)
+  3. **対地速度 (Ground Speed) & 移動方位 (Heading)**:
+     - 屋外フライトでの風流され検知や速度管理。
+  4. **Home距離 & 方角 (Dist to Home / Direction)**:
+     - 例: `Home: 15m ↗`
+     - 小型ドローンが目視外や遠方へ飛んだ際のロスト防止・帰還支援。
+  5. **GNSS高度 (MSL Altitude / WGS84)**:
+     - 対地高度（気圧・LiDAR）とは別の絶対標高情報。
+- **表示場所の候補**:
+  - **QUICKタブ**: 既存の10タイル枠内の調整（例: あまり見ない項目との入替、またはGPS専用タイルの追加）。
+  - **メインツールバー / ステータスバー**: 画面上部の常時表示領域（例: 衛星数バッジ `🛰️ 12` や Fixバッジ `GPS: 3D`）。
+  - **HUDオーバレイ**: カメラ映像・人工水平儀上へのコンパス・距離表示。
 
 ---
 
