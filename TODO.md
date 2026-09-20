@@ -21,6 +21,9 @@
 | **TASK-010** | バッテリー低電圧警告・フェイルセーフの適正化 (3.50V設定) | ArduPilot / MP Android | ✅ **完了 (defaults.parm反映済)** | `defaults.parm` の `BATT_LOW_VOLT` を 3.50V に設定・反映完了 |
 | **TASK-011** | テレメトリのARM状態（アーム中・アーム・解除）の周期的点滅・ループ現象の修正 | MP Android / テレメトリ | 📝 **TODO (調査・修正)** | テレメトリのARM項目がアーム中・アーム・アーム解除を定期的に繰り返す表示不具合の調査と修正 |
 | **TASK-012** | テレメトリのGPS情報から有意義な情報を表示する (StampFly GNSS搭載対応) | MP Android / UI | 💡 **検討・設計中** | 搭載したGNSS(u-blox)からのテレメトリを精査し、パイロットに必要なGPS関連情報を最適表示 |
+| **TASK-013** | 衛星画像（マッププロバイダ）サイト指定のSETUPへの追加 | MP Android / SETUP | 📝 **TODO (要件定義・設計)** | フライトプラン画面等にある衛星画像・地図プロバイダ選択をSETUP画面に追加し、好みの地図サイト（Google/Bing/国土地理院等）を選択・切替可能にする |
+| **TASK-014** | メインツールバーGNSSタップで詳細情報表示（実機確認後に要不要選定） | MP Android / UI | 📝 **TODO (実装準備完了)** | メインツールバーのGNSSをタップするとアン提示の詳細情報を表示。まずは全項目表示し、実機画面を見てから必須・不要を決定 |
+| **TASK-015** | Wi-Fi SSIDの個別識別化（ARDUPILOT123 ➔ ARDUPILOT_XXXXXX / MAC下位3バイトHEXA6文字） | ArduPilot (AP_HAL_ESP32) | 📝 **TODO (要件定義・設計)** | StampFlyのAP SSID（固定値 `ardupilot123`）にMACアドレス下位3バイト（HEXA6文字）を付与し、複数機体での個別識別・誤接続防止を実現 |
 
 ---
 
@@ -197,10 +200,85 @@
      - 小型ドローンが目視外や遠方へ飛んだ際のロスト防止・帰還支援。
   5. **GNSS高度 (MSL Altitude / WGS84)**:
      - 対地高度（気圧・LiDAR）とは別の絶対標高情報。
-- **表示場所の候補**:
+- **表示場所・UI機能の候補**:
+  - **トップバーGNSSタップ詳細カード（★提案中）**:
+    - 画面上部の `🛰️ 3D (8)` ピルをタップした際に、`GPS_RAW_INT` の全詳細（Fix状態、衛星数、HDOP/VDOP、HACC/VACC、対地速度/方位、飛行可否判定バッジ等）をリアルタイム表示するオーバーレイカード。
   - **QUICKタブ**: 既存の10タイル枠内の調整（例: あまり見ない項目との入替、またはGPS専用タイルの追加）。
   - **メインツールバー / ステータスバー**: 画面上部の常時表示領域（例: 衛星数バッジ `🛰️ 12` や Fixバッジ `GPS: 3D`）。
   - **HUDオーバレイ**: カメラ映像・人工水平儀上へのコンパス・距離表示。
+
+---
+
+### TASK-013: 衛星画像（マッププロバイダ）サイト指定のSETUPへの追加
+- **対象**: `MissionPlanner (Android / Xamarin)` / `SETUP (設定画面)` & `マップ描画`
+- **ステータス**: `📝 未着手（TODO）`
+- **背景・目的**:
+  - フライトプラン画面（FlightPlanner）等に衛星画像・地図プロバイダの選択機能があるが、日常的な設定・セットアップを行うSETUP画面からは変更できない。
+  - スマホ上でも、日本国内で高精細な「国土地理院（航空写真）」や「Google Satellite」「Bing Hybrid」など、利用環境や好みに応じた衛星画像・地図プロバイダをSETUP項目から簡単に選択・切り替えできるようにしたい。
+- **目標・要望**:
+  1. **SETUP項目への追加**:
+     - `FlightData.xaml` の SETUP モーダル（または設定メニュー）に「🗺️ Map / 衛星画像」タブまたは設定項目を追加。
+  2. **プロバイダ選択UI**:
+     - 利用可能な衛星画像・地図プロバイダ一覧（Google Satellite, Bing Hybrid, 国土地理院（写真/標準）, OpenStreetMap等）をプルダウン/ピッカーで選択可能にする。
+  3. **設定の永続化と即時反映**:
+     - 選択した地図プロバイダをアプリ設定（Preferences / Settings）に保存し、次回起動時も維持。
+     - 選択変更と同時に、FlightDataのフライト画面マップやフライトプラン画面の地図へ即座に反映させる。
+- **アンの事前調査メモ・準備方針**:
+  - `GMapProviders.List` から衛星画像系・国内系プロバイダを抽出し、見やすい日本語/英語表示リストを作成。
+  - `FlightData.mymap.MapProvider` の更新処理と、設定保存キー（`Settings.Instance["map_type"]`）の仕様を確認。
+  - SETUPモーダル内のレイアウト調整（タブ追加またはGeneral設定内への組み込み）。
+
+---
+
+### TASK-014: メインツールバーGNSSタップで詳細情報表示（実機確認後に要不要選定）
+- **対象**: `MissionPlanner (Android / Xamarin)` / `UI (FlightData.xaml / トップバー)`
+- **ステータス**: `📝 未着手（TODO / 実装方針確定）`
+- **背景・目的**:
+  - メインツールバーのGNSSステータス表示（`🛰️ 3D (8)` / `🛰️ No GPS`）をタップすることで、GPSの詳細情報を確認できるようにする。
+  - まずはアンが提示した全詳細項目を網羅した詳細カード（オーバーレイ）を実装し、実機画面で実際の見栄えや操作性を確認した上で、パイロットにとって本当に必須な項目・不要な項目を絞り込む。
+- **初回実装で表示するGPS詳細データ候補**:
+  1. **Fix Type**: 測位状態（No Fix / 2D / 3D / DGPS / RTK）
+  2. **Satellites**: 補足衛星数（例: `12 Sats`）
+  3. **HDOP / VDOP**: 水平・垂直精度低下率
+  4. **HACC / VACC**: 水平・垂直の推定誤差（m）
+  5. **Ground Speed**: 対地速度（m/s）
+  6. **Vel Acc (SACC)**: 速度精度（m/s）
+  7. **Course / Hdg Acc**: 進行方位と方位精度（deg）
+  8. **Lat / Lon**: 現在位置（10進度）
+  9. **Alt (MSL) / Ellipsoid**: 海抜高度 / 楕円体高（m）
+  10. **GPS Time**: GPS UTC時刻
+  11. **★ 飛行可否判定バッジ**: 総合安全判定（🟢 READY / 🔴 NOT READY）
+- **UI・挙動仕様**:
+  - メインツールバーのGNSS表示部をピル型ボタン化し、タップで半透明ダーク調のオーバーレイカードをポップアップ。
+  - 開いている間は1秒周期でリアルタイム更新。
+  - 画面外タップまたは「✕」ボタンでクローズ。
+  - **むらさん実機確認後**: 不要な項目の削減、文字サイズ・レイアウトの最適化を実施。
+
+---
+
+### TASK-015: Wi-Fi SSIDの個別識別化（ARDUPILOT123 ➔ ARDUPILOT_XXXXXX / MACアドレス下位3バイト HEXA6文字）
+- **対象**: `ArduPilot (AP_HAL_ESP32 / StampFly)`
+- **ステータス**: `📝 未着手（TODO / むらさんリクエスト）`
+- **背景・課題**:
+  - 現在、StampFly（ESP32-S3）のWi-Fi APモード（SoftAP）におけるSSIDは、`hwdef.dat` で固定値 `ardupilot123`（小文字）に設定されている。
+  - 複数台のStampFlyやArduPilot ESP32機体が同じ場所に存在する場合、すべての機体が同一のSSID（`ardupilot123`）を発信するため、スマホ（Mission Planner）のWi-Fi一覧から自分が接続したい機体を特定・識別できない。
+- **目標・要望**:
+  1. **SSIDの動的生成**:
+     - ハードウェア固有のMACアドレス下位3バイト（24bit）を取得し、16進数6文字（HEXA大文字、例: `A1B2C3`）に変換。
+     - SSIDを `プレフィックス_XXXXXX`（例: `ARDUPILOT_A1B2C3` または `ANDROID XXXXXX`）の形式で自動生成して発信。
+  2. **個体識別と誤接続防止**:
+     - 複数機体が同時に起動していても、MACアドレス末尾により確実に目的の機体を選択・接続可能にする。
+- **仕様検討（プレフィックス形式）**:
+  - 候補A（推奨）: `ARDUPILOT_XXXXXX`（ArduPilot標準の機体識別フォーマット）
+  - 候補B（リクエスト原文）: `ANDROID XXXXXX`（むらさんのリクエスト表記に準拠）
+  - 候補C: `StampFly_XXXXXX`（機体モデル名直結で最も分かりやすいフォーマット）
+- **アンの事前調査メモ・実装方針**:
+  - **MACアドレス取得方法**:
+    - `libraries/AP_HAL_ESP32/Util.cpp` の既存実装と同様に `esp_efuse_mac_get_default(base_mac_addr)`、または `esp_read_mac(mac, ESP_MAC_WIFI_SOFTAP)` を使用。
+    - 下位3バイト: `mac[3]`, `mac[4]`, `mac[5]`
+  - **SSIDフォーマット処理**:
+    - `libraries/AP_HAL_ESP32/WiFiUdpDriver.cpp` (L306) および `WiFiDriver.cpp` (L282) で、SoftAP初期化時にMACアドレスを取得してSSIDバッファに `snprintf` で書き込む。
+    - パスワード（`WIFI_PWD`）は引き続き `ardupilot123`（または設定値）を維持。
 
 ---
 
