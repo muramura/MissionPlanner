@@ -1,4 +1,4 @@
-﻿
+
 using System.Collections.Concurrent;
 using System.Net.Http;
 using System.Threading;
@@ -392,7 +392,7 @@ namespace GMap.NET.MapProviders
             return response.ContentType.Contains(responseContentType);
         }
 
-        HttpClient client = new HttpClient();
+        HttpClient client = new HttpClient() { Timeout = TimeSpan.FromSeconds(3) };
 
         protected PureImage GetTileImageUsingHttp(string url)
         {

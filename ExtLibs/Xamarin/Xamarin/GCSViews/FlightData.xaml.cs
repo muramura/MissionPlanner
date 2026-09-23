@@ -1108,6 +1108,12 @@ namespace Xamarin
 
                         if (cs != null && isOpen)
                         {
+                            // Telemetry auto-offline trigger: force map offline to prevent network thread pool starvation
+                            if (_autoOfflineOnTelemetry && !_hasForcedOfflineOnThisConnection && !_userManuallySwitchedOnline && GMaps.Instance.Mode != AccessMode.CacheOnly)
+                            {
+                                _hasForcedOfflineOnThisConnection = true;
+                                SetMapAccessMode(AccessMode.CacheOnly, isAuto: true);
+                            }
 
                             // Update HUD attitude & values in real-time
                             hud1.roll = (float)cs.roll;
@@ -1441,6 +1447,11 @@ namespace Xamarin
                             {
                                 gMapControl1.Position = new PointLatLng(cs.lat, cs.lng);
                             }
+                        }
+                        else
+                        {
+                            _hasForcedOfflineOnThisConnection = false;
+                            _userManuallySwitchedOnline = false;
                         }
                     }
                 }
@@ -8409,6 +8420,12 @@ namespace Xamarin
         };
 
         private const string PREF_SELECTED_MAP_PROVIDER = "MP_SelectedMapProvider";
+        private const string PREF_MAP_ACCESS_MODE = "MP_MapAccessMode";
+        private const string PREF_AUTO_OFFLINE_ON_TELEMETRY = "MP_AutoOfflineOnTelemetry";
+
+        private bool _autoOfflineOnTelemetry = true;
+        private bool _hasForcedOfflineOnThisConnection = false;
+        private bool _userManuallySwitchedOnline = false;
 
         private void InitMapProvider()
         {
@@ -8416,11 +8433,128 @@ namespace Xamarin
             {
                 string saved = global::Xamarin.Essentials.Preferences.Get(PREF_SELECTED_MAP_PROVIDER, "Google 衛星写真");
                 ApplyMapProvider(saved);
+
+                _autoOfflineOnTelemetry = global::Xamarin.Essentials.Preferences.Get(PREF_AUTO_OFFLINE_ON_TELEMETRY, true);
+                int savedMode = global::Xamarin.Essentials.Preferences.Get(PREF_MAP_ACCESS_MODE, (int)AccessMode.ServerAndCache);
+                SetMapAccessMode((AccessMode)savedMode, isAuto: false, userManualOverride: false);
+                UpdateAutoOfflineUI();
             }
             catch (Exception ex)
             {
                 log.Error("InitMapProvider error: " + ex.Message);
                 gMapControl1.MapProvider = GMapProviders.GoogleSatelliteMap;
+            }
+        }
+
+        private void SetMapAccessMode(AccessMode mode, bool isAuto = false, bool userManualOverride = false)
+        {
+            try
+            {
+                GMaps.Instance.Mode = mode;
+                global::Xamarin.Essentials.Preferences.Set(PREF_MAP_ACCESS_MODE, (int)mode);
+
+                if (userManualOverride)
+                {
+                    _userManuallySwitchedOnline = true;
+                }
+                else if (mode == AccessMode.CacheOnly)
+                {
+                    _userManuallySwitchedOnline = false;
+                }
+
+                UpdateMapModeUI(mode, isAuto);
+
+                if (isAuto)
+                {
+                    log.Info("[MAP] Automatically switched to CacheOnly (Offline) upon telemetry reception");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("SetMapAccessMode error: " + ex.Message);
+            }
+        }
+
+        private void UpdateMapModeUI(AccessMode mode, bool isAuto = false)
+        {
+            try
+            {
+                if (Btn_Actions_MapMode == null) return;
+
+                if (mode == AccessMode.CacheOnly)
+                {
+                    Btn_Actions_MapMode.Text = isAuto ? "📴 OFFLINE(Auto)" : "📴 OFFLINE";
+                    Btn_Actions_MapMode.TextColor = global::Xamarin.Forms.Color.FromHex("#F97316"); // Orange
+                    Btn_Actions_MapMode.BorderColor = global::Xamarin.Forms.Color.FromHex("#F97316");
+                }
+                else
+                {
+                    Btn_Actions_MapMode.Text = "🌐 ONLINE";
+                    Btn_Actions_MapMode.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981"); // Emerald green
+                    Btn_Actions_MapMode.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("UpdateMapModeUI error: " + ex.Message);
+            }
+        }
+
+        private void OnMapModeToggleClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                if (GMaps.Instance.Mode == AccessMode.CacheOnly)
+                {
+                    SetMapAccessMode(AccessMode.ServerAndCache, isAuto: false, userManualOverride: true);
+                }
+                else
+                {
+                    SetMapAccessMode(AccessMode.CacheOnly, isAuto: false, userManualOverride: false);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnMapModeToggleClicked error: " + ex.Message);
+            }
+        }
+
+        private void OnAutoOfflineToggleClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                _autoOfflineOnTelemetry = !_autoOfflineOnTelemetry;
+                global::Xamarin.Essentials.Preferences.Set(PREF_AUTO_OFFLINE_ON_TELEMETRY, _autoOfflineOnTelemetry);
+                UpdateAutoOfflineUI();
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnAutoOfflineToggleClicked error: " + ex.Message);
+            }
+        }
+
+        private void UpdateAutoOfflineUI()
+        {
+            try
+            {
+                if (Btn_Actions_AutoOffline == null) return;
+
+                if (_autoOfflineOnTelemetry)
+                {
+                    Btn_Actions_AutoOffline.Text = "⚡ テレメ受信時 自動オフライン: ON";
+                    Btn_Actions_AutoOffline.TextColor = global::Xamarin.Forms.Color.FromHex("#38BDF8"); // Sky blue
+                    Btn_Actions_AutoOffline.BorderColor = global::Xamarin.Forms.Color.FromHex("#38BDF8");
+                }
+                else
+                {
+                    Btn_Actions_AutoOffline.Text = "⚡ テレメ受信時 自動オフライン: OFF";
+                    Btn_Actions_AutoOffline.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8"); // Slate gray
+                    Btn_Actions_AutoOffline.BorderColor = global::Xamarin.Forms.Color.FromHex("#475569");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("UpdateAutoOfflineUI error: " + ex.Message);
             }
         }
 
