@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Linq;
@@ -339,21 +339,8 @@ namespace MissionPlanner
                                 continue;
 
                             // poll for params at heartbeat interval - primary mav on this port only
-                            if (!port.giveComport)
-                            {
-                                try
-                                {
-                                    // poll only when not armed
-                                    if (!port.MAV.cs.armed)
-                                    {
-                                        port.getParamPoll();
-                                        port.getParamPoll();
-                                    }
-                                }
-                                catch
-                                {
-                                }
-                            }
+                            // TASK-004: Disabled background parameter polling over Wi-Fi on Android port
+                            // to prevent ESP32-S3 queue overflow and avoid stalling high-rate telemetry.
 
                             // there are 3 hb types we can send, mavlink1, mavlink2 signed and unsigned
                             bool sentsigned = false;

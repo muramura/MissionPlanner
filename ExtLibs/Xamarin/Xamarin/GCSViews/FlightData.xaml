@@ -21,12 +21,12 @@
             <Grid VerticalOptions="CenterAndExpand">
                 <Grid.ColumnDefinitions>
                     <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
                     <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
                 </Grid.ColumnDefinitions>
 
                 <!-- Left: StampFly Logo, GNSS Status, Drone Battery, Phone Battery, Message Button -->
-                <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="8" VerticalOptions="Center">
+                <StackLayout Grid.Column="0" Orientation="Horizontal" Spacing="6" VerticalOptions="Center" Margin="0,0,8,0">
                     <!-- Logo (Clean Text) -->
                     <Label Text="StampFly" TextColor="#38BDF8" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
                     
@@ -79,76 +79,42 @@
                             <Label x:Name="LBL_Camera_TopBar" Text="CAM: ON" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
-
-                    <!-- Map Source / Satellite Image Selector Button -->
-                    <Frame x:Name="Frame_MapProvider_TopBar" BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnMapProviderSelectClicked"/>
-                        </Frame.GestureRecognizers>
-                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
-                            <Label Text="🗺️" FontSize="11" VerticalOptions="Center"/>
-                            <Label x:Name="LBL_MapProvider_TopBar" Text="MAP: Google Sat" TextColor="#38BDF8" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
-                        </StackLayout>
-                    </Frame>
                 </StackLayout>
 
-                <!-- Center: Flight Mode, Telemetry (HB), and Wi-Fi Badges -->
-                <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="6" HorizontalOptions="Center" VerticalOptions="Center">
+                <!-- Center: Flight Mode and Wi-Fi / Telemetry Badges -->
+                <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="5" VerticalOptions="Center">
                     <!-- Flight Mode Selector Badge -->
-                    <Frame x:Name="Frame_flight_mode" BackgroundColor="#1E293B" CornerRadius="6" Padding="8,3" HasShadow="True" VerticalOptions="Center" BorderColor="#F59E0B">
+                    <Frame x:Name="Frame_flight_mode" BackgroundColor="#1E293B" CornerRadius="6" Padding="6,2" HasShadow="True" VerticalOptions="Center" BorderColor="#F59E0B">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnFlightModeTapped"/>
                         </Frame.GestureRecognizers>
-                        <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
-                            <Label x:Name="LBL_mode_icon" Text="🕹️" FontSize="12" VerticalOptions="Center"/>
-                            <Label x:Name="LBL_mode_val" Text="STABILIZE ▾" TextColor="#F59E0B" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                            <Label x:Name="LBL_mode_icon" Text="🕹️" FontSize="11" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_mode_val" Text="STABILIZE ▾" TextColor="#F59E0B" FontSize="11" FontAttributes="Bold" LineBreakMode="NoWrap" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
 
-                    <!-- Telemetry (Heartbeat) Health Badge: 1s以内100%, 5s超0% -->
-                    <Frame x:Name="Frame_telem_link" BackgroundColor="#1E293B" CornerRadius="6" Padding="8,3" HasShadow="True" VerticalOptions="Center" BorderColor="#10B981">
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnTelemLinkTapped"/>
-                        </Frame.GestureRecognizers>
-                        <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
-                            <Label x:Name="LBL_telem_icon" Text="💓" FontSize="12" VerticalOptions="Center"/>
-                            <Label x:Name="LBL_telem_label" Text="TELEM:" TextColor="#CBD5E1" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
-                            <Label x:Name="LBL_telem_val" Text="100%" TextColor="#10B981" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
-                        </StackLayout>
-                    </Frame>
-
-                    <!-- Wi-Fi Link Quality Badge -->
-                    <Frame x:Name="Frame_wifi_link" BackgroundColor="#1E293B" CornerRadius="6" Padding="8,3" HasShadow="True" VerticalOptions="Center" BorderColor="#10B981">
+                    <!-- Wi-Fi & Telemetry Link Quality Badge (タップで詳細表示) -->
+                    <Frame x:Name="Frame_wifi_link" BackgroundColor="#1E293B" CornerRadius="6" Padding="6,2" HasShadow="True" VerticalOptions="Center" BorderColor="#10B981">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnWifiLinkTapped"/>
                         </Frame.GestureRecognizers>
-                        <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
-                            <Label x:Name="LBL_wifi_icon" Text="📶" FontSize="12" VerticalOptions="Center"/>
-                            <Label x:Name="LBL_wifi_label" Text="WIFI:" TextColor="#CBD5E1" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
-                            <Label x:Name="LBL_link_val" Text="100%" TextColor="#10B981" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
+                            <Label x:Name="LBL_wifi_icon" Text="📶" FontSize="11" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_wifi_label" Text="WIFI:" TextColor="#CBD5E1" FontSize="10" FontAttributes="Bold" LineBreakMode="NoWrap" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_link_val" Text="100%" TextColor="#10B981" FontSize="11" FontAttributes="Bold" LineBreakMode="NoWrap" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
                 </StackLayout>
 
-                <!-- Right: Arm/Disarm Status & Emergency Stop Button -->
-                <StackLayout Grid.Column="2" Orientation="Horizontal" Spacing="6" VerticalOptions="Center">
+                <!-- Right: Arm/Disarm Status Pill -->
+                <StackLayout Grid.Column="2" Orientation="Horizontal" Spacing="6" HorizontalOptions="End" VerticalOptions="Center">
                     <!-- Arm/Disarm Status Pill -->
                     <Frame x:Name="Frame_arm_status" BackgroundColor="#1E293B" CornerRadius="5" Padding="6,2" HasShadow="False" VerticalOptions="Center" BorderColor="#475569">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnMotorControlTapped"/>
                         </Frame.GestureRecognizers>
                         <Label x:Name="LBL_arm_val" Text="🔴 DISARMED ▾" TextColor="#EF4444" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
-                    </Frame>
-
-                    <!-- Emergency Stop (Force Disarm) Button -->
-                    <Frame BackgroundColor="#DC2626" CornerRadius="5" Padding="8,2" HasShadow="False" VerticalOptions="Center" BorderColor="#EF4444">
-                        <Frame.GestureRecognizers>
-                            <TapGestureRecognizer Tapped="OnEmergencyForceDisarmTapped"/>
-                        </Frame.GestureRecognizers>
-                        <StackLayout Orientation="Horizontal" Spacing="3" VerticalOptions="Center">
-                            <Label Text="🛑" FontSize="11" VerticalOptions="Center"/>
-                            <Label Text="STOP MOTORS" TextColor="#FFFFFF" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
-                        </StackLayout>
                     </Frame>
                 </StackLayout>
             </Grid>
@@ -315,6 +281,10 @@
                             <Button x:Name="Btn_Actions_SyncTime" Text="🕒 SYNC TIME TO PHONE" FontSize="9" FontAttributes="Bold"
                                     BackgroundColor="#1E293B" BorderColor="#38BDF8" BorderWidth="1" TextColor="#38BDF8" CornerRadius="5" HeightRequest="28"
                                     Clicked="OnActionsSyncTimeClicked"/>
+                            <!-- Map Source / Satellite Image Selector Button -->
+                            <Button x:Name="Btn_Actions_MapProvider" Text="🗺️ MAP: Google Sat" FontSize="9" FontAttributes="Bold"
+                                    BackgroundColor="#1E293B" BorderColor="#38BDF8" BorderWidth="1" TextColor="#38BDF8" CornerRadius="5" HeightRequest="28"
+                                    Clicked="OnMapProviderSelectClicked"/>
                         </StackLayout>
                     </ScrollView>
 

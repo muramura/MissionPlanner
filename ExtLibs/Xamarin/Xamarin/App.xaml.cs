@@ -97,13 +97,15 @@ namespace Xamarin
                             {
                                 MainV2.comPort.MAV.cs.rateattitude = 10;
                                 MainV2.comPort.MAV.cs.ratesensors = 4;
+                                MainV2.comPort.MAV.cs.ratestatus = 2;
+                                MainV2.comPort.MAV.cs.rateposition = 2;
                             }
 
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA1, 10);
-                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 1);
-                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 1);
-                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 1);
-                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, 1);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA2, 4);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.POSITION, 2);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.RC_CHANNELS, 2);
+                            MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTENDED_STATUS, 2);
                             MainV2.comPort.requestDatastream(MAVLink.MAV_DATA_STREAM.EXTRA3, 4);
                             // TASK-004: Eliminated bulk getParamList() upon connection to avoid FC CPU slowdown (Main loop slow)
                         }
