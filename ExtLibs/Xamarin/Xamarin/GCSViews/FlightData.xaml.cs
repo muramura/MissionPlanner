@@ -1169,7 +1169,36 @@ namespace Xamarin
                             if (LBL_mode_icon != null) LBL_mode_icon.Text = modeIcon;
                             if (Frame_flight_mode != null) Frame_flight_mode.BorderColor = global::Xamarin.Forms.Color.FromHex(modeColor);
 
-                            // Wi-Fi / Link Quality: 明確・高視認性バッジ更新 (Android実測RSSI優先)
+                            // Telemetry (Heartbeat) Health Badge: 1秒以内なら100%、5秒を超えたら0%
+                            int telemPct = cs.HeartbeatQualityPercent;
+                            if (LBL_telem_val != null) LBL_telem_val.Text = $"{telemPct}%";
+                            string telemColor;
+                            string telemIcon;
+                            if (telemPct >= 75)
+                            {
+                                telemColor = "#10B981";
+                                telemIcon = "💓";
+                            }
+                            else if (telemPct >= 50)
+                            {
+                                telemColor = "#F59E0B";
+                                telemIcon = "💓";
+                            }
+                            else if (telemPct > 0)
+                            {
+                                telemColor = "#F97316";
+                                telemIcon = "⚠️";
+                            }
+                            else
+                            {
+                                telemColor = "#EF4444";
+                                telemIcon = "💔";
+                            }
+                            if (LBL_telem_val != null) LBL_telem_val.TextColor = global::Xamarin.Forms.Color.FromHex(telemColor);
+                            if (LBL_telem_icon != null) LBL_telem_icon.Text = telemIcon;
+                            if (Frame_telem_link != null) Frame_telem_link.BorderColor = global::Xamarin.Forms.Color.FromHex(telemColor);
+
+                            // Wi-Fi Link Quality: Android実測電波強度 (RSSI 0〜100%)
                             int displayPct;
                             if (GetWifiRssiPercentFunc != null)
                             {
@@ -1188,7 +1217,7 @@ namespace Xamarin
                                 displayPct = (int)cs.linkqualitygcs;
                             }
 
-                            LBL_link_val.Text = $"{displayPct}%";
+                            if (LBL_link_val != null) LBL_link_val.Text = $"{displayPct}%";
                             string wifiColor = "#10B981";
                             string wifiIcon = "📶";
                             if (displayPct >= 70)
@@ -1211,7 +1240,7 @@ namespace Xamarin
                                 wifiColor = "#64748B";
                                 wifiIcon = "❌";
                             }
-                            LBL_link_val.TextColor = global::Xamarin.Forms.Color.FromHex(wifiColor);
+                            if (LBL_link_val != null) LBL_link_val.TextColor = global::Xamarin.Forms.Color.FromHex(wifiColor);
                             if (LBL_wifi_icon != null) LBL_wifi_icon.Text = wifiIcon;
                             if (Frame_wifi_link != null) Frame_wifi_link.BorderColor = global::Xamarin.Forms.Color.FromHex(wifiColor);
 
@@ -3083,6 +3112,28 @@ namespace Xamarin
             }
         }
 
+        private async void OnTelemLinkTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                var cs = MainV2.comPort?.MAV?.cs;
+                double age = cs != null ? cs.HeartbeatAgeSeconds : 999.0;
+                int telemPct = cs != null ? cs.HeartbeatQualityPercent : 0;
+                string statusDesc = telemPct >= 75 ? "良好 (Active)" : (telemPct >= 50 ? "注意 (Delayed)" : (telemPct > 0 ? "警告 (Critical)" : "途絶 (Lost)"));
+                string ageStr = age > 60.0 ? "未受信" : $"{age:0.1}秒前";
+
+                string telemDetails = $"💓 テレメトリ健全性: {telemPct}% [{statusDesc}]\n" +
+                                      $"• 最終ハートビート: {ageStr}\n" +
+                                      $"• パケット受信率: {(int)(cs?.linkqualitygcs ?? 0)}%\n" +
+                                      $"• 累積パケット: {MainV2.comPort?.MAV?.packetsnotlost:0} 受信 / {MainV2.comPort?.MAV?.packetslost:0} ロスト";
+                await DisplayAlert("テレメトリ (ハートビート)", telemDetails, "閉じる");
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnTelemLinkTapped error: " + ex);
+            }
+        }
+
         private async void OnWifiLinkTapped(object sender, EventArgs e)
         {
             try
@@ -3091,7 +3142,7 @@ namespace Xamarin
                 string mavQuality = $"MAVLinkパケット品質: {(int)MainV2.comPort.MAV.cs.linkqualitygcs}%\n" +
                                     $"受信パケット数: {MainV2.comPort.MAV.packetsnotlost:0}\n" +
                                     $"ロストパケット数: {MainV2.comPort.MAV.packetslost:0}";
-                await DisplayAlert("通信・Wi-Fiステータス", $"{wifiDetails}\n\n{mavQuality}", "閉じる");
+                await DisplayAlert("Wi-Fi 電波強度ステータス", $"{wifiDetails}\n\n{mavQuality}", "閉じる");
             }
             catch (Exception ex)
             {

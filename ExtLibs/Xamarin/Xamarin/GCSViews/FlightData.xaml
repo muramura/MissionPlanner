@@ -92,16 +92,28 @@
                     </Frame>
                 </StackLayout>
 
-                <!-- Center: Flight Mode & Wi-Fi Link Quality (高視認性バッジ) -->
-                <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="10" HorizontalOptions="Center" VerticalOptions="Center">
+                <!-- Center: Flight Mode, Telemetry (HB), and Wi-Fi Badges -->
+                <StackLayout Grid.Column="1" Orientation="Horizontal" Spacing="6" HorizontalOptions="Center" VerticalOptions="Center">
                     <!-- Flight Mode Selector Badge -->
-                    <Frame x:Name="Frame_flight_mode" BackgroundColor="#1E293B" CornerRadius="6" Padding="10,3" HasShadow="True" VerticalOptions="Center" BorderColor="#F59E0B">
+                    <Frame x:Name="Frame_flight_mode" BackgroundColor="#1E293B" CornerRadius="6" Padding="8,3" HasShadow="True" VerticalOptions="Center" BorderColor="#F59E0B">
                         <Frame.GestureRecognizers>
                             <TapGestureRecognizer Tapped="OnFlightModeTapped"/>
                         </Frame.GestureRecognizers>
                         <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
                             <Label x:Name="LBL_mode_icon" Text="🕹️" FontSize="12" VerticalOptions="Center"/>
                             <Label x:Name="LBL_mode_val" Text="STABILIZE ▾" TextColor="#F59E0B" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
+                        </StackLayout>
+                    </Frame>
+
+                    <!-- Telemetry (Heartbeat) Health Badge: 1s以内100%, 5s超0% -->
+                    <Frame x:Name="Frame_telem_link" BackgroundColor="#1E293B" CornerRadius="6" Padding="8,3" HasShadow="True" VerticalOptions="Center" BorderColor="#10B981">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnTelemLinkTapped"/>
+                        </Frame.GestureRecognizers>
+                        <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
+                            <Label x:Name="LBL_telem_icon" Text="💓" FontSize="12" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_telem_label" Text="TELEM:" TextColor="#CBD5E1" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
+                            <Label x:Name="LBL_telem_val" Text="100%" TextColor="#10B981" FontSize="12" FontAttributes="Bold" VerticalOptions="Center"/>
                         </StackLayout>
                     </Frame>
 

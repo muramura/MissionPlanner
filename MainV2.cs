@@ -1656,8 +1656,7 @@ namespace MissionPlanner
                 //158	MAV_COMP_ID_PERIPHERAL	Generic autopilot peripheral component ID. Meant for devices that do not implement the parameter microservice.
                 if (getparams && comPort.MAV.compid != (byte)MAVLink.MAV_COMPONENT.MAV_COMP_ID_PERIPHERAL)
                 {
-                    if (UseCachedParams && File.Exists(comPort.MAV.ParamCachePath) &&
-                        new FileInfo(comPort.MAV.ParamCachePath).LastWriteTime > DateTime.Now.AddHours(-1))
+                    if (UseCachedParams && File.Exists(comPort.MAV.ParamCachePath))
                     {
                         File.ReadAllText(comPort.MAV.ParamCachePath).FromJSON<MAVLink.MAVLinkParamList>()
                             .ForEach(a => comPort.MAV.param.Add(a));
@@ -3331,7 +3330,7 @@ namespace MissionPlanner
                         {
                             var mav = new MAVLinkInterface();
                             mav.BaseStream = serial;
-                            MainV2.instance.doConnect(mav, "preset", serial.PortName);
+                            MainV2.instance.doConnect(mav, "preset", serial.PortName, false, false);
 
                             MainV2.Comports.Add(mav);
 
@@ -3344,7 +3343,7 @@ namespace MissionPlanner
                         else
                         {
                             MainV2.comPort.BaseStream = serial;
-                            MainV2.instance.doConnect(MainV2.comPort, "preset", serial.PortName);
+                            MainV2.instance.doConnect(MainV2.comPort, "preset", serial.PortName, false, false);
                         }
                     });
                 }
@@ -3582,7 +3581,7 @@ namespace MissionPlanner
                         {
                             MAVLinkInterface mav = new MAVLinkInterface();
                             mav.BaseStream = port;
-                            MainV2.instance.doConnect(mav, "preset", "0");
+                            MainV2.instance.doConnect(mav, "preset", "0", false, false);
                             MainV2.Comports.Add(mav);
 
                             try
@@ -3598,7 +3597,7 @@ namespace MissionPlanner
                     log.Info("CommsSerialScan.doConnect NO invoke");
                     MAVLinkInterface mav = new MAVLinkInterface();
                     mav.BaseStream = port;
-                    MainV2.instance.doConnect(mav, "preset", "0");
+                    MainV2.instance.doConnect(mav, "preset", "0", false, false);
                     MainV2.Comports.Add(mav);
 
                     try

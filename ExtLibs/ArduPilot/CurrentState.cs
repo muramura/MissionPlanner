@@ -2014,6 +2014,24 @@ namespace MissionPlanner
         // reference
         public DateTime datetime { get; set; }
 
+        [GroupText("Telem")] public DateTime lastheartbeat { get; set; } = DateTime.MinValue;
+
+        [GroupText("Telem")]
+        public double HeartbeatAgeSeconds => lastheartbeat == DateTime.MinValue ? 999.0 : (DateTime.UtcNow - lastheartbeat).TotalSeconds;
+
+        [GroupText("Telem")]
+        public int HeartbeatQualityPercent
+        {
+            get
+            {
+                if (lastheartbeat == DateTime.MinValue) return 0;
+                double age = (DateTime.UtcNow - lastheartbeat).TotalSeconds;
+                if (age <= 1.0) return 100;
+                if (age >= 5.0) return 0;
+                return (int)Math.Round((5.0 - age) / 4.0 * 100.0);
+            }
+        }
+
         public bool connected => parent.parent.BaseStream != null && parent.parent.BaseStream.IsOpen ||
                                  parent.parent.logreadmode;
 
@@ -2889,6 +2907,7 @@ namespace MissionPlanner
                             }
                             else
                             {
+                                lastheartbeat = DateTime.UtcNow;
                                 var newarmed = (hb.base_mode & (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED) ==
                                         (byte)MAVLink.MAV_MODE_FLAG.SAFETY_ARMED;
 
@@ -4417,6 +4436,7 @@ namespace MissionPlanner
                 ratesensors = ratesensorsbackup;
                 raterc = ratercbackup;
                 datetime = DateTime.MinValue;
+                lastheartbeat = DateTime.MinValue;
                 battery_usedmah = 0;
                 _lastcurrent = DateTime.MinValue;
                 distTraveled = 0;
