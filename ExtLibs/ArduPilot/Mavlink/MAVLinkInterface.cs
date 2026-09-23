@@ -5184,42 +5184,67 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
                     buffer.Length >= message.payloadlength)
                 {
                     packetSeemValid = true;
-                    // check if we lost pacakets based on seqno
-                    int expectedPacketSeqNo = ((MAVlist[sysid, compid].recvpacketcount + 1) % 0x100);
+                    // check if we lost packets based on seqno
+                    int lastSeq = MAVlist[sysid, compid].recvpacketcount;
 
+                    if (MAVlist[sysid, compid].packetsnotlost == 0)
                     {
-                        // the second part is to work around a 3dr radio bug sending dup seqno's
-                        if (packetSeqNo != expectedPacketSeqNo &&
-                            packetSeqNo != MAVlist[sysid, compid].recvpacketcount)
+                        // 初回受信: パケットロス判定を行わずシーケンス番号を同期
+                        MAVlist[sysid, compid].recvpacketcount = packetSeqNo;
+                        MAVlist[sysid, compid].packetsnotlost++;
+                    }
+                    else if (packetSeqNo == lastSeq)
+                    {
+                        // 重複パケット (3DR radio や UDP再送など): ロスト加算せずカウントのみ
+                        MAVlist[sysid, compid].packetsnotlost++;
+                    }
+                    else
+                    {
+                        int forwardDiff = (packetSeqNo - lastSeq + 0x100) % 0x100;
+                        if (forwardDiff == 1)
                         {
-                            MAVlist[sysid, compid].synclost++; // actual sync loss's
-                            int numLost = 0;
-
-                            if (packetSeqNo < ((MAVlist[sysid, compid].recvpacketcount + 1)))
-                                // recvpacketcount = 255 then   10 < 256 = true if was % 0x100 this would fail
-                            {
-                                numLost = 0x100 - expectedPacketSeqNo + packetSeqNo;
-                            }
-                            else
-                            {
-                                numLost = packetSeqNo - expectedPacketSeqNo;
-                            }
-
+                            // 正常な連続パケット
+                            MAVlist[sysid, compid].packetsnotlost++;
+                            MAVlist[sysid, compid].recvpacketcount = packetSeqNo;
+                        }
+                        else if (forwardDiff < 128)
+                        {
+                            // 前方スキップ: パケットがロスト
+                            int numLost = forwardDiff - 1;
+                            MAVlist[sysid, compid].synclost++;
                             MAVlist[sysid, compid].packetslost += numLost;
+                            MAVlist[sysid, compid].packetsnotlost++;
+                            MAVlist[sysid, compid].recvpacketcount = packetSeqNo;
                             WhenPacketLost.OnNext(numLost);
 
                             if (!logreadmode)
                                 log.InfoFormat("mav {2}-{4} seqno {0} exp {3} pkts lost {1}", packetSeqNo,
                                     numLost,
                                     sysid,
-                                    expectedPacketSeqNo, compid);
+                                    (lastSeq + 1) % 0x100, compid);
                         }
+                        else
+                        {
+                            // 後方／遅延到着 (forwardDiff >= 128)
+                            int backwardDiff = 0x100 - forwardDiff;
+                            if (backwardDiff < 32)
+                            {
+                                // UDP/Wi-Fiでの順序逆転による遅延パケット到着
+                                // 直前に進んだ際に誤ってロスト判定していた分を補正
+                                if (MAVlist[sysid, compid].packetslost > 0)
+                                    MAVlist[sysid, compid].packetslost--;
 
-                        MAVlist[sysid, compid].packetsnotlost++;
-
-                        //Console.WriteLine("{0} {1}", sysid, packetSeqNo);
-
-                        MAVlist[sysid, compid].recvpacketcount = packetSeqNo;
+                                MAVlist[sysid, compid].packetsnotlost++;
+                                // 最大シーケンス番号を保持するため recvpacketcount は巻き戻さない
+                            }
+                            else
+                            {
+                                // 大きな不連続（機体再起動・接続リセット）
+                                MAVlist[sysid, compid].synclost++;
+                                MAVlist[sysid, compid].recvpacketcount = packetSeqNo;
+                                MAVlist[sysid, compid].packetsnotlost++;
+                            }
+                        }
                     }
                     WhenPacketReceived.OnNext(1);
 

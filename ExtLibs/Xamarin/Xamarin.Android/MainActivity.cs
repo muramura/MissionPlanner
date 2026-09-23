@@ -465,6 +465,10 @@ namespace Xamarin.Droid
                 catch { }
             };
 
+            // 📶 Wi-Fi電波強度（RSSI）ハンドラ登録
+            FlightData.GetWifiRssiPercentFunc = () => GetWifiRssiPercent(this);
+            FlightData.GetWifiDetailsFunc = () => GetWifiDetails(this);
+
             AndroidEnvironment.UnhandledExceptionRaiser += AndroidEnvironment_UnhandledExceptionRaiser;
 
             {
@@ -1079,6 +1083,87 @@ namespace Xamarin.Droid
         {
             Log.Error(TAG, e.ExceptionObject.ToString());
             Debugger.Break();
+        }
+
+        /// <summary>
+        /// 現在接続中のWi-Fi電波強度（RSSI dBm）を取得し、0〜100%に変換して返します。未接続時は -1 を返します。
+        /// </summary>
+        public static int GetWifiRssiPercent(global::Android.Content.Context context)
+        {
+            int dbm = GetWifiRssiDbm(context);
+            if (dbm <= -127) return -1;
+            if (dbm <= -100) return 0;
+            if (dbm >= -50) return 100;
+            return (int)global::System.Math.Round((dbm + 100) * 2.0);
+        }
+
+        public static int GetWifiRssiDbm(global::Android.Content.Context context)
+        {
+            try
+            {
+                if (context == null) return -127;
+
+                int rssiDbm = -127;
+
+                // 1. Android 10 (API 29) 以上: ConnectivityManager から SignalStrength を取得
+                if (global::Android.OS.Build.VERSION.SdkInt >= global::Android.OS.BuildVersionCodes.Q)
+                {
+                    var cm = (global::Android.Net.ConnectivityManager)context.GetSystemService(global::Android.Content.Context.ConnectivityService);
+                    var activeNetwork = cm?.ActiveNetwork;
+                    if (activeNetwork != null)
+                    {
+                        var caps = cm.GetNetworkCapabilities(activeNetwork);
+                        if (caps != null && caps.HasTransport(global::Android.Net.TransportType.Wifi))
+                        {
+                            int sig = caps.SignalStrength;
+                            if (sig > -127 && sig < 0)
+                            {
+                                rssiDbm = sig;
+                            }
+                        }
+                    }
+                }
+
+                // 2. フォールバックまたは API < 29: WifiManager から取得
+                if (rssiDbm <= -127)
+                {
+                    var wm = (global::Android.Net.Wifi.WifiManager)context.ApplicationContext.GetSystemService(global::Android.Content.Context.WifiService);
+                    if (wm != null && wm.IsWifiEnabled)
+                    {
+                        var info = wm.ConnectionInfo;
+                        if (info != null && info.NetworkId != -1)
+                        {
+                            int sig = info.Rssi;
+                            if (sig > -127 && sig < 0)
+                            {
+                                rssiDbm = sig;
+                            }
+                        }
+                    }
+                }
+
+                return rssiDbm;
+            }
+            catch (global::System.Exception ex)
+            {
+                global::Android.Util.Log.Warn("MainActivity", "GetWifiRssiDbm error: " + ex.Message);
+                return -127;
+            }
+        }
+
+        public static string GetWifiDetails(global::Android.Content.Context context)
+        {
+            try
+            {
+                int dbm = GetWifiRssiDbm(context);
+                int pct = GetWifiRssiPercent(context);
+                if (pct < 0) return "Wi-Fi: 切断 / 未検出";
+                return $"Wi-Fi電波強度: {pct}% ({dbm} dBm)";
+            }
+            catch
+            {
+                return "Wi-Fi: 状態取得エラー";
+            }
         }
 
     }

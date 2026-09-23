@@ -30,7 +30,7 @@
 | **TASK-019** | フラッシュFS割当エリアをROMFS化（ROMFS利用基盤の整備） | ArduPilot (AP_HAL_ESP32) | 📝 **TODO (1Wトークン復活後)** | FlashFS割当領域をROMFSに割り当て、未設定状態を解消して組み込みROMFSを安全に利用可能にする |
 | **TASK-020** | StampFly デフォルトパラメータでフライトモードCH無効化 (`FLTMODE_CH 0`) | ArduPilot (AP_HAL_ESP32) | 📝 **TODO (1Wトークン復活後)** | StampFlyのdefaults.parmにFLTMODE_CH 0を明記し、RC CH5によるモード強制上書きを無効化してMAVLink制御を確実に保護 |
 | **TASK-021** | STATUSTEXTメッセージレベルに応じた音声通知（TTS読み上げ）の実装 | MP Android / Core | 📝 **TODO (1Wトークン復活後)** | FCから通知されるSTATUSTEXTをメッセージレベル（Severity）に従ってText-to-Speechで音声通知し、目視なしでの状況把握を実現 |
-| **TASK-022** | Wi-Fi接続時に電波強度（リンク状態）が0%になる問題の調査・修正 | MP Android / Core | 📝 **TODO (1Wトークン復活後)** | Wi-Fi (UDP) 接続中にツールバーのWIFI状態表示（`cs.linkqualitygcs`）が0%になる現象の原因究明と修正 |
+| **TASK-022** | メインツールバーのWIFI表示をAndroid電波強度（RSSI %）に変更 & パケット品質計算の修正 | MP Android / Core | 🟢 **コード実装完了（ビルド・実機テスト待ち）** | ツールバーのWIFI表示をAndroid実測の電波強度(0-100%)に切替、UDP順序逆転誤加算とUTC不一致を修正 |
 
 
 
@@ -335,26 +335,20 @@
 
 ---
 
-### TASK-022: Wi-Fi接続時に電波強度（リンク状態）が0%になる問題の調査・修正
+### TASK-022: メインツールバーのWIFI表示をAndroid電波強度（RSSI %）に変更 & パケット品質計算の修正
 - **対象**: `MissionPlanner (MP Android / Xamarin / CurrentState.cs / MAVLinkInterface.cs)`
-- **ステータス**: `📝 未着手（TODO / 1Wトークン復活後に着手）`
-- **背景・課題**:
-  - Mission Planner（MP Android）において、StampFly等の機体とWi-Fi（UDP）接続している際に、メインツールバーのWIFIステータスバッジ（`📶 WIFI: 0%`）が0%と表示されてしまう現象が報告されている。
-  - テレメトリ通信自体は正常に行われていても、リンク品質・電波状態が0%と表示されるため、通信健全性が把握しにくい。
-- **想定される原因と調査ポイント**:
-  1. **`cs.linkqualitygcs` の計算条件**:
-     - `CurrentState.cs` の `UpdateCurrentSettings()` において、`parent.packetsnotlost / (parent.packetsnotlost + parent.packetslost) * 100.0` により計算されるが、`parent == null` や `parent.packetsnotlost == 0` の場合に更新されない。
-     - また、`MAV.lastvalidpacket` との差分（`> 10秒`）判定で0%にフォールバックしている可能性。
-  2. **MAVState / sysid / compid の参照不整合**:
-     - 呼び出し元の `MAV` と `parent`（`MAVState`）のインスタンス参照や、SysID/CompIDの不一致によってパケット統計が正しく集計されていない可能性。
-  3. **シーケンス番号（`seqno`）飛びやUDPパケット順序入れ替わり**:
-     - UDP通信特有のパケット順序入れ替わりや重複を `packetslost` として過剰カウントし、品質計算が急激に低下・0%化していないか。
-  4. **AndroidネイティブWi-Fi RSSIの補完・代替検討**:
-     - MAVLinkパケットロス率だけでなく、端末ネイティブのWi-Fi RSSI（電波強度dBm / %）の取得・併用についても検討。
-- **改修方針（1Wトークン復活後に実施）**:
-  1. `CurrentState.cs` および `MAVLinkInterface.cs` における `linkqualitygcs` 更新フローの実機ログトレースと原因特定。
-  2. パケットロス率計算のロバスト化、またはWi-Fi接続時の適切なリンク健全度算出ロジックの実装。
-  3. 実機（Zenfone 7 + StampFly）接続にて、WIFIバッジが適切な％（90%〜100%等）で安定表示されることを確認。
+- **ステータス**: `🟢 コード実装完了（村田さんビルド＆実機テスト待ち）`
+- **背景・目的**:
+  - メインツールバーの `📶 WIFI: xx%` は、直感的には「Androidスマホが受信しているWi-Fi電波の強度（アンテナピクト）」と認識されるのが自然。
+  - 現在はMAVLinkのパケット到達率（`cs.linkqualitygcs`）を表示していた上、UDP順序逆転バグ（+254誤加算）やUTCタイムゾーン不一致により0%に急落する問題があった。
+  - ユーザー要望に基づき、**ツールバーの表示をAndroidネイティブのWi-Fi電波強度（RSSI 0〜100%）に切り替え**、機体との距離や電波状況を直感的に把握できるようにする。
+  - あわせて、内部のMAVLinkパケットロス計算におけるUDP順序逆転誤爆とUTC不一致も是正する。
+- **実装内容**:
+  1. `AndroidManifest.xml`: `ACCESS_NETWORK_STATE`, `ACCESS_WIFI_STATE` パーミッションを追加。
+  2. `MainActivity.cs`: `ConnectivityManager` (API 29+ `SignalStrength`) および `WifiManager.ConnectionInfo.Rssi` から電波強度dBm（-100dBm〜-50dBm）を取得し、0〜100%に変換する `GetWifiRssiPercent()` を実装。`FlightData.GetWifiRssiPercentFunc` および `GetWifiDetailsFunc` を登録。
+  3. `FlightData.xaml` & `FlightData.xaml.cs`: ツールバーの `LBL_link_val` 更新時に `GetWifiRssiPercent()` を最優先表示（電波アイコン・色分けも連動）。タップ時に詳細オーバーレイ（Wi-Fi電波強度 dBm / % と MAVLinkパケット品質）を表示する `OnWifiLinkTapped` を追加。
+  4. `MAVLinkInterface.cs`: UDP遅延パケット到着時の過剰ロス加算（+254）の防止、初回パケットの同期初期化、重複パケット処理の適正化。
+  5. `CurrentState.cs`: `lastvalidpacket` の判定対象を `parent.lastvalidpacket` に統一。
 
 ---
 

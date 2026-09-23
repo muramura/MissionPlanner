@@ -54,6 +54,10 @@ namespace Xamarin
         // 🎮 Android ネイティブ接続のジョイスティック列挙用デリゲート
         public static Func<List<string>> GetConnectedJoysticksFunc;
 
+        // 📶 Android Wi-Fi 実測電波強度（RSSI）取得用デリゲート (-1: 未接続/未対応, 0..100: 電波強度%)
+        public static Func<int> GetWifiRssiPercentFunc;
+        public static Func<string> GetWifiDetailsFunc;
+
         // 📳 Android ネイティブ接続のゲームコントローラー＆端末バイブレーション送信デリゲート
         public static Action<HapticPattern, int> VibrateHandler;
 
@@ -1165,22 +1169,39 @@ namespace Xamarin
                             if (LBL_mode_icon != null) LBL_mode_icon.Text = modeIcon;
                             if (Frame_flight_mode != null) Frame_flight_mode.BorderColor = global::Xamarin.Forms.Color.FromHex(modeColor);
 
-                            // Wi-Fi / Link Quality: 明確・高視認性バッジ更新
-                            int linkPct = (int)cs.linkqualitygcs;
-                            LBL_link_val.Text = $"{linkPct}%";
+                            // Wi-Fi / Link Quality: 明確・高視認性バッジ更新 (Android実測RSSI優先)
+                            int displayPct;
+                            if (GetWifiRssiPercentFunc != null)
+                            {
+                                int wifiRssi = GetWifiRssiPercentFunc();
+                                if (wifiRssi >= 0)
+                                {
+                                    displayPct = wifiRssi;
+                                }
+                                else
+                                {
+                                    displayPct = (int)cs.linkqualitygcs;
+                                }
+                            }
+                            else
+                            {
+                                displayPct = (int)cs.linkqualitygcs;
+                            }
+
+                            LBL_link_val.Text = $"{displayPct}%";
                             string wifiColor = "#10B981";
                             string wifiIcon = "📶";
-                            if (linkPct >= 70)
+                            if (displayPct >= 70)
                             {
                                 wifiColor = "#10B981";
                                 wifiIcon = "📶";
                             }
-                            else if (linkPct >= 40)
+                            else if (displayPct >= 40)
                             {
                                 wifiColor = "#F59E0B";
                                 wifiIcon = "📶";
                             }
-                            else if (linkPct > 0)
+                            else if (displayPct > 0)
                             {
                                 wifiColor = "#EF4444";
                                 wifiIcon = "⚠️";
@@ -3059,6 +3080,22 @@ namespace Xamarin
             catch (Exception ex)
             {
                 log.Error("OnEmergencyForceDisarmTapped error: " + ex);
+            }
+        }
+
+        private async void OnWifiLinkTapped(object sender, EventArgs e)
+        {
+            try
+            {
+                string wifiDetails = GetWifiDetailsFunc != null ? GetWifiDetailsFunc() : "Wi-Fi: 情報なし";
+                string mavQuality = $"MAVLinkパケット品質: {(int)MainV2.comPort.MAV.cs.linkqualitygcs}%\n" +
+                                    $"受信パケット数: {MainV2.comPort.MAV.packetsnotlost:0}\n" +
+                                    $"ロストパケット数: {MainV2.comPort.MAV.packetslost:0}";
+                await DisplayAlert("通信・Wi-Fiステータス", $"{wifiDetails}\n\n{mavQuality}", "閉じる");
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnWifiLinkTapped error: " + ex);
             }
         }
 

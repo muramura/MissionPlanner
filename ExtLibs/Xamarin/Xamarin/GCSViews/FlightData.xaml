@@ -107,6 +107,9 @@
 
                     <!-- Wi-Fi Link Quality Badge -->
                     <Frame x:Name="Frame_wifi_link" BackgroundColor="#1E293B" CornerRadius="6" Padding="8,3" HasShadow="True" VerticalOptions="Center" BorderColor="#10B981">
+                        <Frame.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnWifiLinkTapped"/>
+                        </Frame.GestureRecognizers>
                         <StackLayout Orientation="Horizontal" Spacing="4" VerticalOptions="Center">
                             <Label x:Name="LBL_wifi_icon" Text="📶" FontSize="12" VerticalOptions="Center"/>
                             <Label x:Name="LBL_wifi_label" Text="WIFI:" TextColor="#CBD5E1" FontSize="11" FontAttributes="Bold" VerticalOptions="Center"/>
