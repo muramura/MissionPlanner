@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -37,8 +37,9 @@ namespace MissionPlanner.Comms
 
         public string ConfigRef { get; set; } = "";
 
-        private static HashSet<IPAddress> _localAddresses = null;
+        private static HashSet<IPAddress> _localAddresses = new HashSet<IPAddress> { IPAddress.Loopback, IPAddress.IPv6Loopback };
         private static DateTime _lastLocalAddressesUpdate = DateTime.MinValue;
+        private static int _isUpdatingAddresses = 0;
 
         public static IPAddress NormalizeAddress(IPAddress address)
         {
@@ -55,6 +56,48 @@ namespace MissionPlanner.Comms
             return address;
         }
 
+        private static void RefreshLocalAddresses()
+        {
+            try
+            {
+                var set = new HashSet<IPAddress>
+                {
+                    IPAddress.Loopback,
+                    IPAddress.IPv6Loopback
+                };
+
+                // NOTE: NEVER call Dns.GetHostAddresses(Dns.GetHostName()) here!
+                // On isolated Wi-Fi (such as StampFly AP without internet access),
+                // DNS queries will block for 10-35 seconds waiting for DNS timeout,
+                // freezing the MAVLink telemetry receive loop and dropping packets.
+                try
+                {
+                    foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
+                    {
+                        if (ni.OperationalStatus == OperationalStatus.Up)
+                        {
+                            var ipProps = ni.GetIPProperties();
+                            foreach (var unicast in ipProps.UnicastAddresses)
+                            {
+                                set.Add(NormalizeAddress(unicast.Address));
+                            }
+                        }
+                    }
+                }
+                catch { }
+
+                _localAddresses = set;
+                _lastLocalAddressesUpdate = DateTime.Now;
+            }
+            catch
+            {
+            }
+            finally
+            {
+                Interlocked.Exchange(ref _isUpdatingAddresses, 0);
+            }
+        }
+
         public static bool IsLocalAddress(IPAddress address)
         {
             if (address == null)
@@ -65,45 +108,22 @@ namespace MissionPlanner.Comms
             if (IPAddress.IsLoopback(address))
                 return true;
 
+            // Fast-path: StampFly / ESP32 AP gateway is never local
+            if (address.ToString() == "192.168.4.1")
+                return false;
+
             try
             {
-                if (_localAddresses == null || (DateTime.Now - _lastLocalAddressesUpdate).TotalSeconds > 5)
+                // Update in background if stale, never block the receive thread!
+                if ((DateTime.Now - _lastLocalAddressesUpdate).TotalSeconds > 10)
                 {
-                    var set = new HashSet<IPAddress>
+                    if (Interlocked.CompareExchange(ref _isUpdatingAddresses, 1, 0) == 0)
                     {
-                        IPAddress.Loopback,
-                        IPAddress.IPv6Loopback
-                    };
-
-                    try
-                    {
-                        var hostAddresses = Dns.GetHostAddresses(Dns.GetHostName());
-                        foreach (var a in hostAddresses)
-                            set.Add(NormalizeAddress(a));
+                        ThreadPool.QueueUserWorkItem(_ => RefreshLocalAddresses());
                     }
-                    catch { }
-
-                    try
-                    {
-                        foreach (var ni in NetworkInterface.GetAllNetworkInterfaces())
-                        {
-                            if (ni.OperationalStatus == OperationalStatus.Up)
-                            {
-                                var ipProps = ni.GetIPProperties();
-                                foreach (var unicast in ipProps.UnicastAddresses)
-                                {
-                                    set.Add(NormalizeAddress(unicast.Address));
-                                }
-                            }
-                        }
-                    }
-                    catch { }
-
-                    _localAddresses = set;
-                    _lastLocalAddressesUpdate = DateTime.Now;
                 }
 
-                return _localAddresses.Contains(address);
+                return _localAddresses != null && _localAddresses.Contains(address);
             }
             catch
             {
@@ -156,6 +176,10 @@ namespace MissionPlanner.Comms
             if (endPoint == null)
                 return false;
 
+            // Fast-path: StampFly vehicle address is never self
+            if (endPoint.Address != null && endPoint.Address.ToString() == "192.168.4.1")
+                return false;
+
             try
             {
                 int localPort = 0;
@@ -195,9 +219,24 @@ namespace MissionPlanner.Comms
             ReadTimeout = 500;
         }
 
+        private void ConfigureSocketBuffers(UdpClient c)
+        {
+            if (c?.Client == null) return;
+            try
+            {
+                c.Client.ReceiveBufferSize = 2 * 1024 * 1024; // 2MB to prevent OS packet drops
+                c.Client.SendBufferSize = 512 * 1024;
+            }
+            catch (Exception ex)
+            {
+                log.WarnFormat("UDPSerial: Failed to set socket buffer sizes: {0}", ex.Message);
+            }
+        }
+
         public UdpSerial(UdpClient client)
         {
             this.client = client;
+            ConfigureSocketBuffers(this.client);
             _isopen = true;
             ReadTimeout = 500;
         }
@@ -278,6 +317,7 @@ namespace MissionPlanner.Comms
             }
 
             client = new UdpClient(int.Parse(Port));
+            ConfigureSocketBuffers(client);
 
             while (true)
             {
@@ -533,6 +573,7 @@ namespace MissionPlanner.Comms
             }
 
             client = new UdpClient();
+            ConfigureSocketBuffers(client);
         }
 
         public void Dispose()
