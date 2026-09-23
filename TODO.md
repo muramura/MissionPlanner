@@ -26,6 +26,15 @@
 | **TASK-015** | Wi-Fi SSIDの個別識別化（ARDUPILOT123 ➔ ARDUPILOT_XXXXXX / MAC下位3バイトHEXA6文字） | ArduPilot (AP_HAL_ESP32) | ✅ **完了 (コミット・プッシュ済)** | StampFly SoftAP SSIDにMACアドレス下位3バイト（HEXA6文字）を動的付与し、複数機体での個別識別を実現 |
 | **TASK-016** | オンボード NeoPixel RGB LED 動的制御 (WS2812C / RMT移行) | ArduPilot (AP_HAL_ESP32) | ✅ **完了 (コミット・プッシュ済)** | ESP-IDF 5.x/6.0 RMT API移行、SERVO5 (GPIO 39) への動的チャンネルマッピングおよびLED通知対応 |
 | **TASK-017** | スローモード設定の最低を２５％にする | MP Android / UI | 📝 **TODO (要件定義・設計)** | 実機飛行テスト結果を反映し、スローモード最小スケーリング制限を20%から25%に引き上げ、UIプリセットも更新 |
+| **TASK-018** | CIビルドエラー解消 (RMT名前空間競合 / rmt_channel_t) | ArduPilot (AP_HAL_ESP32) | 📝 **TODO (1Wトークン復活後)** | GitHub Actions CI (`esp32s3empty`) 等で発生した `rmt_channel_t` 型定義競合（typedef-name after struct）の解消 |
+| **TASK-019** | フラッシュFS割当エリアをROMFS化（ROMFS利用基盤の整備） | ArduPilot (AP_HAL_ESP32) | 📝 **TODO (1Wトークン復活後)** | FlashFS割当領域をROMFSに割り当て、未設定状態を解消して組み込みROMFSを安全に利用可能にする |
+| **TASK-020** | StampFly デフォルトパラメータでフライトモードCH無効化 (`FLTMODE_CH 0`) | ArduPilot (AP_HAL_ESP32) | 📝 **TODO (1Wトークン復活後)** | StampFlyのdefaults.parmにFLTMODE_CH 0を明記し、RC CH5によるモード強制上書きを無効化してMAVLink制御を確実に保護 |
+| **TASK-021** | STATUSTEXTメッセージレベルに応じた音声通知（TTS読み上げ）の実装 | MP Android / Core | 📝 **TODO (1Wトークン復活後)** | FCから通知されるSTATUSTEXTをメッセージレベル（Severity）に従ってText-to-Speechで音声通知し、目視なしでの状況把握を実現 |
+| **TASK-022** | Wi-Fi接続時に電波強度（リンク状態）が0%になる問題の調査・修正 | MP Android / Core | 📝 **TODO (1Wトークン復活後)** | Wi-Fi (UDP) 接続中にツールバーのWIFI状態表示（`cs.linkqualitygcs`）が0%になる現象の原因究明と修正 |
+
+
+
+
 
 ---
 
@@ -251,6 +260,101 @@
      - `FlightData.xaml` のプリセットボタン `Btn_SlowPct_20` を `Btn_SlowPct_25`（"25% (Min)"）に変更、または20%ボタンを廃止して25%から始まるプリセット配置に調整。
   3. **表示・保存の整合性確認**:
      - 25%選択時に正しくハイライトされ、永続化（Preferences）されることを確認。
+
+---
+
+### TASK-018: CIビルドエラー解消 (RMT名前空間競合 / `rmt_channel_t` typedef vs struct)
+- **対象**: `ArduPilot (AP_HAL_ESP32 / RCOutput / RMT)`
+- **ステータス**: `📝 未着手（TODO / 1Wトークン復活後に着手）`
+- **背景・エラー内容**:
+  - GitHub Actions CIのボードビルド（`esp32s3empty` 等）において、以下のコンパイルエラーが発生してビルドが失敗した：
+    ```text
+    In file included from /opt/esp_idf/components/esp_driver_rmt/include/driver/rmt_common.h:11,
+                     from /opt/esp_idf/components/esp_driver_rmt/include/driver/rmt_tx.h:12,
+                     from ../../libraries/AP_HAL_ESP32/RCOutput.h:31,
+                     from ../../libraries/AP_HAL_ESP32/HAL_ESP32_Class.cpp:27:
+    Error: /opt/esp_idf/components/esp_driver_rmt/include/driver/rmt_types.h:22:16: error: using typedef-name 'rmt_channel_t' after 'struct'
+       22 | typedef struct rmt_channel_t *rmt_channel_handle_t;
+          |                ^~~~~~~~~~~~~
+    compilation terminated due to -Wfatal-errors.
+    ```
+- **原因の分析**:
+  - `RCOutput.h` 内で `<driver/rmt_tx.h>`（ESP-IDF 5.x/6.0の新RMTドライバ）をグローバルに include している。
+  - ESP-IDFの旧RMTドライバヘッダー（`driver/rmt.h`）等で定義されている `rmt_channel_t`（enum）と、新RMTドライバ（`esp_driver_rmt`）の `typedef struct rmt_channel_t *rmt_channel_handle_t;` が同一翻訳単位（`HAL_ESP32_Class.cpp`）内で衝突している。
+- **改修方針（1Wトークン復活後に実施）**:
+  1. `RCOutput.h` ヘッダー内での直接的な `<driver/rmt_tx.h>` の include を取りやめ、前方宣言（forward declaration）または不透明ポインタ化を行い、`.cpp`（`RCOutput.cpp`）側のみで include する設計（依存関係の局所化）にする。
+  2. ボード定義（`esp32s3empty` や他ターゲット）で旧RMTと新RMTの競合が一切起きないよう安全に分離・クリーン化する。
+  3. ローカルおよびCIでのビルド通過を確認後、コミット＆プッシュ。
+
+---
+
+### TASK-019: フラッシュFS割当エリアをROMFS化（ROMFS利用基盤の整備）
+- **対象**: `ArduPilot (AP_HAL_ESP32 / StampFly / partitions.csv / hwdef.dat)`
+- **ステータス**: `📝 未着手（TODO / 1Wトークン復活後に着手）`
+- **背景・目的**:
+  - StampFly（ESP32-S3）では、フライトループ（150Hz）中のFlash書き込みによるCPUキャッシュストールを回避するため、書き込み型FlashFS（`AP_FILESYSTEM_ESP32_ENABLED 0`）を無効化している。
+  - しかし未設定のままでは、読み取り専用のファイルシステムである ROMFS（`AP_FILESYSTEM_ROMFS`）すら利用できない状態になっている。
+  - Flashのストレージ/ファイルシステム用に確保されていた領域・設定を ROMFS 向けに再割り当て・定義し、キャッシュストールを起こさず安全に組み込みファイル（設定、Luaスクリプト等）へアクセスできる基盤を整備する。
+- **改修方針（1Wトークン復活後に実施）**:
+  1. **パーティションおよびメモリ領域の整理**:
+     - `partitions.csv` 等におけるFlashFS（storage）割当領域を見直し、ROMFS組み込み・展開領域として利用できるように設定。
+  2. **ROMFSの有効化設定**:
+     - `hwdef.dat` または `boards.py` において `define AP_FILESYSTEM_ROMFS_ENABLED 1` を設定し、`AP_ROMFS` を `AP_Filesystem` バックエンドとして正しくリンク・認識させる。
+  3. **動作検証**:
+     - `esp32s3m5stampfly` のビルドを行い、ROMFS経由でファイルアクセス（`@ROMFS/...`）が正常に行えることを確認。
+
+---
+
+### TASK-020: StampFly デフォルトパラメータでフライトモードCH無効化 (`FLTMODE_CH 0`)
+- **対象**: `ArduPilot (AP_HAL_ESP32 / StampFly / defaults.parm)`
+- **ステータス**: `📝 未着手（TODO / 1Wトークン復活後に着手）`
+- **背景・課題**:
+  - StampFlyはWi-Fi経由のMAVLink通信（Mission PlannerのタッチスティックやUDPジョイスティック）を主たる操縦インターフェースとしており、フライトモード変更もMAVLinkコマンド（`SET_MODE`）によって制御される。
+  - ArduCopterのデフォルト設定では `FLTMODE_CH`（フライトモード切替RCチャンネル）が `5`（CH5）となっているため、RC入力やパケット受信時の状態によって意図しないモード強制切り替えや干渉が発生するリスクがある。
+  - `FLTMODE_CH 0`（0: Disabled / 無効）を `defaults.parm` に明記することで、RCチャンネルによるモード切替を排除し、MAVLink経由での安全かつ確実なフライトモード管理を実現する。
+- **改修方針（1Wトークン復活後に実施）**:
+  1. `libraries/AP_HAL_ESP32/hwdef/esp32s3m5stampfly/defaults.parm` に `FLTMODE_CH 0` を追加。
+  2. ビルドおよび実機でのパラメータ反映を確認後、コミット＆プッシュ。
+
+---
+
+### TASK-021: STATUSTEXTメッセージレベルに応じた音声通知（TTS読み上げ）の実装
+- **対象**: `MissionPlanner (MP Android / Xamarin / Core)`
+- **ステータス**: `📝 未着手（TODO / 1Wトークン復活後に着手）`
+- **背景・目的**:
+  - フライト中や機体テスト中、フライトコントローラ（FC）から通知される `STATUSTEXT`（エラー、警告、モード遷移、キャリブレーション状況等）を、パイロットが画面を凝視していなくても即座に把握できるようにしたい。
+  - 受信した `STATUSTEXT` のメッセージレベル（`MAV_SEVERITY`: EMERGENCY, ALERT, CRITICAL, ERROR, WARNING, NOTICE, INFO 等）を判定し、設定された重要度閾値に従って Text-to-Speech（TTS）による自動音声通知を行う。
+- **改修方針（1Wトークン復活後に実施）**:
+  1. **AndroidネイティブTTS連携（`ISpeech` 実装）**:
+     - `Xamarin.Android` に `Android.Speech.Tts.TextToSpeech` を組み込んだ `ISpeech` 実装（`AndroidSpeech`）を作成し、`MainV2.speechEngine` および `MAVLinkInterface.Speech` にバインド。
+  2. **重要度（Severity）フィルタリングと音声読み上げ連動**:
+     - `MAVLinkInterface.cs` における `STATUSTEXT` 受信・パース処理と連携。
+     - ユーザーが音声通知のON/OFFおよび対象重要度レベル（例: Warning以上のみ、Info以上など）を設定できるようにする。
+  3. **実機動作確認**:
+     - Android実機で接続中、FCから送信された指定レベル以上の重要メッセージがクリアに音声発話されることを確認。
+
+---
+
+### TASK-022: Wi-Fi接続時に電波強度（リンク状態）が0%になる問題の調査・修正
+- **対象**: `MissionPlanner (MP Android / Xamarin / CurrentState.cs / MAVLinkInterface.cs)`
+- **ステータス**: `📝 未着手（TODO / 1Wトークン復活後に着手）`
+- **背景・課題**:
+  - Mission Planner（MP Android）において、StampFly等の機体とWi-Fi（UDP）接続している際に、メインツールバーのWIFIステータスバッジ（`📶 WIFI: 0%`）が0%と表示されてしまう現象が報告されている。
+  - テレメトリ通信自体は正常に行われていても、リンク品質・電波状態が0%と表示されるため、通信健全性が把握しにくい。
+- **想定される原因と調査ポイント**:
+  1. **`cs.linkqualitygcs` の計算条件**:
+     - `CurrentState.cs` の `UpdateCurrentSettings()` において、`parent.packetsnotlost / (parent.packetsnotlost + parent.packetslost) * 100.0` により計算されるが、`parent == null` や `parent.packetsnotlost == 0` の場合に更新されない。
+     - また、`MAV.lastvalidpacket` との差分（`> 10秒`）判定で0%にフォールバックしている可能性。
+  2. **MAVState / sysid / compid の参照不整合**:
+     - 呼び出し元の `MAV` と `parent`（`MAVState`）のインスタンス参照や、SysID/CompIDの不一致によってパケット統計が正しく集計されていない可能性。
+  3. **シーケンス番号（`seqno`）飛びやUDPパケット順序入れ替わり**:
+     - UDP通信特有のパケット順序入れ替わりや重複を `packetslost` として過剰カウントし、品質計算が急激に低下・0%化していないか。
+  4. **AndroidネイティブWi-Fi RSSIの補完・代替検討**:
+     - MAVLinkパケットロス率だけでなく、端末ネイティブのWi-Fi RSSI（電波強度dBm / %）の取得・併用についても検討。
+- **改修方針（1Wトークン復活後に実施）**:
+  1. `CurrentState.cs` および `MAVLinkInterface.cs` における `linkqualitygcs` 更新フローの実機ログトレースと原因特定。
+  2. パケットロス率計算のロバスト化、またはWi-Fi接続時の適切なリンク健全度算出ロジックの実装。
+  3. 実機（Zenfone 7 + StampFly）接続にて、WIFIバッジが適切な％（90%〜100%等）で安定表示されることを確認。
 
 ---
 
