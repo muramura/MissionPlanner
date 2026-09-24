@@ -49,3 +49,11 @@ obj3/
 
 /.claude/settings.local.json
 /CLAUDE.md
+
+# macOS metadata
+._*
+.DS_Store
+
+# Telemetry binary logs and local analysis logs
+*.tlog
+analysis_logs/

@@ -30,7 +30,8 @@
 | **TASK-019** | フラッシュFS割当エリアをROMFS化（ROMFS利用基盤の整備） | ArduPilot (AP_HAL_ESP32) | 📝 **TODO (1Wトークン復活後)** | FlashFS割当領域をROMFSに割り当て、未設定状態を解消して組み込みROMFSを安全に利用可能にする |
 | **TASK-020** | StampFly デフォルトパラメータでフライトモードCH無効化 (`FLTMODE_CH 0`) | ArduPilot (AP_HAL_ESP32) | 📝 **TODO (1Wトークン復活後)** | StampFlyのdefaults.parmにFLTMODE_CH 0を明記し、RC CH5によるモード強制上書きを無効化してMAVLink制御を確実に保護 |
 | **TASK-021** | STATUSTEXTメッセージレベルに応じた音声通知（TTS読み上げ）の実装 | MP Android / Core | 📝 **TODO (1Wトークン復活後)** | FCから通知されるSTATUSTEXTをメッセージレベル（Severity）に従ってText-to-Speechで音声通知し、目視なしでの状況把握を実現 |
-| **TASK-022** | メインツールバーのWIFI表示をAndroid電波強度（RSSI %）に変更 & パケット品質計算の修正 | MP Android / Core | 🟢 **コード実装完了（ビルド・実機テスト待ち）** | ツールバーのWIFI表示をAndroid実測の電波強度(0-100%)に切替、UDP順序逆転誤加算とUTC不一致を修正 |
+| **TASK-022** | メインツールバーのWIFI表示をAndroid電波強度（RSSI %）に変更 & パケット品質計算の修正 | MP Android / Core | ✅ **完了 (実機動作確認済)** | ツールバーのWIFI表示をAndroid実測の電波強度(0-100%)に切替、UDP順序逆転誤加算とUTC不一致を修正 |
+| **TASK-023** | UDP受信ワーカー専用スレッド化によるテレメトリ停滞問題の解消 | MP Android / Comms | ✅ **完了 (実機検証・TLOG実証済)** | Androidソケット通知遅延を解消するため専用受信スレッド＆ConcurrentQueueを導入。パケット欠落0%、停滞を完全根絶 |
 
 
 
@@ -337,7 +338,7 @@
 
 ### TASK-022: メインツールバーのWIFI表示をAndroid電波強度（RSSI %）に変更 & パケット品質計算の修正
 - **対象**: `MissionPlanner (MP Android / Xamarin / CurrentState.cs / MAVLinkInterface.cs)`
-- **ステータス**: `🟢 コード実装完了（村田さんビルド＆実機テスト待ち）`
+- **ステータス**: `✅ 完了（実機テスト検証済）`
 - **背景・目的**:
   - メインツールバーの `📶 WIFI: xx%` は、直感的には「Androidスマホが受信しているWi-Fi電波の強度（アンテナピクト）」と認識されるのが自然。
   - 現在はMAVLinkのパケット到達率（`cs.linkqualitygcs`）を表示していた上、UDP順序逆転バグ（+254誤加算）やUTCタイムゾーン不一致により0%に急落する問題があった。
@@ -349,6 +350,28 @@
   3. `FlightData.xaml` & `FlightData.xaml.cs`: ツールバーの `LBL_link_val` 更新時に `GetWifiRssiPercent()` を最優先表示（電波アイコン・色分けも連動）。タップ時に詳細オーバーレイ（Wi-Fi電波強度 dBm / % と MAVLinkパケット品質）を表示する `OnWifiLinkTapped` を追加。
   4. `MAVLinkInterface.cs`: UDP遅延パケット到着時の過剰ロス加算（+254）の防止、初回パケットの同期初期化、重複パケット処理の適正化。
   5. `CurrentState.cs`: `lastvalidpacket` の判定対象を `parent.lastvalidpacket` に統一。
+- **実機検証結果**:
+  - 実機Androidスマホ上でWi-Fi電波強度がリアルタイムに正確表示（80%〜98%）されることを確認。
+  - タップ時の詳細オーバーレイ表示、パケット欠落0%時の100%維持を確認。
+
+---
+
+### TASK-023: UDP受信ワーカー専用スレッド化によるテレメトリ停滞問題の解消
+- **対象**: `MissionPlanner (ExtLibs/Comms/CommsUdpSerial.cs)`
+- **ステータス**: `✅ 完了（実機検証・TLOG解析実証済）`
+- **背景・課題**:
+  - Android環境下において、通信開始から数分経過後に20〜30秒間テレメトリの更新が完全停止し、その後溜まっていた数千件のパケットが一気にバースト吸い上げされる現象が発生していた。
+  - 原因調査の結果、従来の `BytesToRead`（内部で `FIONREAD` ioctl）によるポーリング方式では、AndroidのLinuxカーネル/ソケットレイヤにおけるバッファ通知遅延（ソケットキューにデータがあっても `BytesToRead == 0` を返す挙動）に依存していたため、MAVLink読み出しループが待機状態に陥っていたことが判明。
+- **対策内容（施策1）**:
+  1. `CommsUdpSerial.cs` に専用のバックグラウンド受信スレッド（`_rxThread`, IsBackground = true）を導入。
+  2. スレッド内で `UdpClient.Receive(ref endpoint)` をブロッキング呼び出しさせ、Androidカーネルにパケットが着信した瞬間に即座に起床・吸い上げるアーキテクチャに刷新。
+  3. 受信したバイト列はスレッドセーフな `ConcurrentQueue<byte[]>` へ高速キューイングし、メインループの `Read()` はキューからノンブロッキングで引き出す構造に分離。
+  4. 切断・再接続時のスレッド安全な破棄・停止ロジックを実装。
+- **実機検証結果 (`2026-09-24_09-16-09.tlog` 解析)**:
+  - 総パケット 37,078 件（機体受信 26,979 件、平均 111.7 Hz）において、**パケット欠落 0.000%**。
+  - 0.5 秒以上の受信途絶ギャップ **0 回**。
+  - 機体起動時間と受信時刻のジッター変動が **±35 ms 以内** と極めて安定。
+  - スマホ実機画面上でもテレメトリの停滞・カクツキが一切なく滑らかに更新されることを目視確認。
 
 ---
 
