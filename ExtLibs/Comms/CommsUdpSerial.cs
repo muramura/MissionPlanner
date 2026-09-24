@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Net;
@@ -7,6 +8,7 @@ using System.Net.NetworkInformation;
 using System.Reflection;
 using System.Text;
 using System.Threading;
+using System.Threading.Tasks;
 using log4net;
 
 // dns, ip address
@@ -28,7 +30,13 @@ namespace MissionPlanner.Comms
         /// </summary>
         public UdpClient client = new UdpClient();
 
-        private MemoryStream rbuffer = new MemoryStream();
+        private readonly ConcurrentQueue<byte[]> _packetQueue = new ConcurrentQueue<byte[]>();
+        private byte[] _currentPacket;
+        private int _currentPacketOffset;
+        private int _queuedBytesCount;
+        private readonly object _readLock = new object();
+        private CancellationTokenSource _receiveCts;
+        private Task _receiveTask;
 
         /// <summary>
         ///     this is the remote endpoint we send messages too. this class does not support multiple remote endpoints.
@@ -239,6 +247,7 @@ namespace MissionPlanner.Comms
             ConfigureSocketBuffers(this.client);
             _isopen = true;
             ReadTimeout = 500;
+            StartReceiveWorker();
         }
 
         public string Port { get; set; }
@@ -270,7 +279,17 @@ namespace MissionPlanner.Comms
             set { }
         }
 
-        public int BytesToRead => (int)(client.Available + rbuffer.Length - rbuffer.Position);
+        public int BytesToRead
+        {
+            get
+            {
+                lock (_readLock)
+                {
+                    int currentLeft = (_currentPacket != null) ? (_currentPacket.Length - _currentPacketOffset) : 0;
+                    return currentLeft + _queuedBytesCount;
+                }
+            }
+        }
 
         public int BytesToWrite => 0;
 
@@ -336,11 +355,11 @@ namespace MissionPlanner.Comms
                     return;
                 }
 
-                if (BytesToRead > 0)
+                if (client.Available > 0 || BytesToRead > 0)
                     break;
             }
 
-            if (BytesToRead == 0)
+            if (client.Available == 0 && BytesToRead == 0)
                 return;
 
             try
@@ -350,7 +369,7 @@ namespace MissionPlanner.Comms
 
                 while (true)
                 {
-                    client.Receive(ref RemoteIpEndPoint);
+                    var firstPacket = client.Receive(ref RemoteIpEndPoint);
                     if (IsSelfPacket(RemoteIpEndPoint))
                     {
                         log.DebugFormat("UDPSerial Open: Discarding self packet from {0}", RemoteIpEndPoint);
@@ -368,6 +387,14 @@ namespace MissionPlanner.Comms
                     log.InfoFormat("UDPSerial connecting to {0} : {1}", RemoteIpEndPoint.Address, RemoteIpEndPoint.Port);
                     AddEndPoint(RemoteIpEndPoint);
                     _isopen = true;
+
+                    if (firstPacket != null && firstPacket.Length > 0)
+                    {
+                        _packetQueue.Enqueue(firstPacket);
+                        Interlocked.Add(ref _queuedBytesCount, firstPacket.Length);
+                    }
+
+                    StartReceiveWorker();
                     break;
                 }
             }
@@ -380,51 +407,160 @@ namespace MissionPlanner.Comms
             }
         }
 
+        private void StartReceiveWorker()
+        {
+            lock (_readLock)
+            {
+                if (_receiveTask != null && !_receiveTask.IsCompleted)
+                    return;
+
+                _receiveCts = new CancellationTokenSource();
+                var token = _receiveCts.Token;
+
+                _receiveTask = Task.Factory.StartNew(() => ReceiveWorkerLoop(token),
+                    token,
+                    TaskCreationOptions.LongRunning,
+                    TaskScheduler.Default);
+            }
+        }
+
+        private void StopReceiveWorker()
+        {
+            try
+            {
+                _receiveCts?.Cancel();
+                lock (_readLock)
+                {
+                    Monitor.PulseAll(_readLock);
+                }
+                _receiveTask?.Wait(200);
+            }
+            catch { }
+            finally
+            {
+                _receiveCts?.Dispose();
+                _receiveCts = null;
+                _receiveTask = null;
+            }
+
+            lock (_readLock)
+            {
+                while (_packetQueue.TryDequeue(out _)) { }
+                _currentPacket = null;
+                _currentPacketOffset = 0;
+                _queuedBytesCount = 0;
+            }
+        }
+
+        private void ReceiveWorkerLoop(CancellationToken token)
+        {
+            log.Info("UDPSerial: Background receive worker thread started");
+            while (!token.IsCancellationRequested && _isopen && client?.Client != null)
+            {
+                try
+                {
+                    var remoteEp = new IPEndPoint(IPAddress.Any, 0);
+                    byte[] data = client.Receive(ref remoteEp);
+
+                    if (data == null || data.Length == 0)
+                        continue;
+
+                    if (IsSelfPacket(remoteEp))
+                        continue;
+
+                    AddEndPoint(remoteEp);
+
+                    if (_packetQueue.Count > 2000)
+                    {
+                        if (_packetQueue.TryDequeue(out var dropped))
+                        {
+                            Interlocked.Add(ref _queuedBytesCount, -dropped.Length);
+                        }
+                    }
+
+                    _packetQueue.Enqueue(data);
+                    Interlocked.Add(ref _queuedBytesCount, data.Length);
+
+                    lock (_readLock)
+                    {
+                        Monitor.Pulse(_readLock);
+                    }
+                }
+                catch (ObjectDisposedException)
+                {
+                    break;
+                }
+                catch (SocketException)
+                {
+                    if (token.IsCancellationRequested || !_isopen)
+                        break;
+
+                    Thread.Sleep(1);
+                }
+                catch (Exception ex)
+                {
+                    if (token.IsCancellationRequested || !_isopen)
+                        break;
+
+                    log.DebugFormat("UDPSerial receive worker exception: {0}", ex.Message);
+                    Thread.Sleep(5);
+                }
+            }
+            log.Info("UDPSerial: Background receive worker thread ended");
+        }
+
         public int Read(byte[] readto, int offset, int length)
         {
             VerifyConnected();
             if (length < 1) return 0;
 
+            int totalRead = 0;
             var deadline = DateTime.Now.AddMilliseconds(ReadTimeout);
 
-            lock (rbuffer)
+            lock (_readLock)
             {
-                if (rbuffer.Position == rbuffer.Length)
-                    rbuffer.SetLength(0);
-
-                var position = rbuffer.Position;
-
-                while ((rbuffer.Length - rbuffer.Position) < length && DateTime.Now < deadline)
+                while (totalRead < length && DateTime.Now < deadline)
                 {
-                    // read more
-                    while (client.Available > 0 && (rbuffer.Length - rbuffer.Position) < length)
+                    if (_currentPacket != null && _currentPacketOffset < _currentPacket.Length)
                     {
-                        var currentRemoteIpEndPoint = new IPEndPoint(IPAddress.Any, 0);
-                        // assumes the udp packets are mavlink aligned, if we are receiving from more than one source
-                        var b = client.Receive(ref currentRemoteIpEndPoint);
+                        int available = _currentPacket.Length - _currentPacketOffset;
+                        int toCopy = Math.Min(available, length - totalRead);
+                        Buffer.BlockCopy(_currentPacket, _currentPacketOffset, readto, offset + totalRead, toCopy);
+                        _currentPacketOffset += toCopy;
+                        totalRead += toCopy;
 
-                        if (IsSelfPacket(currentRemoteIpEndPoint))
+                        if (_currentPacketOffset >= _currentPacket.Length)
                         {
-                            log.DebugFormat("UDPSerial Read: Discarding self packet from {0}", currentRemoteIpEndPoint);
-                            continue;
+                            _currentPacket = null;
+                            _currentPacketOffset = 0;
                         }
 
-                        rbuffer.Seek(0, SeekOrigin.End);
-                        rbuffer.Write(b, 0, b.Length);
-                        rbuffer.Seek(position, SeekOrigin.Begin);
+                        if (totalRead == length)
+                            return totalRead;
 
-                        AddEndPoint(currentRemoteIpEndPoint);
+                        continue;
                     }
 
-                    Thread.Yield();
+                    if (_packetQueue.TryDequeue(out var nextPacket))
+                    {
+                        Interlocked.Add(ref _queuedBytesCount, -nextPacket.Length);
+                        _currentPacket = nextPacket;
+                        _currentPacketOffset = 0;
+                        continue;
+                    }
+
+                    if (totalRead > 0)
+                        return totalRead;
+
+                    int remainingMs = (int)(deadline - DateTime.Now).TotalMilliseconds;
+                    if (remainingMs <= 0)
+                        break;
+
+                    Monitor.Wait(_readLock, Math.Min(remainingMs, 10));
                 }
-
-                // prevent read past end of array
-                if (rbuffer.Length - rbuffer.Position < length)
-                    length = (int)(rbuffer.Length - rbuffer.Position);
-
-                return rbuffer.Read(readto, offset, length);
             }
+
+            return totalRead;
         }
 
         public int ReadByte()
@@ -521,10 +657,14 @@ namespace MissionPlanner.Comms
         public void DiscardInBuffer()
         {
             VerifyConnected();
-            var size = client.Available;
-            var crap = new byte[size];
-            log.InfoFormat("UdpSerial DiscardInBuffer {0}", size);
-            Read(crap, 0, size);
+            lock (_readLock)
+            {
+                while (_packetQueue.TryDequeue(out _)) { }
+                _currentPacket = null;
+                _currentPacketOffset = 0;
+                _queuedBytesCount = 0;
+            }
+            log.Info("UdpSerial DiscardInBuffer completed");
         }
 
         public string ReadLine()
@@ -565,7 +705,13 @@ namespace MissionPlanner.Comms
         public void Close()
         {
             _isopen = false;
-            if (client != null) client.Close();
+            try
+            {
+                if (client != null) client.Close();
+            }
+            catch { }
+
+            StopReceiveWorker();
 
             lock (EndPointList)
             {
