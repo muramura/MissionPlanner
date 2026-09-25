@@ -32,6 +32,7 @@
 | **TASK-021** | STATUSTEXTメッセージレベルに応じた音声通知（TTS読み上げ）の実装 | MP Android / Core | 📝 **TODO (1Wトークン復活後)** | FCから通知されるSTATUSTEXTをメッセージレベル（Severity）に従ってText-to-Speechで音声通知し、目視なしでの状況把握を実現 |
 | **TASK-022** | メインツールバーのWIFI表示をAndroid電波強度（RSSI %）に変更 & パケット品質計算の修正 | MP Android / Core | ✅ **完了 (実機動作確認済)** | ツールバーのWIFI表示をAndroid実測の電波強度(0-100%)に切替、UDP順序逆転誤加算とUTC不一致を修正 |
 | **TASK-023** | UDP受信ワーカー専用スレッド化によるテレメトリ停滞問題の解消 | MP Android / Comms | ✅ **完了 (実機検証・TLOG実証済)** | Androidソケット通知遅延を解消するため専用受信スレッド＆ConcurrentQueueを導入。パケット欠落0%、停滞を完全根絶 |
+| **TASK-024** | 加速度センサー・キャリブレーション値の妥当性範囲（Sanity Check）プリアームチェックの実装 | ArduPilot (AP_InertialSensor / AP_Arming) | 📝 **TODO (設計・検討)** | `accel_calibrated_ok_all()`が`is_zero()`のみで判定している盲点を解消し、オフセット・スケールの妥当性範囲判定を追加 |
 
 
 
@@ -372,6 +373,27 @@
   - 0.5 秒以上の受信途絶ギャップ **0 回**。
   - 機体起動時間と受信時刻のジッター変動が **±35 ms 以内** と極めて安定。
   - スマホ実機画面上でもテレメトリの停滞・カクツキが一切なく滑らかに更新されることを目視確認。
+
+---
+
+### TASK-024: 加速度センサー・キャリブレーション値の妥当性範囲（Sanity Check）プリアームチェックの実装
+- **対象**: `ArduPilot (libraries/AP_InertialSensor / libraries/AP_Arming)`
+- **ステータス**: `📝 未着手（TODO / むらさんご指摘・重要安全改善）`
+- **背景・課題**:
+  - ArduPilotのアーム前診断（`AP_Arming::ins_checks`）において、加速度計のキャリブレーション済み判定は `AP_InertialSensor::accel_calibrated_ok_all()` を呼び出して行われている。
+  - しかし現在の `accel_calibrated_ok_all()` は、各加速度計のオフセット（`_accel_offset`）およびスケール（`_accel_scale`）が **「0.0 かどうか（`is_zero()`）」** しか判定していない。
+    - オフセットやスケールが `0.0` の場合のみ未キャリブレーションと見なし、`PreArm: 3D Accel calibration needed` を通知してアームを拒否する。
+    - 逆に、Flash/EEPROMのパラメータ破損、誤った手動設定、別機体パラメータの流用などで **オフセットが 50m/s²（約5G）やスケールが 0.001 / 99.0 といった物理的にあり得ない異常値・不正値が入っていても、0 ではないため「キャリブレーション正常（OK）」として通過してしまう**。
+  - 一方で、キャリブレーション実行時（`AccelCalibrator::accept_result()`）には `|offset| <= GRAVITY_MSS`（9.8m/s²以内）かつ `0.8 <= scale <= 1.2` という妥当性チェックが存在しているが、起動時のプリアームチェックではこの整合性・妥当性検証が完全に抜け落ちていた。
+- **改修方針・実装検討**:
+  1. **妥当性チェック関数（`accel_calibrated_ok()`）の強化**:
+     - `AP_InertialSensor` に保存されているオフセットおよびスケール値が、物理的に妥当な範囲内にあるかを検証するロジックを導入。
+     - **オフセット判定**: `fabsf(offset.x/y/z) <= GRAVITY_MSS`（または設定された許容上限値、NaN/Inf除外）。
+     - **スケール判定**: 各軸のスケール係数が `0.7f <= scale <= 1.3f`（または妥当なマージン内、NaN/Inf除外）。
+  2. **明確なエラーメッセージの通知**:
+     - 単なる「0.0」未キャリブレーション時（`PreArm: 3D Accel calibration needed`）と、不正値・破損時（`PreArm: Accel offsets out of range` / `PreArm: Accel scale invalid`）を区別して通知し、原因を即座に特定できるようにする。
+  3. **ArduPilot アップストリームへのPR展開**:
+     - StampFlyだけでなく、全ArduPilot機体の安全性を根本から底上げする改善となるため、アップストリーム（GitHub ArduPilot/ardupilot）へのPR提出を視野に入れて最小限・堅牢な設計とする。
 
 ---
 
