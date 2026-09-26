@@ -8422,6 +8422,8 @@ namespace Xamarin
         private const string PREF_SELECTED_MAP_PROVIDER = "MP_SelectedMapProvider";
         private const string PREF_MAP_ACCESS_MODE = "MP_MapAccessMode";
         private const string PREF_AUTO_OFFLINE_ON_TELEMETRY = "MP_AutoOfflineOnTelemetry";
+        private const string PREF_SPEECH_ENABLE = "speechenable";
+        private const string PREF_STATUSTEXT_SEVERITY = "severity";
 
         private bool _autoOfflineOnTelemetry = true;
         private bool _hasForcedOfflineOnThisConnection = false;
@@ -8438,6 +8440,7 @@ namespace Xamarin
                 int savedMode = global::Xamarin.Essentials.Preferences.Get(PREF_MAP_ACCESS_MODE, (int)AccessMode.ServerAndCache);
                 SetMapAccessMode((AccessMode)savedMode, isAuto: false, userManualOverride: false);
                 UpdateAutoOfflineUI();
+                InitActionsSpeechAndSeverity();
             }
             catch (Exception ex)
             {
@@ -8557,6 +8560,169 @@ namespace Xamarin
                 log.Error("UpdateAutoOfflineUI error: " + ex.Message);
             }
         }
+
+        #region Actions Speech & StatusText Severity Controls
+
+        private void InitActionsSpeechAndSeverity()
+        {
+            try
+            {
+                // 音声通知設定の復元（デフォルト: false）
+                bool speechPref = global::Xamarin.Essentials.Preferences.Get(PREF_SPEECH_ENABLE, false);
+                if (Settings.Instance[PREF_SPEECH_ENABLE] != null)
+                {
+                    speechPref = Settings.Instance.GetBoolean(PREF_SPEECH_ENABLE);
+                }
+                MainV2.speechEnable = speechPref;
+                Settings.Instance[PREF_SPEECH_ENABLE] = speechPref.ToString();
+                UpdateActionsSpeechUI();
+
+                // STATUSTEXT 最低レベルの復元（デフォルト: 4 = WARNING）
+                int sevPref = global::Xamarin.Essentials.Preferences.Get(PREF_STATUSTEXT_SEVERITY, 4);
+                if (Settings.Instance[PREF_STATUSTEXT_SEVERITY] != null)
+                {
+                    sevPref = Settings.Instance.GetInt32(PREF_STATUSTEXT_SEVERITY, 4);
+                }
+                Settings.Instance[PREF_STATUSTEXT_SEVERITY] = sevPref.ToString();
+                UpdateActionsSeverityUI(sevPref);
+            }
+            catch (Exception ex)
+            {
+                log.Error("InitActionsSpeechAndSeverity error: " + ex.Message);
+            }
+        }
+
+        private void UpdateActionsSpeechUI()
+        {
+            try
+            {
+                if (Btn_Actions_Speech == null) return;
+                bool enabled = MainV2.speechEnable;
+                if (enabled)
+                {
+                    Btn_Actions_Speech.Text = "🔊 音声通知: ON";
+                    Btn_Actions_Speech.TextColor = global::Xamarin.Forms.Color.FromHex("#10B981"); // Emerald green
+                    Btn_Actions_Speech.BorderColor = global::Xamarin.Forms.Color.FromHex("#10B981");
+                }
+                else
+                {
+                    Btn_Actions_Speech.Text = "🔇 音声通知: OFF";
+                    Btn_Actions_Speech.TextColor = global::Xamarin.Forms.Color.FromHex("#94A3B8"); // Slate gray
+                    Btn_Actions_Speech.BorderColor = global::Xamarin.Forms.Color.FromHex("#475569");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("UpdateActionsSpeechUI error: " + ex.Message);
+            }
+        }
+
+        private static readonly string[] SeverityShortNames = new string[]
+        {
+            "EMERG", "ALERT", "CRIT", "ERROR", "WARN", "NOTICE", "INFO", "DEBUG"
+        };
+
+        private void UpdateActionsSeverityUI(int sev = -1)
+        {
+            try
+            {
+                if (Btn_Actions_Severity == null) return;
+                if (sev < 0)
+                {
+                    sev = Settings.Instance.GetInt32(PREF_STATUSTEXT_SEVERITY, 4);
+                }
+                string name = (sev >= 0 && sev < SeverityShortNames.Length) ? SeverityShortNames[sev] : sev.ToString();
+                Btn_Actions_Severity.Text = $"📢 STATUSTEXT: {name} ▾";
+
+                // 重要度に応じたアクセントカラー
+                string borderColor;
+                if (sev <= 2)
+                    borderColor = "#DC2626"; // Red for Emergency/Alert/Crit
+                else if (sev == 3)
+                    borderColor = "#EA580C"; // Orange-Red for Error
+                else if (sev == 4)
+                    borderColor = "#F59E0B"; // Amber for Warning
+                else if (sev == 5)
+                    borderColor = "#38BDF8"; // Sky Blue for Notice
+                else
+                    borderColor = "#94A3B8"; // Slate for Info/Debug
+
+                Btn_Actions_Severity.BorderColor = global::Xamarin.Forms.Color.FromHex(borderColor);
+                Btn_Actions_Severity.TextColor = global::Xamarin.Forms.Color.FromHex(borderColor);
+            }
+            catch (Exception ex)
+            {
+                log.Error("UpdateActionsSeverityUI error: " + ex.Message);
+            }
+        }
+
+        private void OnActionsSpeechToggleClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                MainV2.speechEnable = !MainV2.speechEnable;
+                Settings.Instance[PREF_SPEECH_ENABLE] = MainV2.speechEnable.ToString();
+                global::Xamarin.Essentials.Preferences.Set(PREF_SPEECH_ENABLE, MainV2.speechEnable);
+                UpdateActionsSpeechUI();
+
+                string toast = MainV2.speechEnable ? "🔊 音声通知: ON" : "🔇 音声通知: OFF";
+                string color = MainV2.speechEnable ? "#10B981" : "#64748B";
+                ShowButtonActionToast(toast, color);
+
+                if (MainV2.speechEnable && MainV2.speechEngine != null)
+                {
+                    MainV2.speechEngine.SpeakAsync("Voice enabled");
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnActionsSpeechToggleClicked error: " + ex.Message);
+            }
+        }
+
+        private async void OnActionsSeveritySelectClicked(object sender, EventArgs e)
+        {
+            try
+            {
+                string[] options = new string[]
+                {
+                    "0: EMERGENCY (緊急のみ)",
+                    "1: ALERT (警戒以上)",
+                    "2: CRITICAL (重大以上)",
+                    "3: ERROR (エラー以上)",
+                    "4: WARNING (警告以上・推奨)",
+                    "5: NOTICE (通知以上)",
+                    "6: INFO (一般情報以上)",
+                    "7: DEBUG (全メッセージ)"
+                };
+
+                string choice = await DisplayActionSheet("SEND_STATUSTEXT 最低レベル選択", "キャンセル", null, options);
+                if (string.IsNullOrEmpty(choice) || choice == "キャンセル")
+                    return;
+
+                if (char.IsDigit(choice[0]) && int.TryParse(choice.Substring(0, 1), out int selectedSev))
+                {
+                    Settings.Instance[PREF_STATUSTEXT_SEVERITY] = selectedSev.ToString();
+                    global::Xamarin.Essentials.Preferences.Set(PREF_STATUSTEXT_SEVERITY, selectedSev);
+                    UpdateActionsSeverityUI(selectedSev);
+
+                    string shortName = (selectedSev >= 0 && selectedSev < SeverityShortNames.Length)
+                                       ? SeverityShortNames[selectedSev] : selectedSev.ToString();
+                    ShowButtonActionToast($"📢 STATUSTEXT レベル: {shortName}", "#38BDF8");
+
+                    if (MainV2.speechEnable && MainV2.speechEngine != null)
+                    {
+                        MainV2.speechEngine.SpeakAsync($"Status level {shortName}");
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error("OnActionsSeveritySelectClicked error: " + ex.Message);
+            }
+        }
+
+        #endregion
 
         private void ApplyMapProvider(string name)
         {

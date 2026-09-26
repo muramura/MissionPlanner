@@ -13,7 +13,12 @@ namespace MissionPlanner
     public class MainV2
     {
         public static bool isHerelink { get; set; } = false;
-        public static bool speechEnabled() => false;
+        public static bool speechEnabled()
+        {
+            if (speechEngine == null)
+                return false;
+            return speechEnable;
+        }
         
         public static MAVLinkInterface comPort;
         public static MainV2 instance;
@@ -28,6 +33,12 @@ namespace MissionPlanner
         static MainV2()
         {
             instance = new MainV2();
+            try
+            {
+                if (Settings.Instance["speechenable"] != null)
+                    _speechEnable = Settings.Instance.GetBoolean("speechenable");
+            }
+            catch { }
         }
 
         public MainV2()
@@ -41,12 +52,41 @@ namespace MissionPlanner
         public static List<MAVLinkInterface> Comports { get; set; } = new List<MAVLinkInterface>();
         public static bool ShowAirports { get; set; }
 
-        public static bool speechEnable { get; set; }
+        private static bool _speechEnable = false;
+        public static bool speechEnable
+        {
+            get
+            {
+                if (_speechEngine != null)
+                    return _speechEngine.speechEnable;
+                return _speechEnable;
+            }
+            set
+            {
+                _speechEnable = value;
+                if (_speechEngine != null)
+                    _speechEngine.speechEnable = value;
+            }
+        }
 
+        private static ISpeech _speechEngine;
         public static ISpeech speechEngine
         {
-            get { throw new NotImplementedException(); }
-            set { throw new NotImplementedException(); }
+            get => _speechEngine;
+            set
+            {
+                _speechEngine = value;
+                try
+                {
+                    MAVLinkInterface.Speech = value;
+                    CurrentState.Speech = value;
+                    if (value != null)
+                    {
+                        value.speechEnable = _speechEnable;
+                    }
+                }
+                catch { }
+            }
         }
 
         public static bool ShowTFR { get; set; }

@@ -294,6 +294,15 @@
                             <Button x:Name="Btn_Actions_AutoOffline" Text="⚡ テレメ受信時 自動オフライン: ON" FontSize="9" FontAttributes="Bold"
                                     BackgroundColor="#1E293B" BorderColor="#38BDF8" BorderWidth="1" TextColor="#38BDF8" CornerRadius="5" HeightRequest="28"
                                     Clicked="OnAutoOfflineToggleClicked"/>
+                            <!-- Voice Speech & StatusText Severity Controls -->
+                            <Grid ColumnDefinitions="*,*" ColumnSpacing="3">
+                                <Button x:Name="Btn_Actions_Speech" Grid.Column="0" Text="🔊 音声通知: ON" FontSize="9" FontAttributes="Bold"
+                                        BackgroundColor="#1E293B" BorderColor="#10B981" BorderWidth="1" TextColor="#10B981" CornerRadius="5" HeightRequest="28"
+                                        Clicked="OnActionsSpeechToggleClicked"/>
+                                <Button x:Name="Btn_Actions_Severity" Grid.Column="1" Text="📢 STATUSTEXT: WARN ▾" FontSize="9" FontAttributes="Bold"
+                                        BackgroundColor="#1E293B" BorderColor="#F59E0B" BorderWidth="1" TextColor="#F59E0B" CornerRadius="5" HeightRequest="28"
+                                        Clicked="OnActionsSeveritySelectClicked"/>
+                            </Grid>
                         </StackLayout>
                     </ScrollView>
 

@@ -1,4 +1,4 @@
-﻿//extern alias MPLib;
+//extern alias MPLib;
 
 using MissionPlanner;
 using MissionPlanner.Utilities;
@@ -1042,7 +1042,12 @@ namespace Xamarin.GCSViews
 
         public Speech()
         {
-
+            try
+            {
+                if (Settings.Instance["speechenable"] != null)
+                    speechEnable = Settings.Instance.GetBoolean("speechenable");
+            }
+            catch { }
         }
 
         public bool IsReady
