@@ -78,7 +78,7 @@ namespace MissionPlanner
                 {
                     try
                     {
-                        speechEngine = new Xamarin.GCSViews.Speech();
+                        speechEngine = new Speech();
                     }
                     catch (Exception ex)
                     {

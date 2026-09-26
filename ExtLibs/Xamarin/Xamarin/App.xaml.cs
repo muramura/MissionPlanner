@@ -69,7 +69,7 @@ namespace Xamarin
             {
                 if (MainV2.speechEngine == null)
                 {
-                    MainV2.speechEngine = new Xamarin.GCSViews.Speech();
+                    MainV2.speechEngine = new Speech();
                 }
             }
             catch (Exception ex)

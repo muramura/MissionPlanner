@@ -8571,7 +8571,7 @@ namespace Xamarin
                 {
                     try
                     {
-                        MainV2.speechEngine = new Xamarin.GCSViews.Speech();
+                        MainV2.speechEngine = new Speech();
                     }
                     catch { }
                 }
