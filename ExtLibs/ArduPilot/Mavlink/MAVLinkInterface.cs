@@ -5501,7 +5501,7 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
                                 speechenabled)
                             {
                                 if (!logdata.StartsWith("PreArm:")) // Suppress audible PreArm messages
-                                    Speech.SpeakAsync(logdata);
+                                    Speech.SpeakAsync(logdata, (int)sev);
                             }
                         }
                     }
