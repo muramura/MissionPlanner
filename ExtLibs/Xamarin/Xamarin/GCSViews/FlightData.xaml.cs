@@ -8567,6 +8567,15 @@ namespace Xamarin
         {
             try
             {
+                if (MainV2.speechEngine == null)
+                {
+                    try
+                    {
+                        MainV2.speechEngine = new Xamarin.GCSViews.Speech();
+                    }
+                    catch { }
+                }
+
                 // 音声通知設定の復元（デフォルト: false）
                 bool speechPref = global::Xamarin.Essentials.Preferences.Get(PREF_SPEECH_ENABLE, false);
                 if (Settings.Instance[PREF_SPEECH_ENABLE] != null)
@@ -8574,7 +8583,7 @@ namespace Xamarin
                     speechPref = Settings.Instance.GetBoolean(PREF_SPEECH_ENABLE);
                 }
                 MainV2.speechEnable = speechPref;
-                Settings.Instance[PREF_SPEECH_ENABLE] = speechPref.ToString();
+                Settings.Instance[PREF_SPEECH_ENABLE] = speechPref ? "True" : "False";
                 UpdateActionsSpeechUI();
 
                 // STATUSTEXT 最低レベルの復元（デフォルト: 4 = WARNING）

@@ -1052,66 +1052,79 @@ namespace Xamarin.GCSViews
 
         public bool IsReady
         {
-            get { if (lastmsg.AddSeconds(5) < DateTime.Now) return true;  return !isBusy; }
+            get
+            {
+                // 直近メッセージから2秒以上経過していればReadyとみなす（固まりを防止）
+                return !isBusy || (DateTime.Now - lastmsg).TotalSeconds > 2.0;
+            }
         }
 
-        CancellationTokenSource cts;
-        bool isBusy = false;
+        private CancellationTokenSource cts;
+        private volatile bool isBusy = false;
 
         public void SpeakAsync(string text)
         {
-            if (!MainV2.speechEnabled())
-                return;
+            try
+            {
+                if (!MainV2.speechEnabled())
+                {
+                    log.Debug("TTS: speech disabled, skipping: " + text);
+                    return;
+                }
 
-            if (text == null || String.IsNullOrWhiteSpace(text))
-                return;
+                if (string.IsNullOrWhiteSpace(text))
+                    return;
 
-            text = Regex.Replace(text, @"\bPreArm\b", "Pre Arm", RegexOptions.IgnoreCase);
-            text = Regex.Replace(text, @"\bdist\b", "distance", RegexOptions.IgnoreCase);
-            text = Regex.Replace(text, @"\bNAV\b", "Navigation", RegexOptions.IgnoreCase);
-            text = Regex.Replace(text, @"\b([0-9]+)m\b", "$1 meters", RegexOptions.IgnoreCase);
-            text = Regex.Replace(text, @"\b([0-9]+)ft\b", "$1 feet", RegexOptions.IgnoreCase);
-            text = Regex.Replace(text, @"\b([0-9]+)\bbaud\b", "$1 baudrate", RegexOptions.IgnoreCase);
+                text = Regex.Replace(text, @"\bPreArm\b", "Pre Arm", RegexOptions.IgnoreCase);
+                text = Regex.Replace(text, @"\bdist\b", "distance", RegexOptions.IgnoreCase);
+                text = Regex.Replace(text, @"\bNAV\b", "Navigation", RegexOptions.IgnoreCase);
+                text = Regex.Replace(text, @"\b([0-9]+)m\b", "$1 meters", RegexOptions.IgnoreCase);
+                text = Regex.Replace(text, @"\b([0-9]+)ft\b", "$1 feet", RegexOptions.IgnoreCase);
+                text = Regex.Replace(text, @"\b([0-9]+)\bbaud\b", "$1 baudrate", RegexOptions.IgnoreCase);
 
-            cts = new CancellationTokenSource();
-            lastmsg = DateTime.Now;
-            isBusy = true;
-            log.Info("TTS: say " + text);
-            _ = Task.Run(async () =>
-              {
-                  try
-                  {
-                    var locales = await TextToSpeech.GetLocalesAsync();
+                lastmsg = DateTime.Now;
+                log.Info("TTS: say " + text);
 
-                    // Grab the first locale
-                    var locale = locales.FirstOrDefault();
+                // Android TTS は UI/MainThread またはアクティビティのコンテキストで確実に駆動する
+                global::Xamarin.Forms.Device.BeginInvokeOnMainThread(async () =>
+                {
+                    try
+                    {
+                        isBusy = true;
+                        try { cts?.Cancel(); } catch { }
+                        cts = new CancellationTokenSource();
 
-                      var settings = new SpeechOptions()
-                      {
-                          Volume = 1.0f,
-                          Pitch = 1.0f,
-                          //Locale = locale
-                      };
+                        var settings = new SpeechOptions()
+                        {
+                            Volume = 1.0f,
+                            Pitch = 1.0f
+                        };
 
-                      await TextToSpeech.SpeakAsync(text, settings, cts.Token).ConfigureAwait(false);
-                  }
-                  catch (Exception e)
-                  {
-                  }
-                  finally
-                  {
-                      isBusy = false;
-                  }
-              });
+                        await TextToSpeech.SpeakAsync(text, settings, cts.Token);
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Warn("TextToSpeech.SpeakAsync error: " + ex.Message);
+                    }
+                    finally
+                    {
+                        isBusy = false;
+                    }
+                });
+            }
+            catch (Exception ex)
+            {
+                log.Error("TTS SpeakAsync outer error: " + ex.Message);
+            }
         }
 
         public void SpeakAsyncCancelAll()
         {
-            if (cts?.IsCancellationRequested ?? true)
-                return;
-
-            cts.Cancel();
-
+            try
+            {
+                cts?.Cancel();
+            }
+            catch { }
             isBusy = false;
         }
     }

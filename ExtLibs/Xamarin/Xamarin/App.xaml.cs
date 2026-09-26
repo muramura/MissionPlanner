@@ -67,6 +67,17 @@ namespace Xamarin
             MainPage = new MainPage();
             try
             {
+                if (MainV2.speechEngine == null)
+                {
+                    MainV2.speechEngine = new Xamarin.GCSViews.Speech();
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Warn("Init speech engine in App: " + ex.Message);
+            }
+            try
+            {
                 AutoConnect.NewMavlinkConnection += (sender, serial) =>
                 {
                     try

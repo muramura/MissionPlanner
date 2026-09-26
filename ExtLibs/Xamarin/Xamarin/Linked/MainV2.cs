@@ -72,7 +72,21 @@ namespace MissionPlanner
         private static ISpeech _speechEngine;
         public static ISpeech speechEngine
         {
-            get => _speechEngine;
+            get
+            {
+                if (_speechEngine == null)
+                {
+                    try
+                    {
+                        speechEngine = new Xamarin.GCSViews.Speech();
+                    }
+                    catch (Exception ex)
+                    {
+                        log.Warn("Failed to auto-init Speech: " + ex.Message);
+                    }
+                }
+                return _speechEngine;
+            }
             set
             {
                 _speechEngine = value;

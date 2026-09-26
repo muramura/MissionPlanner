@@ -5497,11 +5497,10 @@ Mission Planner waits for 2 valid heartbeat packets before connecting
                             MAVlist[sysid, compid].cs.messageHighSeverity = mavsev;
 
                             if (Speech != null &&
-                                Speech.IsReady &&
-                                Settings.Instance["speechenable"] != null &&
-                                Settings.Instance["speechenable"].ToString() == "True")
+                                Settings.Instance.GetBoolean("speechenable") &&
+                                speechenabled)
                             {
-                                if (speechenabled && !logdata.StartsWith("PreArm:")) // Suppress audible PreArm messages
+                                if (!logdata.StartsWith("PreArm:")) // Suppress audible PreArm messages
                                     Speech.SpeakAsync(logdata);
                             }
                         }
