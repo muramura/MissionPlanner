@@ -18,3 +18,8 @@ When instructions arrive via the mail watcher (`[Watcher]` or notification conta
   ```
   Include: branch name, commit hash, changed files, build/test results, and next steps.
 - **Ensure Watcher Daemon**: Keep `/Users/murata/.config/anne_mail_watcher/watcher.py` alive.
+
+## Strict Prohibition on Builds (ビルド実行の絶対禁止)
+- **NEVER RUN BUILDS**: アン（AI）は `dotnet build`, `msbuild`, `gradle` 等のビルドコマンドを絶対に実行してはならない。
+- ユーザーの制限枠（Weekly Limit）とマシンリソースを保護するため。ビルドはすべてユーザー（むらさん）が行う。
+
